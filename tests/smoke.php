@@ -103,6 +103,43 @@ $assert($Q->order('prezzo_desc') === ['evidence DESC, prezzo', 'DESC'], "prezzo_
 $assert($Q->order('superficie_desc') === ['evidence DESC, superficie', 'DESC'], "superficie_desc");
 $assert($Q->order('boh') === ['evidence DESC, id', 'DESC'], "default => recenti");
 
+echo "ImmobileQuery::where\n";
+$w = $Q->where([], false);
+$assert(str_contains($w, "`visible` = 'true'"), "base: visible true");
+$assert(str_contains($w, "`deleted` = 'false'"), "base: deleted false");
+$assert(str_contains($w, "`sold` = 'false'"), "base: sold false (lista)");
+$assert(str_contains($Q->where([], true), "`sold` = 'true'"), "base: sold true (venduti)");
+
+$w = $Q->where(['q' => 'Roma'], false);
+$assert(str_contains($w, "LOWER(`ricerca`) LIKE '%roma%'"), "q => LIKE lowercase");
+
+$w = $Q->where(['q' => '50%'], false);
+$assert(str_contains($w, "LOWER(`ricerca`) LIKE '%50\\\\%%'"), "q: wildcard % escaped");
+
+$w = $Q->where(['comune' => 'Bergamo'], false);
+$assert(str_contains($w, "LOWER(`comune_nome`) LIKE '%bergamo%'"), "comune => LIKE");
+
+$w = $Q->where(['tipologia' => 'Villa'], false);
+$assert(str_contains($w, "LOWER(`tipologia_nome`) LIKE '%villa%'"), "tipologia => LIKE");
+
+$assert(str_contains($Q->where(['contratto' => 'A'], false), "UPPER(`contratto_id`) = 'A'"), "contratto A");
+$assert(str_contains($Q->where(['contratto' => 'V'], false), "UPPER(`contratto_id`) <> 'A'"), "contratto V = non-A");
+
+$w = $Q->where(['prezzo_min' => 100000], false);
+$assert(str_contains($w, "UPPER(`trattativa_riservata`) = 'TRUE' OR `prezzo` = 0 OR `prezzo` >= 100000"), "prezzo_min con guardie");
+$w = $Q->where(['prezzo_max' => 300000], false);
+$assert(str_contains($w, "`prezzo` <= 300000"), "prezzo_max");
+
+$w = $Q->where(['superficie_min' => 80], false);
+$assert(str_contains($w, "`superficie` = 0 OR `superficie` >= 80"), "superficie_min con guardia zero");
+$w = $Q->where(['superficie_max' => 200], false);
+$assert(str_contains($w, "`superficie` <= 200"), "superficie_max");
+
+$assert(str_contains($Q->where(['camere' => 3], false), "`n_camere` >= 3"), "camere");
+$assert(str_contains($Q->where(['bagni' => 2], false), "`n_bagni` >= 2"), "bagni");
+
+$assert(str_contains($Q->where(['comune' => "O'Brien"], false), "LIKE '%o\\'brien%'"), "apice escaped");
+
 echo "\n";
 echo $failures === 0
     ? "OK — {$total} asserzioni passate\n"

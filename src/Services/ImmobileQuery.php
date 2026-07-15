@@ -77,6 +77,90 @@ final class ImmobileQuery
     }
 
     /**
+     * Costruisce la condizione WHERE (stringa SQL raw) per la ricerca immobili.
+     * Single-table su `immobili`. Fedele al filtraggio PHP storico. Tutti i
+     * valori stringa sono escaped; i numerici castati a int.
+     *
+     * @param array<string, mixed> $filters
+     */
+    public function where(array $filters, bool $sold = false): string
+    {
+        $clauses = [
+            "`visible` = 'true'",
+            "`deleted` = 'false'",
+            "`sold` = '".($sold ? 'true' : 'false')."'",
+        ];
+
+        $q = strtolower(trim((string) ($filters['q'] ?? '')));
+        if ($q !== '') {
+            $clauses[] = "LOWER(`ricerca`) LIKE '%".$this->like($q)."%'";
+        }
+
+        $comune = strtolower(trim((string) ($filters['comune'] ?? '')));
+        if ($comune !== '') {
+            $clauses[] = "LOWER(`comune_nome`) LIKE '%".$this->like($comune)."%'";
+        }
+
+        $tipologia = strtolower(trim((string) ($filters['tipologia'] ?? '')));
+        if ($tipologia !== '') {
+            $clauses[] = "LOWER(`tipologia_nome`) LIKE '%".$this->like($tipologia)."%'";
+        }
+
+        $contratto = strtoupper(trim((string) ($filters['contratto'] ?? '')));
+        if ($contratto === 'A') {
+            $clauses[] = "UPPER(`contratto_id`) = 'A'";
+        } elseif ($contratto === 'V') {
+            $clauses[] = "UPPER(`contratto_id`) <> 'A'";
+        }
+
+        if (($min = (int) ($filters['prezzo_min'] ?? 0)) > 0) {
+            $clauses[] = "(UPPER(`trattativa_riservata`) = 'TRUE' OR `prezzo` = 0 OR `prezzo` >= {$min})";
+        }
+        if (($max = (int) ($filters['prezzo_max'] ?? 0)) > 0) {
+            $clauses[] = "(UPPER(`trattativa_riservata`) = 'TRUE' OR `prezzo` = 0 OR `prezzo` <= {$max})";
+        }
+
+        if (($min = (int) ($filters['superficie_min'] ?? 0)) > 0) {
+            $clauses[] = "(`superficie` = 0 OR `superficie` >= {$min})";
+        }
+        if (($max = (int) ($filters['superficie_max'] ?? 0)) > 0) {
+            $clauses[] = "(`superficie` = 0 OR `superficie` <= {$max})";
+        }
+
+        if (($camere = (int) ($filters['camere'] ?? 0)) > 0) {
+            $clauses[] = "`n_camere` >= {$camere}";
+        }
+        if (($bagni = (int) ($filters['bagni'] ?? 0)) > 0) {
+            $clauses[] = "`n_bagni` >= {$bagni}";
+        }
+
+        return implode(' AND ', $clauses);
+    }
+
+    /**
+     * Escape di un valore per una clausola LIKE: prima i metacaratteri LIKE
+     * (`\`, `%`, `_`) così l'input è trattato come substring letterale, poi
+     * l'escape SQL per gli apici.
+     */
+    private function like(string $value): string
+    {
+        $value = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+
+        return $this->sqlEscape($value);
+    }
+
+    /**
+     * Escape SQL. Usa la connessione mysqli del framework se disponibile;
+     * altrimenti (test offline, senza runtime) ricade su addslashes.
+     */
+    private function sqlEscape(string $value): string
+    {
+        $mysqli = $GLOBALS['mysqli'] ?? null;
+
+        return $mysqli instanceof \mysqli ? $mysqli->real_escape_string($value) : addslashes($value);
+    }
+
+    /**
      * @param array<string, mixed> $filters
      */
     private function matches(object $card, array $filters): bool
