@@ -1,9 +1,8 @@
 <?php
 
-use Wonder\Api\Endpoint;
-use Wonder\Api\Handler;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Services\SyncApiUser;
 
 /**
  * Backfill idempotente dei campi derivati per la ricerca SQL della lista.
@@ -13,33 +12,61 @@ use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
  *
  * Serve a popolare i campi denormalizzati sui record importati prima
  * dell'introduzione delle colonne (dopo il sync questi valori sono già
- * mantenuti aggiornati). Sicuro da rieseguire. Autenticazione: token
- * dell'utente API dedicato `@immobili` (`Authorization: Bearer <token>`),
- * come per sync e images.
+ * mantenuti aggiornati). Sicuro da rieseguire.
+ *
+ * Disponibile senza credenziali solo in ambiente locale
+ * (host localhost/.test/.local/…), come il seed. Fuori dal locale richiede il
+ * token dell'utente API `@immobili` (header `Authorization: Bearer <token>` o
+ * `?token=<token>`).
  */
 
-require __DIR__.'/_bearer.php';
+header('Content-Type: application/json; charset=utf-8');
 
-Handler::run('/api/immobili/reindex/', 'GET', ['immobili_sync', 'api_internal_user'], function (Endpoint $call) {
-    $presenter = new ImmobilePresenter();
+$host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+$isLocal = getenv('APP_ENV') === 'local'
+    || (bool) preg_match('/(^localhost|127\.0\.0\.1|\.test$|\.local$|\.localhost$|\.ddev\.site$)/', $host);
 
-    $rows = Immobile::find(['deleted' => 'false']);
-    $rows = is_array($rows) ? (isset($rows['id']) ? [$rows] : array_values($rows)) : [];
+// Token presentato: header Bearer oppure ?token= (fallback).
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+if (!$authHeader && function_exists('getallheaders')) {
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+}
 
-    $updated = 0;
-    foreach ($rows as $row) {
-        $id = (int) ($row['id'] ?? 0);
-        if ($id <= 0) {
-            continue;
-        }
+$presented = (is_string($authHeader) && preg_match('/Bearer\s(\S+)/', $authHeader, $m))
+    ? $m[1]
+    : trim((string) ($_GET['token'] ?? ''));
 
-        Immobile::update($presenter->searchFields($row), $id);
-        $updated++;
+if (!$isLocal && !SyncApiUser::authorize($presented)) {
+    http_response_code(403);
+    echo json_encode([
+        'success'  => false,
+        'status'   => 403,
+        'response' => ['message' => 'Reindex disponibile solo in ambiente locale o con token API valido.'],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+$presenter = new ImmobilePresenter();
+
+$rows = Immobile::find(['deleted' => 'false']);
+$rows = is_array($rows) ? (isset($rows['id']) ? [$rows] : array_values($rows)) : [];
+
+$updated = 0;
+foreach ($rows as $row) {
+    $id = (int) ($row['id'] ?? 0);
+
+    if ($id <= 0) {
+        continue;
     }
 
-    return [
-        'success'  => true,
-        'status'   => 200,
-        'response' => ['updated' => $updated],
-    ];
-});
+    Immobile::update($presenter->searchFields($row), $id);
+    $updated++;
+}
+
+echo json_encode([
+    'success'  => true,
+    'status'   => 200,
+    'response' => ['updated' => $updated],
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+exit;
