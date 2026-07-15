@@ -140,6 +140,28 @@ $assert(str_contains($Q->where(['bagni' => 2], false), "`n_bagni` >= 2"), "bagni
 
 $assert(str_contains($Q->where(['comune' => "O'Brien"], false), "LIKE '%o\\'brien%'"), "apice escaped");
 
+echo "ImmobilePresenter::searchFields\n";
+$P = new \Wonder\Plugin\Immobili\Services\ImmobilePresenter();
+$row = [
+    'provider'      => 'gestim',
+    'tipologia_id'  => '',
+    'comune_id'     => '',
+    'attributi'     => ['tipologia' => 'Villa', 'comune' => 'Milano'],
+    'nome'          => 'Bella villa',
+    'pub_indirizzo' => 'true',
+    'strada'        => 'Via Roma',
+    'indirizzo'     => '',
+    'pub_civico'    => 'true',
+    'civico'        => '10',
+];
+$sf = $P->searchFields($row);
+$assert(($sf['comune_nome'] ?? '') === 'Milano', "comune_nome da attributi (fallback Gestim)");
+$assert(($sf['tipologia_nome'] ?? '') === 'Villa', "tipologia_nome da attributi");
+$assert(str_contains($sf['ricerca'] ?? '', 'villa'), "ricerca contiene tipologia");
+$assert(str_contains($sf['ricerca'] ?? '', 'milano'), "ricerca contiene comune (via indirizzo)");
+$assert(str_contains($sf['ricerca'] ?? '', 'via roma'), "ricerca contiene la via");
+$assert(($sf['ricerca'] ?? '') === strtolower($sf['ricerca'] ?? ''), "ricerca è lowercase");
+
 echo "\n";
 echo $failures === 0
     ? "OK — {$total} asserzioni passate\n"
