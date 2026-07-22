@@ -1,0 +1,12 @@
+{
+    "680": {
+        "type": "success",
+        "title": "Immobili aggiornati",
+        "text": "La sincronizzazione dei feed è stata completata."
+    },
+    "681": {
+        "type": "danger",
+        "title": "Sincronizzazione non completata",
+        "text": "Controlla lo storico delle sincronizzazioni per i dettagli."
+    }
+}

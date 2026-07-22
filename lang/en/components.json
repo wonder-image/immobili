@@ -1,0 +1,45 @@
+{
+    "immobili": {
+        "card": {
+            "sold": "Sold",
+            "featured": "Featured",
+            "rooms": "rooms"
+        },
+        "filters": {
+            "search": "Search",
+            "search_placeholder": "Reference, address, area…",
+            "city": "Town",
+            "contract": "Contract",
+            "all": "All",
+            "sale": "Sale",
+            "rent": "Rent",
+            "type": "Type",
+            "price_min": "Min price",
+            "price_max": "Max price",
+            "surface_min": "Min surface",
+            "rooms": "Min rooms",
+            "sort": "Sort by",
+            "sort_recent": "Most recent",
+            "sort_price_asc": "Price ascending",
+            "sort_price_desc": "Price descending",
+            "sort_surface": "Surface",
+            "apply": "Filter",
+            "reset": "Reset"
+        },
+        "features": {
+            "type": "Type",
+            "contract": "Contract",
+            "surface": "Surface",
+            "rooms": "Rooms",
+            "bedrooms": "Bedrooms",
+            "bathrooms": "Bathrooms",
+            "energy_class": "Energy class"
+        },
+        "backend": {
+            "sync_all": {
+                "button": "Update properties",
+                "confirm": "Start synchronizing all active feeds now?"
+            }
+        }
+    }
+}

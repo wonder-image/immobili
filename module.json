@@ -1,0 +1,38 @@
+{
+    "name": "Wonder Immobili",
+    "slug": "immobili",
+    "version": "1.0.0",
+    "description": "Modulo immobiliare con frontend, backend e API per wonder-image/app, pronto per wonder-image/new-site. Collega uno o più feed da gestionali immobiliari (Getrix, Gestim, …), bilingua it/en.",
+    "namespace": "Wonder\\Plugin\\Immobili\\",
+    "entrypoint": "Wonder\\Plugin\\Immobili\\Immobili",
+    "author": {
+        "name": "Wonder Image",
+        "email": "info@wonderimage.it"
+    },
+    "frameworkCompatibility": {
+        "wonder-app": "^2.2",
+        "php": "^8.2"
+    },
+    "dependencies": {
+        "modules": []
+    },
+    "paths": {
+        "src": "src",
+        "handlers": "http",
+        "views": "view",
+        "assets": "resources/assets",
+        "lang": "lang",
+        "tests": "tests"
+    },
+    "routes": {
+        "frontend": "config/routes/route.frontend.php",
+        "backend": "config/routes/route.backend.php",
+        "api": "config/routes/route.api.php"
+    },
+    "permissions": {
+        "definitions": "config/permissions.php"
+    },
+    "database": {
+        "models": "src/Models"
+    }
+}

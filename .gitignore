@@ -1,0 +1,7 @@
+/vendor/
+composer.phar
+.DS_Store
+*.log
+*.claude
+/resources/assets/upload/
+tests/*

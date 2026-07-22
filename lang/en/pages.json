@@ -1,0 +1,52 @@
+{
+    "immobili": {
+        "list": {
+            "seo": {
+                "title": "Properties for sale and rent",
+                "description": "Browse available properties: apartments, houses, offices, shops and more."
+            },
+            "title": "Properties",
+            "results": "properties found",
+            "empty": "No properties match your search criteria."
+        },
+        "detail": {
+            "seo_suffix": "Property details",
+            "back": "Back to properties",
+            "description": "Description",
+            "plans": "Floor plans",
+            "pdf": "Download brochure",
+            "print": "Print"
+        },
+        "sold": {
+            "seo": {
+                "title": "Sold properties",
+                "description": "A selection of the properties we have sold."
+            },
+            "title": "Sold properties",
+            "subtitle": "A selection of successfully closed deals.",
+            "empty": "There are no sold properties to show at the moment."
+        },
+        "pdf": {
+            "facts": {
+                "riferimento": "Reference",
+                "zona": "Area",
+                "contratto": "Contract",
+                "prezzo": "Price",
+                "spese": "Condo fees",
+                "tipologia": "Type",
+                "anno_costruzione": "Year built",
+                "piani_edificio": "Building floors",
+                "piano": "Floor",
+                "classe": "Energy class",
+                "ipe": "EPI",
+                "superficie": "Surface",
+                "locali": "Rooms",
+                "camere": "Bedrooms",
+                "bagni": "Bathrooms",
+                "cucina": "Kitchen",
+                "riscaldamento": "Heating",
+                "posti_auto": "Parking"
+            }
+        }
+    }
+}

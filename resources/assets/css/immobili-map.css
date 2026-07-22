@@ -1,0 +1,113 @@
+/**
+ * Mappa immobili — stile dei marker (Google Maps AdvancedMarkerElement).
+ *
+ * Tutte le regole sono scopate su `.immobili-map` (la classe del contenitore
+ * renderizzato da view/components/map.php) per non inquinare il resto della
+ * pagina. Un sito può sovrascrivere questo file pubblicandolo con
+ * `php forge publish:module immobili --assets`.
+ */
+
+.immobili-map .property {
+    align-items: center;
+    background-color: #FFFFFF;
+    border-radius: 50%;
+    color: #263238;
+    cursor: pointer;
+    display: flex;
+    font-size: 14px;
+    gap: 15px;
+    height: 30px;
+    justify-content: center;
+    padding: 4px;
+    position: relative;
+    transition: all 0.3s ease-out;
+    width: 30px;
+}
+
+.immobili-map .property::after {
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 9px solid #FFFFFF;
+    content: "";
+    height: 0;
+    left: 50%;
+    position: absolute;
+    top: 95%;
+    transform: translate(-50%, 0);
+    transition: all 0.3s ease-out;
+    width: 0;
+    z-index: 1;
+}
+
+.immobili-map .property .icon {
+    align-items: center;
+    color: var(--primary-color, #263238);
+    display: flex;
+    justify-content: center;
+}
+
+.immobili-map .property .icon i {
+    font-size: 15px;
+}
+
+.immobili-map .property .details {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.immobili-map .property .details .name {
+    color: inherit;
+    font-weight: 600;
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.immobili-map .property .details .name:hover {
+    text-decoration: underline;
+}
+
+.immobili-map .property .features {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: row;
+    gap: var(--spacer, 8px);
+    white-space: nowrap;
+}
+
+.immobili-map .property.highlight {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
+    height: 90px;
+    padding: 8px 15px;
+    width: 290px;
+    z-index: 2;
+}
+
+.immobili-map .property.highlight::after {
+    border-top: 9px solid #FFFFFF;
+}
+
+.immobili-map .property.highlight .details {
+    display: flex;
+}
+
+.immobili-map .property.highlight .icon i {
+    font-size: 20px;
+}
+
+.immobili-map .property:not(.highlight) {
+    background-color: var(--primary-color, #FFFFFF);
+}
+
+.immobili-map .property:not(.highlight) .icon {
+    color: #FFFFFF;
+}
+
+.immobili-map .property:not(.highlight)::after {
+    border-top: 9px solid var(--primary-color, #FFFFFF);
+}

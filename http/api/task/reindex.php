@@ -3,12 +3,14 @@
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Services\SyncApiUser;
+use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
  * Backfill idempotente dei campi derivati per la ricerca SQL della lista.
  *
- *   GET /api/immobili/reindex/   → ricalcola comune_nome/tipologia_nome/ricerca
- *                                  per tutti gli immobili non cancellati
+ *   GET /api/immobili/reindex/   → ricalcola comune_nome/tipologia_nome e fa il
+ *                                  backfill dello slug per tutti gli immobili non
+ *                                  cancellati che ne sono privi
  *
  * Serve a popolare i campi denormalizzati sui record importati prima
  * dell'introduzione delle colonne (dopo il sync questi valori sono già
@@ -60,7 +62,21 @@ foreach ($rows as $row) {
         continue;
     }
 
-    Immobile::update($presenter->searchFields($row), $id);
+    $fields = $presenter->searchFields($row);
+
+    // Backfill dello slug per i record che ne sono privi (es. dopo la migrazione
+    // dir→slug): base leggibile resa univoca, escludendo il record stesso.
+    if (trim((string) ($row['slug'] ?? '')) === '') {
+        $base = Slug::base([
+            $fields['tipologia_nome'] ?? '',
+            $row['strada'] ?? '',
+            $row['indirizzo'] ?? '',
+            $fields['comune_nome'] ?? '',
+        ]);
+        $fields['slug'] = Slug::unique($base, $id);
+    }
+
+    Immobile::update($fields, $id);
     $updated++;
 }
 

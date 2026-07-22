@@ -103,3 +103,8 @@ GET /immobili/idealista/            → feed XML per il portale Idealista (expor
 Ogni run di sincronizzazione e del secondo piano immagini viene registrato nella tabella
 `immobili_sync_log` (file/sorgente importato, conteggi, esito) e consultabile dal backend in
 **Immobili → Storico sync**.
+
+Per Getrix la colonna **Sorgente / file** contiene il path relativo dello ZIP archiviato. Nella stessa
+cartella vengono conservati anche l'XML estratto e `metadata.json`, così ogni risposta del gestionale
+può essere verificata a posteriori. Gli archivi sono dati runtime e vivono sotto
+`storage/immobili/feed-sync/getrix/`.

@@ -5,6 +5,7 @@ namespace Wonder\Plugin\Immobili\Services;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
+use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
  * Seed di immobili di esempio (solo per verifica locale).
@@ -135,7 +136,11 @@ final class ImmobileSeeder
      */
     private function createImmobile(array $data): int
     {
-        $dir = immobiliSlug(($data['tipologia_nome'] ?? '').' '.($data['strada'] ?? '').' '.($data['comune_nome'] ?? '')).'-'.($data['external_id'] ?? '');
+        $slug = Slug::unique(Slug::base([
+            (string) ($data['tipologia_nome'] ?? ''),
+            (string) ($data['strada'] ?? ''),
+            (string) ($data['comune_nome'] ?? ''),
+        ]));
 
         $fields = [
             'provider'             => 'seed',
@@ -165,8 +170,7 @@ final class ImmobileSeeder
                 'tipologia' => (string) ($data['tipologia_nome'] ?? ''),
                 'comune'    => (string) ($data['comune_nome'] ?? ''),
             ],
-            'dir'                  => $dir,
-            'url'                  => '',
+            'slug'                 => $slug,
             'synced_at'            => date('Y-m-d H:i:s'),
             'external_modified_at' => date('Y-m-d H:i:s'),
             'feed_deleted'         => 'false',

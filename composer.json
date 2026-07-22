@@ -1,0 +1,33 @@
+{
+    "name": "wonder-image/immobili",
+    "description": "Modulo immobiliare per wonder-image/new-site: collega uno o più feed da gestionali (Getrix, Gestim, …), con view, backend e API pronti e bilingua.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "wonder-image/app": "dev-main"
+    },
+    "autoload": {
+        "psr-4": {
+            "Wonder\\Plugin\\Immobili\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "extra": {
+        "wonder": {
+            "module": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "config": {
+        "platform": {
+            "php": "8.2.30"
+        },
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}

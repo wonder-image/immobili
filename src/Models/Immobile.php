@@ -43,8 +43,7 @@ final class Immobile extends Model
                 // Contratto / commerciale
                 'contratto_id', 'durata_contratto_id', 'situazione_id',
                 'tipo_proprieta_id',
-                'prezzo', 'affitto', 'prezzo_affitto',
-                'trattativa_riservata', 'trattativa_riservata_affitto',
+                'prezzo', 'trattativa_riservata',
                 'asta', 'pregio', 'reddito', 'spese_mensili', 'spese_id',
                 // Energia
                 'legge_classe_energetica_id', 'classe_energetica', 'ipe',
@@ -57,8 +56,8 @@ final class Immobile extends Model
                 'youtube_1', 'youtube_2', 'youtube_3', 'youtube_4',
                 'planimetria', 'virtual_tour', 'visual_tour', 'video',
                 // Attributi estesi / polimorfici + derivati persistiti
-                'attributi', 'dir', 'url', 'qrcode',
-                'comune_nome', 'tipologia_nome', 'ricerca',
+                'attributi', 'slug',
+                'comune_nome', 'tipologia_nome',
             ]),
         ];
     }
@@ -74,7 +73,7 @@ final class Immobile extends Model
             'ind_comune'     => ['index' => 'comune_id'],
             'ind_contratto'  => ['index' => 'contratto_id'],
             'ind_tipologia'  => ['index' => 'tipologia_id'],
-            'ind_dir'        => ['index' => 'dir'],
+            'ind_slug'       => ['index' => 'slug'],
             'ind_comune_nome'    => ['index' => 'comune_nome'],
             'ind_tipologia_nome' => ['index' => 'tipologia_nome'],
             'ind_prezzo'     => ['index' => 'prezzo'],
@@ -126,10 +125,7 @@ final class Immobile extends Model
             Field::key('situazione_id')->text(),
             Field::key('tipo_proprieta_id')->text(),
             Field::key('prezzo')->number()->decimals(0),
-            Field::key('affitto')->text(),
-            Field::key('prezzo_affitto')->number()->decimals(0),
             Field::key('trattativa_riservata')->text(),
-            Field::key('trattativa_riservata_affitto')->text(),
             Field::key('asta')->text(),
             Field::key('pregio')->text(),
             Field::key('reddito')->text(),
@@ -170,15 +166,29 @@ final class Immobile extends Model
             // Attributi estesi / polimorfici (dotazioni, impianti, ecc.)
             Field::key('attributi')->json(),
 
-            // Derivati persistiti
-            Field::key('dir')->text()->slug(),
-            Field::key('url')->text(),
-            Field::key('qrcode')->text(),
+            // Slug pubblico persistito (leggibile, senza external_id)
+            Field::key('slug')->text()->slug(),
 
             // Derivati per la ricerca SQL (denormalizzati al sync)
             Field::key('comune_nome')->text(),
             Field::key('tipologia_nome')->text(),
-            Field::key('ricerca')->text(),
         ];
     }
+
+    public static function decorate(array $row): array
+    {
+        $slug = (string) ($row['slug'] ?? '');
+
+        $row['url'] = __r('immobile.view', [ 'slug' => $slug ]);
+        // Il QR non è salvato in DB: si ricostruisce dall'external_id (generato al sync).
+        $row['qrcode'] = immobiliQrCodeUrl((string) ($row['external_id'] ?? ''));
+
+        $row['url_scheda'] = __r('immobile.scheda', [ 'slug' => $slug ]);
+        $row['url_cartello'] = __r('immobile.cartello', [ 'slug' => $slug ]);
+        $row['url_cartello_vetrina'] = __r('immobile.cartello.vetrina', [ 'slug' => $slug ]);
+        $row['url_cartello_vetrina_venduto'] = __r('immobile.cartello.vetrina.venduto', [ 'slug' => $slug ]);
+
+        return $row;
+    }
+
 }

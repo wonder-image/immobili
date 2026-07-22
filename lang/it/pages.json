@@ -1,0 +1,51 @@
+{
+    "immobili": {
+        "list": {
+            "seo": {
+                "title": "Immobili in vendita e in affitto",
+                "description": "Sfoglia gli immobili disponibili: appartamenti, case, uffici, negozi e altro."
+            },
+            "title": "Immobili",
+            "results": "immobili trovati",
+            "empty": "Nessun immobile trovato con questi criteri di ricerca."
+        },
+        "detail": {
+            "back": "Torna agli immobili",
+            "description": "Descrizione",
+            "plans": "Planimetrie",
+            "pdf": "Scarica la scheda",
+            "print": "Stampa"
+        },
+        "sold": {
+            "seo": {
+                "title": "Immobili venduti",
+                "description": "Una selezione degli immobili che abbiamo venduto."
+            },
+            "title": "Immobili venduti",
+            "subtitle": "Una selezione delle trattative concluse con successo.",
+            "empty": "Al momento non ci sono immobili venduti da mostrare."
+        },
+        "pdf": {
+            "facts": {
+                "riferimento": "Riferimento",
+                "zona": "Zona",
+                "contratto": "Contratto",
+                "prezzo": "Prezzo",
+                "spese": "Spese condominiali",
+                "tipologia": "Tipologia",
+                "anno_costruzione": "Anno di costruzione",
+                "piani_edificio": "Piani edificio",
+                "piano": "Piano",
+                "classe": "Classe energetica",
+                "ipe": "I.P.E.",
+                "superficie": "Superficie",
+                "locali": "Locali",
+                "camere": "Camere",
+                "bagni": "Bagni",
+                "cucina": "Cucina",
+                "riscaldamento": "Riscaldamento",
+                "posti_auto": "Posti auto"
+            }
+        }
+    }
+}

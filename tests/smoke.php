@@ -11,6 +11,21 @@ declare(strict_types=1);
 
 require __DIR__.'/../src/helpers.php';
 
+// Autoloader PSR-4 delle classi del modulo (senza framework): attivo per
+// l'intero file, così i formatter spostati in ImmobilePresenter (slug,
+// formatSurface, price) sono risolvibili anche nei test più in alto.
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'Wonder\\Plugin\\Immobili\\';
+    if (!str_starts_with($class, $prefix)) {
+        return;
+    }
+    $rel = str_replace('\\', '/', substr($class, strlen($prefix)));
+    $file = __DIR__.'/../src/'.$rel.'.php';
+    if (is_file($file)) {
+        require $file;
+    }
+});
+
 $failures = 0;
 $total = 0;
 
@@ -37,19 +52,19 @@ $assert(immobiliDecodeJsonArray('') === [], "vuoto => []");
 $assert(immobiliDecodeJsonArray('nope') === [], "non-JSON => []");
 $assert(immobiliDecodeJsonArray(['a']) === ['a'], "array passthrough");
 
-echo "immobiliSlug\n";
-$assert(immobiliSlug('Villa a Città Alta') === 'villa-a-citta-alta', "translittera e slugghifica");
-$assert(immobiliSlug('  Trilocale, Via Roma 10  ') === 'trilocale-via-roma-10', "trim + separatori");
-$assert(immobiliSlug('') === '', "vuoto => vuoto");
+echo "ImmobilePresenter::slug\n";
+$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('Villa a Città Alta') === 'villa-a-citta-alta', "translittera e slugghifica");
+$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('  Trilocale, Via Roma 10  ') === 'trilocale-via-roma-10', "trim + separatori");
+$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('') === '', "vuoto => vuoto");
 
 echo "immobiliFormatPrice\n";
 $assert(immobiliFormatPrice(250000) === '€ 250.000', "prezzo formattato");
 $assert(immobiliFormatPrice(0) === '', "0 => vuoto");
 $assert(immobiliFormatPrice('1500') === '€ 1.500', "stringa numerica");
 
-echo "immobiliFormatSurface\n";
-$assert(immobiliFormatSurface(120) === '120 mq', "superficie formattata");
-$assert(immobiliFormatSurface(0) === '', "0 => vuoto");
+echo "ImmobilePresenter::formatSurface\n";
+$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(120) === '120 mq', "superficie formattata");
+$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(0) === '', "0 => vuoto");
 
 echo "immobiliResolveLocalizedValue\n";
 $resolved = immobiliResolveLocalizedValue(['titolo' => ['it' => 'Casa', 'en' => 'House']], 'en');
@@ -58,20 +73,6 @@ $resolved = immobiliResolveLocalizedValue(['titolo' => ['it' => 'Casa', 'en' => 
 $assert(($resolved['titolo'] ?? '') === 'Casa', "fallback it per lingua mancante");
 $resolved = immobiliResolveLocalizedValue(['x' => 'plain'], 'en');
 $assert(($resolved['x'] ?? '') === 'plain', "valore non localizzato passthrough");
-
-// Autoloader delle classi del modulo (PSR-4, senza framework) per validare che
-// il grafo delle classi si carichi senza errori di namespace/path/interfacce.
-spl_autoload_register(static function (string $class): void {
-    $prefix = 'Wonder\\Plugin\\Immobili\\';
-    if (!str_starts_with($class, $prefix)) {
-        return;
-    }
-    $rel = str_replace('\\', '/', substr($class, strlen($prefix)));
-    $file = __DIR__.'/../src/'.$rel.'.php';
-    if (is_file($file)) {
-        require $file;
-    }
-});
 
 echo "NormalizedListing\n";
 $listing = new \Wonder\Plugin\Immobili\Feed\NormalizedListing('ABC');
@@ -95,6 +96,63 @@ $opts = \Wonder\Plugin\Immobili\Feed\ProviderRegistry::options();
 $assert(($opts['getrix'] ?? '') === 'Getrix', 'provider getrix registrato');
 $assert(($opts['gestim'] ?? '') === 'Gestim', 'provider gestim registrato');
 
+echo "GetrixProvider\n";
+$testRoot = sys_get_temp_dir().'/immobili-getrix-'.bin2hex(random_bytes(5));
+$sourceRoot = $testRoot.'/source';
+$archiveRoot = $testRoot.'/archive';
+mkdir($sourceRoot, 0775, true);
+$fixtureXml = <<<'XML'
+<?xml version="1.0" encoding="UTF-8"?>
+<Getrix>
+  <Immobile IDImmobile="ABC-123">
+    <CodiceComune>001</CodiceComune>
+    <Categoria>1</Categoria>
+    <Contratto>V</Contratto>
+    <Tipologia IDTipologia="10">Appartamento</Tipologia>
+    <Prezzo>250000</Prezzo>
+    <Riferimento>RIF 123</Riferimento>
+    <DataInserimento>2026-01-01 10:00:00</DataInserimento>
+    <DataModifica>2026-01-02 11:00:00</DataModifica>
+  </Immobile>
+</Getrix>
+XML;
+$fixtureZip = new ZipArchive();
+$fixtureZip->open($sourceRoot.'/TEST.zip', ZipArchive::CREATE | ZipArchive::OVERWRITE);
+$fixtureZip->addFromString('TEST.xml', $fixtureXml);
+$fixtureZip->close();
+
+$getrix = new \Wonder\Plugin\Immobili\Feed\GetrixProvider('file://'.$sourceRoot.'/', $archiveRoot);
+$getrixFeed = \Wonder\Plugin\Immobili\Feed\FeedSourceConfig::fromRow([
+    'id'       => 9,
+    'provider' => 'getrix',
+    'code'     => 'TEST',
+]);
+$getrixListings = iterator_to_array($getrix->fetchListings($getrixFeed));
+$assert(count($getrixListings) === 1, 'legge un nodo Immobile dal file archiviato');
+$assert(($getrixListings[0]->externalId ?? '') === 'ABC-123', 'legge IDImmobile come attributo XML');
+$assert(($getrixListings[0]->fields['tipologia_id'] ?? '') === '10', 'legge IDTipologia come attributo XML');
+$assert(is_file($getrix->lastArtifactPath()), 'conserva lo ZIP originale della sync');
+$assert(is_file(dirname($getrix->lastArtifactPath()).'/feed.xml'), 'conserva XML estratto');
+$assert(is_file(dirname($getrix->lastArtifactPath()).'/metadata.json'), 'conserva metadati e hash');
+
+$removeTestTree = static function (string $directory) use (&$removeTestTree): void {
+    if (!is_dir($directory)) {
+        return;
+    }
+
+    foreach (array_diff(scandir($directory) ?: [], ['.', '..']) as $entry) {
+        $path = $directory.'/'.$entry;
+        if (is_dir($path)) {
+            $removeTestTree($path);
+        } else {
+            unlink($path);
+        }
+    }
+
+    rmdir($directory);
+};
+$removeTestTree($testRoot);
+
 echo "ImmobileQuery::order\n";
 $Q = new \Wonder\Plugin\Immobili\Services\ImmobileQuery();
 $assert($Q->order('recenti') === ['evidence DESC, id', 'DESC'], "recenti => id DESC");
@@ -111,10 +169,12 @@ $assert(str_contains($w, "`sold` = 'false'"), "base: sold false (lista)");
 $assert(str_contains($Q->where([], true), "`sold` = 'true'"), "base: sold true (venduti)");
 
 $w = $Q->where(['q' => 'Roma'], false);
-$assert(str_contains($w, "LOWER(`ricerca`) LIKE '%roma%'"), "q => LIKE lowercase");
+$assert(str_contains($w, "(LOWER(`nome`) LIKE '%roma%' OR"), "q => gruppo OR multi-colonna");
+$assert(str_contains($w, "LOWER(`comune_nome`) LIKE '%roma%'"), "q => include comune_nome");
+$assert(str_contains($w, "LOWER(`indirizzo`) LIKE '%roma%')"), "q => include indirizzo (chiude gruppo)");
 
 $w = $Q->where(['q' => '50%'], false);
-$assert(str_contains($w, "LOWER(`ricerca`) LIKE '%50\\\\%%'"), "q: wildcard % escaped");
+$assert(str_contains($w, "LOWER(`nome`) LIKE '%50\\\\%%'"), "q: wildcard % escaped");
 
 $w = $Q->where(['comune' => 'Bergamo'], false);
 $assert(str_contains($w, "LOWER(`comune_nome`) LIKE '%bergamo%'"), "comune => LIKE");
@@ -157,10 +217,7 @@ $row = [
 $sf = $P->searchFields($row);
 $assert(($sf['comune_nome'] ?? '') === 'Milano', "comune_nome da attributi (fallback Gestim)");
 $assert(($sf['tipologia_nome'] ?? '') === 'Villa', "tipologia_nome da attributi");
-$assert(str_contains($sf['ricerca'] ?? '', 'villa'), "ricerca contiene tipologia");
-$assert(str_contains($sf['ricerca'] ?? '', 'milano'), "ricerca contiene comune (via indirizzo)");
-$assert(str_contains($sf['ricerca'] ?? '', 'via roma'), "ricerca contiene la via");
-$assert(($sf['ricerca'] ?? '') === strtolower($sf['ricerca'] ?? ''), "ricerca è lowercase");
+$assert(!array_key_exists('ricerca', $sf), "searchFields non produce più 'ricerca'");
 
 echo "\n";
 echo $failures === 0

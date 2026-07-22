@@ -1,0 +1,12 @@
+{
+    "680": {
+        "type": "success",
+        "title": "Properties updated",
+        "text": "Feed synchronization has been completed."
+    },
+    "681": {
+        "type": "danger",
+        "title": "Synchronization not completed",
+        "text": "Check the synchronization history for details."
+    }
+}

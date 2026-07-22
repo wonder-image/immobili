@@ -24,10 +24,13 @@ final class ImmobilePresenter
 
         $id = (int) ($row['id'] ?? 0);
 
-        $images = $this->images($id);
-        $data['images'] = $images['photos'];
-        $data['planimetrie'] = $images['plans'];
-        $data['cover'] = $images['photos'][0]['thumb'] ?? ($images['photos'][0]['url'] ?? '');
+        $media = $this->images($id);
+        $data['images'] = $media['photos'];
+        $data['imagesAlt'] = $media['photosAlt'];
+        $data['image'] = $media['photos'][0] ?? '';
+        $data['planimetrie'] = $media['plans'];
+        $data['planimetrieAlt'] = $media['plansAlt'];
+        $data['cover'] = $media['cover'];
 
         $descrizione = $this->descrizione($id, $locale);
         $data['titolo'] = $descrizione['titolo'] !== '' ? $descrizione['titolo'] : $data['prettyName'];
@@ -71,14 +74,13 @@ final class ImmobilePresenter
      */
     private function base(array $row): array
     {
+        
         $provider = (string) ($row['provider'] ?? '');
         $contratto = strtoupper((string) ($row['contratto_id'] ?? ''));
         $affitto = ($contratto === 'A');
 
         $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
 
-        // Etichette tassonomia con fallback sugli attributi (i provider che
-        // forniscono nomi anziché codici — es. Gestim — li salvano lì).
         $tipologia = Taxonomy::tipologiaNome($provider, (string) ($row['tipologia_id'] ?? ''));
         if ($tipologia === '') {
             $tipologia = (string) ($attributi['tipologia'] ?? '');
@@ -86,44 +88,32 @@ final class ImmobilePresenter
 
         $comune = $this->comuneName($row, $attributi);
 
-        $dir = (string) ($row['dir'] ?? '');
-        $url = (string) ($row['url'] ?? '');
-        if ($url === '' && $dir !== '') {
-            $url = '/immobili/'.$dir.'/';
-        }
+        // Fonte unica del prezzo, condivisa con la lista backend.
+        $prezzo = self::price($row);
 
-        $prezzo = immobiliIsTrue($row['trattativa_riservata'] ?? '')
-            ? 'Trattativa riservata'
-            : immobiliFormatPrice($row['prezzo'] ?? 0);
-
-        if ($prezzo !== '' && $affitto && !immobiliIsTrue($row['trattativa_riservata'] ?? '')) {
-            $prezzo .= '/mese';
-        }
-
-        return [
+        return array_merge($row, [
             'id'            => (int) ($row['id'] ?? 0),
-            'provider'      => $provider,
-            'dir'           => $dir,
-            'url'           => $url,
             'nome'          => (string) ($row['nome'] ?? ''),
             'tipologia'     => $tipologia,
             'comune'        => $comune,
             'contratto'     => $affitto ? 'Affitto' : 'Vendita',
-            'prezzo'        => $prezzo,
-            'superficie'    => immobiliFormatSurface($row['superficie'] ?? 0),
+            'prettyPrezzo'  => $prezzo,
+            'spese_mensili' => $row['spese_mensili'],
+            'prettySpeseMensili' => empty($row['spese_mensili']) ? '':  number_format($row['spese_mensili'], 0, '', '.').'€/Mese',
+            'prettySuperficie'    => self::formatSurface($row['superficie'] ?? 0),
             'locali'        => (int) ($row['n_locali'] ?? 0),
             'camere'        => (int) ($row['n_camere'] ?? 0),
             'bagni'         => (int) ($row['n_bagni'] ?? 0),
             'classe'        => strtoupper((string) ($row['classe_energetica'] ?? '')),
             'evidence'      => immobiliIsTrue($row['evidence'] ?? ''),
             'sold'          => immobiliIsTrue($row['sold'] ?? ''),
-            'qrcode'        => (string) ($row['qrcode'] ?? ''),
             'latitudine'    => (string) ($row['latitudine'] ?? ''),
             'longitudine'   => (string) ($row['longitudine'] ?? ''),
             'prettyName'    => $this->prettyName($tipologia, $comune, (string) ($row['strada'] ?? '')),
             'prettyAddress' => $this->prettyAddress($row, $comune),
             'attributi'     => $attributi,
-        ];
+        ]);
+
     }
 
     /**
@@ -149,13 +139,12 @@ final class ImmobilePresenter
 
     /**
      * Campi derivati denormalizzati usati dai filtri SQL (lista frontend):
-     * nome comune e tipologia risolti (con fallback JSON Gestim) e un blob di
-     * ricerca lowercase. Unica fonte del calcolo, condivisa da sync e backfill.
+     * nome comune e tipologia risolti (con fallback JSON Gestim). Unica fonte
+     * del calcolo, condivisa da sync e backfill.
      *
      * @param array<string, mixed> $row  riga immobile (o campi normalizzati) con
-     *   almeno: provider, tipologia_id, comune_id, attributi, nome, strada,
-     *   indirizzo, civico, pub_indirizzo, pub_civico
-     * @return array{comune_nome: string, tipologia_nome: string, ricerca: string}
+     *   almeno: provider, tipologia_id, comune_id, attributi
+     * @return array{comune_nome: string, tipologia_nome: string}
      */
     public function searchFields(array $row): array
     {
@@ -169,17 +158,9 @@ final class ImmobilePresenter
 
         $comune = $this->comuneName($row, $attributi);
 
-        $nome = (string) ($row['nome'] ?? '');
-        $indirizzo = $this->prettyAddress($row, $comune);
-
-        $ricerca = strtolower(trim(implode(' ', array_filter([
-            $nome, $tipologia, $indirizzo,
-        ]))));
-
         return [
             'comune_nome'    => $comune,
             'tipologia_nome' => $tipologia,
-            'ricerca'        => $ricerca,
         ];
     }
 
@@ -218,15 +199,149 @@ final class ImmobilePresenter
     }
 
     /**
-     * @return array{photos: array<int, array<string, mixed>>, plans: array<int, array<string, mixed>>}
+     * URL della foto copertina (thumb della prima foto) per la lista backend.
+     * Delega al resolver `cover()` già usato da card(): '' se assente.
+     *
+     * @param array<string, mixed> $row
+     */
+    public function coverImage(array $row): string
+    {
+        return $this->cover((int) ($row['id'] ?? 0));
+    }
+
+    /**
+     * Slug URL-friendly da un testo (translitterazione ASCII deterministica,
+     * indipendente dal locale). '' se il testo è vuoto.
+     */
+    public static function slug(string $text): string
+    {
+        $text = trim($text);
+
+        if ($text === '') {
+            return '';
+        }
+
+        // Translitterazione deterministica dei diacritici più comuni.
+        $map = [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'å' => 'a',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'ñ' => 'n', 'ç' => 'c', 'ß' => 'ss',
+        ];
+
+        $text = mb_strtolower($text, 'UTF-8');
+        $text = strtr($text, $map);
+
+        // Diacritici residui: tentativo con iconv, poi rimozione.
+        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+        if ($ascii !== false) {
+            $text = $ascii;
+        }
+
+        $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
+
+        return trim($text, '-');
+    }
+
+    /**
+     * Superficie formattata in metri quadri (es. "120 mq"). '' se non positiva.
+     */
+    public static function formatSurface(mixed $value, string $unit = 'mq'): string
+    {
+        $surface = (int) round((float) $value);
+
+        if ($surface <= 0) {
+            return '';
+        }
+
+        return number_format($surface, 0, ',', '.').' '.$unit;
+    }
+
+    /**
+     * Prezzo formattato per lista backend e scheda (fonte unica del prezzo).
+     * Il prezzo è sempre in `prezzo`; per l'affitto (`contratto_id` = 'A') si
+     * aggiunge ' /mese'. "Trattativa riservata" se il flag riservato è attivo;
+     * "—" se il prezzo manca. La formattazione euro è delegata a
+     * `immobiliFormatPrice` — la stessa usata ovunque nel modulo.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function price(array $row): string
+    {
+        if (immobiliIsTrue($row['trattativa_riservata'] ?? '')) {
+            return 'Trattativa riservata';
+        }
+
+        $price = immobiliFormatPrice($row['prezzo'] ?? 0);
+
+        if ($price === '') {
+            return '—';
+        }
+
+        $isRent = strtoupper(trim((string) ($row['contratto_id'] ?? ''))) === 'A';
+
+        return $isRent ? $price.' /mese' : $price;
+    }
+
+    /**
+     * Nome (riferimento) + sottotitolo tipologia/indirizzo per la lista backend.
+     * Possiede la cella: restituisce HTML già escaped.
+     *
+     * @param array<string, mixed> $row
+     */
+    public static function nome(array $row): string
+    {
+        $nome = htmlspecialchars((string) ($row['nome'] ?? ''), ENT_QUOTES);
+
+        $tipologia = trim((string) ($row['tipologia_nome'] ?? ''));
+        $strada    = ucwords(strtolower(trim((string) ($row['strada'] ?? ''))));
+        $indirizzo = trim((string) ($row['indirizzo'] ?? ''));
+        $comune    = trim((string) ($row['comune_nome'] ?? ''));
+
+        $via = trim($strada.' '.$indirizzo);
+        $loc = trim($via.($comune !== '' ? ', '.$comune : ''), ', ');
+        $sub = $tipologia;
+
+        if ($loc !== '') {
+            $sub = $sub !== '' ? $sub.' | '.$loc : $loc;
+        }
+
+        $sub = htmlspecialchars($sub, ENT_QUOTES);
+
+        return $nome.($sub !== '' ? "<span class=\"d-block text-muted small\">{$sub}</span>" : '');
+    }
+
+    /**
+     * Restituisce collezioni semplici, adatte alle view e ai media builder:
+     * le liste mantengono l'ordinamento del DB, mentre le mappe associano a
+     * ogni sorgente il relativo titolo (usato come alt/caption).
+     *
+     * @return array{
+     *   photos: array<int, string>,
+     *   photosAlt: array<string, string>,
+     *   plans: array<int, string>,
+     *   plansAlt: array<string, string>,
+     *   cover: string
+     * }
      */
     private function images(int $immobileId): array
     {
         $photos = [];
+        $photosAlt = [];
         $plans = [];
+        $plansAlt = [];
+        $cover = '';
 
         if ($immobileId <= 0) {
-            return ['photos' => $photos, 'plans' => $plans];
+            return [
+                'photos' => $photos,
+                'photosAlt' => $photosAlt,
+                'plans' => $plans,
+                'plansAlt' => $plansAlt,
+                'cover' => $cover,
+            ];
         }
 
         $rows = ImmobileImmagine::find(['immobile_id' => $immobileId], null, 'position', 'ASC');
@@ -234,18 +349,34 @@ final class ImmobilePresenter
         foreach ($this->rows($rows) as $image) {
             $entry = $this->imageEntry($image);
 
-            if ($entry['url'] === '') {
+            $src = (string) ($entry['src'] ?? '');
+
+            if ($src === '') {
                 continue;
             }
 
+            $alt = trim((string) ($entry['titolo'] ?? ''));
+
             if ($entry['planimetria']) {
-                $plans[] = $entry;
+                $plans[] = $src;
+                $plansAlt[$src] = $alt;
             } else {
-                $photos[] = $entry;
+                $photos[] = $src;
+                $photosAlt[$src] = $alt;
+
+                if ($cover === '') {
+                    $cover = (string) ($entry['thumb'] ?? ($entry['url'] ?? $src));
+                }
             }
         }
 
-        return ['photos' => $photos, 'plans' => $plans];
+        return [
+            'photos' => $photos,
+            'photosAlt' => $photosAlt,
+            'plans' => $plans,
+            'plansAlt' => $plansAlt,
+            'cover' => $cover,
+        ];
     }
 
     private function cover(int $immobileId): string

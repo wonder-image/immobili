@@ -5,11 +5,14 @@ namespace Wonder\Plugin\Immobili\Services;
 use Wonder\Plugin\Immobili\Feed\FeedSourceConfig;
 use Wonder\Plugin\Immobili\Feed\NormalizedListing;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;
+use Wonder\Plugin\Immobili\Feed\Contracts\ArchivesFeedArtifact;
 use Wonder\Plugin\Immobili\Models\FeedSource;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
 use Wonder\Plugin\Immobili\Models\SyncLog;
+use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Support\Slug;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**
@@ -18,7 +21,8 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
  * Per ogni feed: sincronizza le tassonomie, marca gli immobili come "non più
  * presenti", legge il feed dal provider e fa l'upsert idempotente (preservando i
  * flag manuali evidence/visible/sold), aggiorna immagini e descrizioni, genera
- * slug/URL/QR code, rimuove gli immobili spariti e registra lo stato.
+ * slug e QR code (l'URL è derivato in lettura, non persistito), rimuove gli
+ * immobili spariti e registra lo stato.
  */
 final class FeedSyncService
 {
@@ -79,14 +83,41 @@ final class FeedSyncService
             // Le tassonomie non bloccano l'import degli immobili.
         }
 
-        // Marca tutti gli immobili del feed come non più presenti (verranno
-        // "riaccesi" quelli ancora nel feed, gli altri rimossi a fine sync).
+        // Prima scarica, valida e normalizza l'intero feed. In questo modo un
+        // download fallito o un parser che produce zero righe non marca gli
+        // immobili esistenti come spariti e non può svuotare il catalogo.
+        try {
+            $listings = [];
+
+            foreach ($provider->fetchListings($feed) as $listing) {
+                if (!$listing instanceof NormalizedListing) {
+                    throw new \RuntimeException('Il provider ha restituito una riga non valida.');
+                }
+
+                $listings[] = $listing;
+            }
+
+            $this->captureArtifact($provider);
+
+            if ($listings === []) {
+                throw new \RuntimeException(
+                    'Il feed non contiene immobili importabili; sincronizzazione annullata senza modificare il catalogo.'
+                );
+            }
+        } catch (\Throwable $e) {
+            $this->captureArtifact($provider);
+
+            return $this->finish($feed, false, 0, $e->getMessage());
+        }
+
+        // Solo dopo la validazione marca gli immobili come non più presenti:
+        // quelli incontrati verranno riaccesi, gli altri rimossi a fine sync.
         Immobile::query()->Update(Immobile::$table, ['feed_deleted' => 'true'], 'feed_source_id', $feed->id);
 
         $count = 0;
 
         try {
-            foreach ($provider->fetchListings($feed) as $listing) {
+            foreach ($listings as $listing) {
                 $this->upsert($feed, $listing);
                 $count++;
             }
@@ -149,9 +180,16 @@ final class FeedSyncService
                 ?? (immobiliIsTrue($feed->default_sold) ? 'true' : 'false');
         }
 
-        $dir = $this->buildDir($feed, $listing);
-        $fields['dir'] = $dir;
-        $fields['url'] = $this->buildUrl($dir);
+        // Slug pubblico leggibile (senza external_id), stabile e univoco.
+        $fields['slug'] = $this->buildSlug($feed, $listing, $existing);
+
+        // Macrotipologia derivata dalla tassonomia Tipologia: il feed dell'immobile
+        // porta solo la tipologia, la macro si risolve dalla tassonomia importata.
+        $fields['macrotipologia_id'] = $this->macrotipologiaId(
+            $feed->provider,
+            (string) ($fields['tipologia_id'] ?? ''),
+            (string) ($fields['macrotipologia_id'] ?? '')
+        );
 
         // Campi derivati denormalizzati per la ricerca SQL della lista frontend.
         $fields = array_merge($fields, ($this->presenter ??= new ImmobilePresenter())->searchFields($fields));
@@ -167,13 +205,12 @@ final class FeedSyncService
         }
 
         if ($id <= 0) {
-            return;
+            throw new \RuntimeException('Salvataggio fallito per l’immobile Getrix '.$listing->externalId.'.');
         }
 
-        $qrcode = $this->buildQrCode($feed, $listing, (string) $fields['url']);
-        if ($qrcode !== '') {
-            Immobile::update(['qrcode' => $qrcode], $id);
-        }
+        // Il QR viene generato al sync (PNG su disco), ma il suo URL NON è salvato
+        // in DB: in lettura si ricostruisce dall'external_id (Immobile::decorate()).
+        $this->buildQrCode($listing, $this->buildUrl((string) $fields['slug']));
 
         // Le immagini vengono registrate solo con la source_url a massima
         // risoluzione: il download e la generazione delle varianti responsive
@@ -225,8 +262,20 @@ final class FeedSyncService
         }
     }
 
-    private function buildDir(FeedSourceConfig $feed, NormalizedListing $listing): string
+    /**
+     * Slug pubblico leggibile (tipologia + indirizzo + comune), senza external_id.
+     * Per un immobile già esistente riusa lo slug salvato (stabile tra i sync);
+     * per uno nuovo genera una base leggibile resa univoca con suffisso numerico.
+     *
+     * @param array<string, mixed>|null $existing
+     */
+    private function buildSlug(FeedSourceConfig $feed, NormalizedListing $listing, ?array $existing): string
     {
+        // Slug stabile: se l'immobile esiste già e ne ha uno, non lo si ricalcola.
+        if ($existing !== null && trim((string) ($existing['slug'] ?? '')) !== '') {
+            return (string) $existing['slug'];
+        }
+
         $tipologia = Taxonomy::tipologiaNome($feed->provider, (string) ($listing->fields['tipologia_id'] ?? ''));
         if ($tipologia === '') {
             $tipologia = (string) ($listing->attributi['tipologia'] ?? '');
@@ -237,58 +286,72 @@ final class FeedSyncService
             $comune = (string) ($listing->attributi['comune'] ?? '');
         }
 
-        $parts = trim(implode(' ', array_filter([
+        $base = Slug::base([
             $tipologia,
             (string) ($listing->fields['strada'] ?? ''),
             (string) ($listing->fields['indirizzo'] ?? ''),
             $comune,
-        ])));
+        ]);
 
-        $slug = immobiliSlug($parts) ?: 'immobile';
-
-        // L'external id garantisce l'unicità dello slug all'interno del feed.
-        return $slug.'-'.immobiliSlug($listing->externalId);
+        return Slug::unique($base, $existing !== null ? (int) $existing['id'] : null);
     }
 
-    private function buildUrl(string $dir): string
+    /**
+     * Macrotipologia di un immobile: risolta dalla tassonomia Tipologia (che
+     * porta il codice macro). Preserva un eventuale valore già fornito dal
+     * provider; '' se non risolvibile.
+     */
+    private function macrotipologiaId(string $provider, string $tipologiaId, string $current): string
+    {
+        if ($current !== '') {
+            return $current;
+        }
+
+        if ($tipologiaId === '') {
+            return '';
+        }
+
+        $tipologia = Taxonomy::resolve(Tipologia::class, $provider, $tipologiaId);
+
+        return (string) ($tipologia['macrotipologia_id'] ?? '');
+    }
+
+    private function buildUrl(string $slug): string
     {
         $path = $GLOBALS['PATH'] ?? null;
         $site = is_object($path) ? rtrim((string) ($path->site ?? ''), '/') : '';
 
-        return $site.'/immobili/'.$dir.'/';
+        return $site.'/immobili/'.$slug.'/';
     }
 
-    private function buildQrCode(FeedSourceConfig $feed, NormalizedListing $listing, string $url): string
+    /**
+     * Genera al sync il PNG del QR code nella posizione canonica
+     * (upload/immobili/{external_id}/qrcode.png). Il percorso NON viene salvato
+     * in DB: la lettura lo ricostruisce con immobiliQrCodeUrl().
+     */
+    private function buildQrCode(NormalizedListing $listing, string $url): void
     {
         if (!function_exists('createQrCode') || $url === '') {
-            return '';
+            return;
         }
 
-        $path = $GLOBALS['PATH'] ?? null;
+        $file = immobiliQrCodeFile($listing->externalId);
 
-        if (!is_object($path) || empty($path->rUpload)) {
-            return '';
+        if ($file === null) {
+            return;
         }
 
-        $dir = rtrim((string) $path->rUpload, '/').'/immobili/'.$listing->externalId;
+        $dir = dirname($file);
 
         if (!is_dir($dir)) {
             @mkdir($dir, 0775, true);
         }
 
-        $file = $dir.'/qrcode.png';
-
         try {
             createQrCode($url, $file);
         } catch (\Throwable) {
-            return '';
+            // Il QR non è essenziale: un errore non blocca la sincronizzazione.
         }
-
-        if (!is_file($file)) {
-            return '';
-        }
-
-        return rtrim((string) ($path->upload ?? ''), '/').'/immobili/'.$listing->externalId.'/qrcode.png';
     }
 
     /**
@@ -297,14 +360,21 @@ final class FeedSyncService
     private function finish(FeedSourceConfig $feed, bool $success, int $count, string $message): array
     {
         $status = $success
-            ? 'OK · '.$count.' immobili · '.date('Y-m-d H:i')
-            : 'ERRORE · '.$message;
+            ? 'OK - '.$count.' immobili - '.date('Y-m-d H:i')
+            : 'ERRORE - '.$message;
 
         if ($feed->id > 0) {
-            FeedSource::update([
-                'last_sync_at'     => date('Y-m-d H:i:s'),
-                'last_sync_status' => $status,
-            ], $feed->id);
+            // Update tecnico parziale: Model::update() validerebbe anche i
+            // campi required non presenti (es. name) e scarterebbe lo stato.
+            FeedSource::query()->Update(
+                FeedSource::$table,
+                [
+                    'last_sync_at'     => date('Y-m-d H:i:s'),
+                    'last_sync_status' => $status,
+                ],
+                'id',
+                $feed->id,
+            );
         }
 
         // Storico: file/sorgente importato + conteggi + esito.
@@ -324,7 +394,20 @@ final class FeedSyncService
             'count'   => $count,
             'message' => $message,
             'feed'    => $feed->id,
+            'source'  => $this->currentSource,
         ];
+    }
+
+    private function captureArtifact(object $provider): void
+    {
+        if (!$provider instanceof ArchivesFeedArtifact) {
+            return;
+        }
+
+        $artifact = trim($provider->lastArtifactPath());
+        if ($artifact !== '') {
+            $this->currentSource = $artifact;
+        }
     }
 
     /**

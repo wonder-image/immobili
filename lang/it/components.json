@@ -1,0 +1,49 @@
+{
+    "immobili": {
+        "card": {
+            "sold": "Venduto",
+            "featured": "In evidenza",
+            "rooms": "locali"
+        },
+        "filters": {
+            "search": "Cerca",
+            "search_placeholder": "Riferimento, indirizzo, zona…",
+            "city": "Comune",
+            "contract": "Contratto",
+            "all": "Tutti",
+            "sale": "Vendita",
+            "rent": "Affitto",
+            "type": "Tipologia",
+            "price_min": "Prezzo min",
+            "price_max": "Prezzo max",
+            "surface_min": "Superficie min",
+            "rooms": "Locali min",
+            "sort": "Ordina per",
+            "sort_recent": "Più recenti",
+            "sort_price_asc": "Prezzo crescente",
+            "sort_price_desc": "Prezzo decrescente",
+            "sort_surface": "Superficie",
+            "apply": "Filtra",
+            "reset": "Azzera"
+        },
+        "features": {
+            "type": "Tipologia",
+            "contract": "Contratto",
+            "surface": "Superficie",
+            "rooms": "Locali",
+            "bedrooms": "Camere",
+            "bathrooms": "Bagni",
+            "energy_class": "Classe energetica"
+        },
+        "backend": {
+            "sync_all": {
+                "button": "Aggiorna immobili",
+                "confirm": "Avviare ora la sincronizzazione di tutti i feed attivi?"
+            }
+        }
+    },
+    "navigation": {
+        "immobili": "Immobili",
+        "immobili_sold": "Immobili venduti"
+    }
+}

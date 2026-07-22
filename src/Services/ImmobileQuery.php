@@ -8,7 +8,7 @@ namespace Wonder\Plugin\Immobili\Services;
  * Builder SQL su singola tabella `immobili`: `where()` costruisce la condizione
  * (compatibile con `pagination()`/`sqlSelect()` del framework), `order()`
  * l'ordinamento. I filtri operano su colonne (incluse le denormalizzate
- * `comune_nome`/`tipologia_nome`/`ricerca`), così i conteggi della paginazione
+ * `comune_nome`/`tipologia_nome`), così i conteggi della paginazione
  * sono corretti. Restituisce card già presentate e il GeoJSON per la mappa.
  * Condiviso tra `pages/frontend/list.php` e `http/api/frontend/search.php`.
  */
@@ -91,7 +91,13 @@ final class ImmobileQuery
 
         $q = strtolower(trim((string) ($filters['q'] ?? '')));
         if ($q !== '') {
-            $clauses[] = "LOWER(`ricerca`) LIKE '%".$this->like($q)."%'";
+            $like = $this->like($q);
+            $columns = ['nome', 'comune_nome', 'tipologia_nome', 'strada', 'indirizzo'];
+            $ors = array_map(
+                static fn (string $col): string => "LOWER(`{$col}`) LIKE '%{$like}%'",
+                $columns
+            );
+            $clauses[] = '('.implode(' OR ', $ors).')';
         }
 
         $comune = strtolower(trim((string) ($filters['comune'] ?? '')));
@@ -169,7 +175,7 @@ final class ImmobileQuery
     public function geojson(string $where): array
     {
         $cols = 'id, nome, comune_nome, tipologia_nome, strada, prezzo, '
-            .'contratto_id, trattativa_riservata, superficie, url, latitudine, longitudine';
+            .'contratto_id, trattativa_riservata, superficie, slug, latitudine, longitudine';
 
         $result = sqlSelect('immobili', $where, null, 'id', 'DESC', $cols);
         $features = [];
@@ -202,8 +208,8 @@ final class ImmobileQuery
                     'id'      => (int) ($row['id'] ?? 0),
                     'name'    => $name,
                     'price'   => $prezzo,
-                    'surface' => immobiliFormatSurface($row['superficie'] ?? 0),
-                    'url'     => (string) ($row['url'] ?? ''),
+                    'surface' => ImmobilePresenter::formatSurface($row['superficie'] ?? 0),
+                    'url'     => __r('immobile.view', ['slug' => (string) ($row['slug'] ?? '')]),
                     'cover'   => '',
                 ],
             ];
