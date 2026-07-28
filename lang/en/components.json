@@ -17,14 +17,18 @@
             "price_min": "Min price",
             "price_max": "Max price",
             "surface_min": "Min surface",
+            "surface_max": "Max surface",
             "rooms": "Min rooms",
+            "bathrooms": "Min bathrooms",
             "sort": "Sort by",
             "sort_recent": "Most recent",
             "sort_price_asc": "Price ascending",
             "sort_price_desc": "Price descending",
-            "sort_surface": "Surface",
+            "sort_surface_asc": "Surface ascending",
+            "sort_surface_desc": "Surface descending",
             "apply": "Filter",
-            "reset": "Reset"
+            "reset": "Reset",
+            "toggle": "Filter properties"
         },
         "features": {
             "type": "Type",

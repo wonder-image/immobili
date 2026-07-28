@@ -1,0 +1,239 @@
+{
+    "immobili": {
+        "titles": {
+            "create": "Add property",
+            "edit": "Edit property"
+        },
+        "sections": {
+            "property_type": "Property type",
+            "location": "Location",
+            "contract_costs": "Contract, price and running costs",
+            "property_status": "Property status",
+            "composition": "Composition",
+            "accessories": "Property amenities",
+            "outdoor": "Outdoor spaces",
+            "features": "Features",
+            "media": "Videos and virtual tours",
+            "images": "Images",
+            "energy": "Energy class",
+            "details": "Details"
+        },
+        "fields": {
+            "nome": "Reference",
+            "categoria_id": "Category",
+            "macrotipologia_id": "Group",
+            "tipologia_id": "Type",
+            "tipologia_nome": "Type",
+            "comune_id": "Town",
+            "comune_nome": "Town",
+            "quartiere_id": "District",
+            "quartiere_zona_id": "Area",
+            "strada": "Street type",
+            "indirizzo": "Address",
+            "civico": "Street number",
+            "cap": "Postcode",
+            "note": "Notes",
+            "contratto_id": "Contract",
+            "prezzo": "Price",
+            "cauzione": "Deposit",
+            "durata_contratto_id": "Contract duration",
+            "superficie": "Surface",
+            "spese_mensili": "Condo fees",
+            "spese_riscaldamento": "Heating costs",
+            "reddito": "Income-producing property",
+            "tipo_costruzione_id": "Construction",
+            "stato_costruzione_id": "Condition",
+            "stato_immobile_id": "Occupancy",
+            "n_camere": "Bedrooms",
+            "n_altre_camere": "Other rooms",
+            "n_locali": "Total rooms",
+            "n_bagni": "Bathrooms",
+            "cucina_id": "Kitchen",
+            "arredamento_id": "Furnishing",
+            "box_auto_id": "Garage",
+            "n_posti_auto": "Parking spaces",
+            "n_balconi": "Balcony",
+            "n_terrazzi": "Terrace",
+            "cantina_id": "Cellar",
+            "mansarda_id": "Attic",
+            "taverna_id": "Basement room",
+            "porta_blindata": "Security door",
+            "allarme": "Alarm system",
+            "cancello_elettrico": "Electric gate",
+            "videocitofono": "Video intercom",
+            "fibra_ottica": "Fibre optic",
+            "camino": "Fireplace",
+            "n_ascensori": "Lift",
+            "infissi_esterni_id": "External window frames",
+            "impianto_tv_id": "TV system",
+            "giardino_privato_id": "Private garden",
+            "giardino_condominiale": "Shared garden",
+            "idromassaggio": "Hot tub",
+            "piscina": "Swimming pool",
+            "tennis": "Tennis court",
+            "anno_costruzione": "Year built",
+            "piano": "Floor",
+            "n_livelli": "Levels",
+            "piani_edificio": "Building floors",
+            "esposizione_interna": "Internal exposure",
+            "esposizione_esterna": "External exposure",
+            "riscaldamento_id": "Heating",
+            "tipo_riscaldamento_id": "Heating fuel",
+            "acqua_calda_id": "Hot water",
+            "youtube": "YouTube videos",
+            "youtube_url": "YouTube URL",
+            "virtual_tour": "Virtual Tours",
+            "virtual_tour_url": "Virtual Tour URL",
+            "images": "Images",
+            "image": "Image",
+            "image_preview": "Image preview",
+            "floor_plans": "Floor plans",
+            "floor_plan": "Floor plan",
+            "floor_plan_preview": "Floor plan preview",
+            "legge_classe_energetica_id": "Energy law",
+            "classe_energetica": "Energy class",
+            "ipe": "Energy performance",
+            "stato": "Status",
+            "creation": "Created",
+            "visible": "Visible",
+            "evidence": "Featured",
+            "sold": "Status"
+        },
+        "options": {
+            "boolean": {
+                "yes": "Yes",
+                "no": "No",
+                "present": "Present",
+                "absent": "Absent"
+            },
+            "category": {
+                "residential": "Residential properties",
+                "commercial": "Commercial properties",
+                "business": "Businesses",
+                "holiday": "Holiday homes",
+                "land": "Land"
+            },
+            "contract": {
+                "rent": "Rent",
+                "sale": "Sale"
+            },
+            "contract_duration": {
+                "four_plus_four": "4 + 4 years",
+                "six_plus_six": "6 + 6 years",
+                "eight_plus_eight": "8 + 8 years",
+                "twelve_plus_twelve": "12 + 12 years",
+                "student": "Student lease",
+                "company_lease": "Company lease",
+                "three_plus_two": "3 + 2 years",
+                "seasonal": "Seasonal",
+                "temporary": "Temporary",
+                "other": "Other"
+            },
+            "construction_type": {
+                "economy": "Economy",
+                "standard": "Standard",
+                "upper_middle": "Upper-middle",
+                "prestigious": "Prestigious",
+                "period": "Period",
+                "railing": "Railing house",
+                "luxury": "Luxury"
+            },
+            "construction_status": {
+                "new": "New",
+                "good": "Good",
+                "renovated": "Renovated",
+                "fair": "Fair",
+                "to_renovate": "To renovate",
+                "excellent": "Excellent",
+                "discreet": "Average"
+            },
+            "occupancy": {
+                "vacant": "Vacant",
+                "vacant_on_deed": "Vacant on completion",
+                "owner_occupied": "Owner occupied",
+                "tenant_occupied": "Tenant occupied",
+                "under_construction": "Under construction",
+                "not_built": "Not yet built"
+            },
+            "kitchen": {
+                "eat_in": "Eat-in kitchen",
+                "kitchenette": "Kitchenette",
+                "small_kitchen": "Small kitchen",
+                "semi_eat_in": "Semi eat-in",
+                "dining_kitchen": "Dining kitchen",
+                "open_plan": "Open plan",
+                "absent": "Not present"
+            },
+            "furnishing": {
+                "partial": "Part furnished",
+                "complete": "Furnished",
+                "absent": "Unfurnished"
+            },
+            "garage": {
+                "single": "Single",
+                "double": "Double",
+                "triple": "Triple",
+                "absent": "Absent"
+            },
+            "window_frames": {
+                "glass_plastic": "Glass/plastic",
+                "glass_wood": "Glass/wood",
+                "glass_metal": "Glass/metal",
+                "double_glass_plastic": "Double glazing/plastic",
+                "double_glass_wood": "Double glazing/wood",
+                "double_glass_metal": "Double glazing/metal"
+            },
+            "tv_system": {
+                "centralized": "Centralized",
+                "individual": "Individual",
+                "absent": "Absent"
+            },
+            "heating": {
+                "independent": "Independent",
+                "centralized": "Centralized",
+                "absent": "Absent"
+            },
+            "heating_fuel": {
+                "methane": "Mains gas",
+                "diesel": "Diesel",
+                "lpg": "LPG",
+                "panels": "Panels",
+                "air": "Air",
+                "wood": "Wood",
+                "solar": "Solar",
+                "photovoltaic": "Photovoltaic",
+                "district_heating": "District heating",
+                "heat_pump": "Heat pump",
+                "electric": "Electric",
+                "gas": "Gas",
+                "pellet": "Pellet",
+                "other": "Other"
+            },
+            "hot_water": {
+                "centralized": "Centralized",
+                "independent": "Independent",
+                "absent": "Absent"
+            },
+            "energy_law": {
+                "dl_192_2005": "Legislative Decree 192/2005",
+                "law_90_2013": "Law 90/2013"
+            },
+            "status": {
+                "active": "Active",
+                "suspended": "Suspended",
+                "purchased": "Purchased",
+                "rented": "Rented"
+            }
+        },
+        "messages": {
+            "feed_read_only": "This property comes from a feed: only its editorial status can be changed here."
+        },
+        "buttons": {
+            "save": "Save",
+            "add_youtube": "Add YouTube video",
+            "add_virtual_tour": "Add Virtual Tour",
+            "add_image": "Add image",
+            "add_floor_plan": "Add floor plan"
+        }
+    }
+}

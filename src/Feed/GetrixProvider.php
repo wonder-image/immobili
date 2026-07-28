@@ -16,6 +16,8 @@ use Wonder\Plugin\Immobili\Models\Quartiere;
 use Wonder\Plugin\Immobili\Models\QuartiereZona;
 use Wonder\Plugin\Immobili\Models\Regione;
 use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Support\Slug;
+use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**
  * Provider Getrix.
@@ -132,14 +134,15 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
         $listing->set('nome', $nome);
 
-        // Classificazione (si conservano i codici nativi; la risoluzione avviene
-        // in lettura via tassonomie scoping per provider).
-        $listing->set('categoria_id', (string) ($data['Categoria'] ?? ''));
+        // Classificazione: i codici nativi Getrix vengono risolti negli id delle
+        // tassonomie canoniche (mappa via colonna getrix_id). La macrotipologia è
+        // derivata dal FeedSyncService dalla tipologia canonica.
+        $listing->set('categoria_id', (string) Taxonomy::idByProviderCode(Categoria::class, self::KEY, (string) ($data['Categoria'] ?? '')));
         $listing->set('macrotipologia_id', '');
-        $listing->set('tipologia_id', $tipologiaId);
+        $listing->set('tipologia_id', (string) Taxonomy::idByProviderCode(Tipologia::class, self::KEY, $tipologiaId));
 
-        // Localizzazione
-        $listing->set('comune_id', (string) ($data['CodiceComune'] ?? ''));
+        // Localizzazione (comune risolto all'id canonico via cod_catastale/getrix_id)
+        $listing->set('comune_id', (string) Taxonomy::idByProviderCode(Comune::class, self::KEY, (string) ($data['CodiceComune'] ?? '')));
         $listing->set('quartiere', $this->quartiere($data));
         $listing->set('quartiere_zona', $this->clean($data['QuartiereZona'] ?? ''));
         $listing->set('zona', $this->clean($data['Zona'] ?? ''));
@@ -169,15 +172,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         $listing->set('spese_mensili', (string) ($data['SpeseMensili'] ?? ''));
         $listing->set('spese_id', (string) ($data['TipoSpese'] ?? ''));
 
-        // Media
-        $listing->set('youtube_1', $this->youtube($data['IDYouTube1'] ?? ''));
-        $listing->set('youtube_2', $this->youtube($data['IDYouTube2'] ?? ''));
-        $listing->set('youtube_3', $this->youtube($data['IDYouTube3'] ?? ''));
-        $listing->set('youtube_4', $this->youtube($data['IDYouTube4'] ?? ''));
-        $listing->set('planimetria', (string) ($data['URLPlanimetria'] ?? ''));
-        $listing->set('virtual_tour', (string) ($data['URLVirtualTour'] ?? ''));
-        $listing->set('visual_tour', (string) ($data['URLVisualTour'] ?? ''));
-        $listing->set('video', (string) ($data['URLVideo'] ?? ''));
+        // Media (array di URL, colonne JSON: si scartano i valori vuoti)
+        $listing->set('youtube', $this->urlList([
+            $this->youtube($data['IDYouTube1'] ?? ''),
+            $this->youtube($data['IDYouTube2'] ?? ''),
+            $this->youtube($data['IDYouTube3'] ?? ''),
+            $this->youtube($data['IDYouTube4'] ?? ''),
+        ]));
+        $listing->set('planimetria', $this->urlList([$data['URLPlanimetria'] ?? '']));
+        $listing->set('virtual_tour', $this->urlList([$data['URLVirtualTour'] ?? '']));
+        $listing->set('visual_tour', $this->urlList([$data['URLVisualTour'] ?? '']));
+        $listing->set('video', $this->urlList([$data['URLVideo'] ?? '']));
 
         // Blocco di dettaglio per categoria (Residenziale/Commerciale/…): i campi
         // noti diventano colonne, l'intero blocco è conservato in `attributi`.
@@ -386,7 +391,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         if (is_array($q)) {
             $code = $q['@attributes']['CodiceQuartiere'] ?? '';
             if ($code !== '') {
-                $row = Quartiere::find(['provider' => self::KEY, 'codice' => (string) $code], 1);
+                $row = Taxonomy::byProviderCode(Quartiere::class, self::KEY, (string) $code);
                 if (is_array($row) && isset($row['nome'])) {
                     return (string) $row['nome'];
                 }
@@ -470,22 +475,34 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
     // ------------------------------------------------------------- Tassonomie
 
+    /**
+     * Codici categoria Getrix → chiave canonica del modulo.
+     *
+     * @var array<string, string>
+     */
+    private const CATEGORY_KEYS = [
+        '1' => 'residenziale',
+        '2' => 'commerciale',
+        '3' => 'attivita',
+        '4' => 'vacanze',
+        '5' => 'terreno',
+    ];
+
     public function syncTaxonomies(FeedSourceConfig $feed): void
     {
         $force = function_exists('immobiliIsTrue')
             && immobiliIsTrue($_REQUEST['refresh_taxonomies'] ?? '');
 
-        // Le tassonomie Getrix sono globali e molto voluminose (oltre 7.000
-        // comuni). Ricostruirle a ogni sync può superare il timeout HTTP prima
-        // ancora di leggere gli immobili. Se il set base esiste già, lo riusa;
-        // il refresh resta disponibile con ?refresh_taxonomies=1.
+        // Getrix semina le tabelle canoniche: upsert per chiave naturale
+        // (cod_catastale, sigla, slug) riempiendo getrix_id, senza cancellare le
+        // mappe degli altri gestionali. Se il set base esiste già lo riusa; il
+        // refresh resta disponibile con ?refresh_taxonomies=1.
         if (!$force && $this->hasBaseTaxonomies()) {
             return;
         }
 
         $import = new Import();
 
-        $this->clearTaxonomies();
         $this->syncCategorie($import);
         $this->syncComuni($import);
         $this->syncQuartieri($import);
@@ -494,7 +511,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
     private function hasBaseTaxonomies(): bool
     {
         foreach ([Categoria::class, Tipologia::class, Comune::class] as $model) {
-            $row = $model::find(['provider' => self::KEY, 'deleted' => 'false'], 1);
+            $row = $model::find([], 1);
 
             if (!is_array($row) || !isset($row['id'])) {
                 return false;
@@ -504,31 +521,16 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         return true;
     }
 
-    private function clearTaxonomies(): void
-    {
-        foreach ([
-            Categoria::class, Macrotipologia::class, Tipologia::class,
-            Regione::class, Provincia::class, Comune::class,
-            Quartiere::class, QuartiereZona::class,
-        ] as $model) {
-            $rows = $model::find(['provider' => self::KEY]);
-            foreach ($this->rows($rows) as $row) {
-                if (isset($row['id'])) {
-                    $model::delete((int) $row['id']);
-                }
-            }
-        }
-    }
-
     private function syncCategorie(Import $import): void
     {
         foreach ($import->Categorie() as $categoria) {
-            $categoriaCode = (string) ($categoria['Categoria'] ?? '');
+            $code = (string) ($categoria['Categoria'] ?? '');
+            $chiave = self::CATEGORY_KEYS[$code] ?? ('categoria-'.$code);
 
-            Categoria::create([
-                'provider' => self::KEY,
-                'codice'   => $categoriaCode,
-                'nome'     => $this->clean($categoria['NomeCategoria'] ?? ''),
+            $categoriaId = $this->upsert(Categoria::class, ['chiave' => $chiave], [
+                'chiave'    => $chiave,
+                'nome'      => $this->clean($categoria['NomeCategoria'] ?? ''),
+                'getrix_id' => $code,
             ]);
 
             $macro = $categoria['MacroTipologie']['MacroTipologia'] ?? [];
@@ -538,12 +540,14 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
             foreach ($macro as $macrotipologia) {
                 $macroCode = (string) ($macrotipologia['IDTipologiaMacro'] ?? '');
+                $macroNome = $this->clean($macrotipologia['TipologiaMacro'] ?? '');
+                $macroChiave = $this->chiave($macroNome, 'macro-'.$macroCode);
 
-                Macrotipologia::create([
-                    'provider'     => self::KEY,
-                    'codice'       => $macroCode,
-                    'categoria_id' => $categoriaCode,
-                    'nome'         => $this->clean($macrotipologia['TipologiaMacro'] ?? ''),
+                $macroId = $this->upsert(Macrotipologia::class, ['chiave' => $macroChiave], [
+                    'chiave'       => $macroChiave,
+                    'nome'         => $macroNome,
+                    'categoria_id' => $categoriaId,
+                    'getrix_id'    => $macroCode,
                 ]);
 
                 $tipologie = $macrotipologia['Tipologie']['Tipologia'] ?? [];
@@ -552,12 +556,16 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                 }
 
                 foreach ($tipologie as $tipologia) {
-                    Tipologia::create([
-                        'provider'          => self::KEY,
-                        'codice'            => (string) ($tipologia['IDTipologia'] ?? ''),
-                        'categoria_id'      => $categoriaCode,
-                        'macrotipologia_id' => $macroCode,
-                        'nome'              => $this->clean($tipologia['Tipologia'] ?? ''),
+                    $tipCode = (string) ($tipologia['IDTipologia'] ?? '');
+                    $tipNome = $this->clean($tipologia['Tipologia'] ?? '');
+                    $tipChiave = $this->chiave($tipNome, 'tipologia-'.$tipCode);
+
+                    $this->upsert(Tipologia::class, ['chiave' => $tipChiave], [
+                        'chiave'            => $tipChiave,
+                        'nome'              => $tipNome,
+                        'categoria_id'      => $categoriaId,
+                        'macrotipologia_id' => $macroId,
+                        'getrix_id'         => $tipCode,
                     ]);
                 }
             }
@@ -569,37 +577,43 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         foreach ($import->Comuni() as $comune) {
             $comune = $comune['@attributes'] ?? $comune;
 
-            $regioneCode = (string) ($comune['IDRegione'] ?? '');
-            if ($regioneCode !== '' && !$this->exists(Regione::class, $regioneCode)) {
-                Regione::create([
-                    'provider' => self::KEY,
-                    'codice'   => $regioneCode,
-                    'nome'     => $this->clean($comune['Regione'] ?? ''),
+            $regioneNome = $this->clean($comune['Regione'] ?? '');
+            $regioneId = 0;
+            if ($regioneNome !== '') {
+                $regioneChiave = $this->chiave($regioneNome, 'regione');
+                $regioneId = $this->upsert(Regione::class, ['chiave' => $regioneChiave], [
+                    'chiave'    => $regioneChiave,
+                    'nome'      => $regioneNome,
+                    'getrix_id' => (string) ($comune['IDRegione'] ?? ''),
                 ]);
             }
 
-            $provinciaCode = (string) ($comune['IDProvincia'] ?? '');
-            if ($provinciaCode !== '' && !$this->exists(Provincia::class, $provinciaCode)) {
-                Provincia::create([
-                    'provider'   => self::KEY,
-                    'codice'     => $provinciaCode,
-                    'regione_id' => $regioneCode,
+            $provinciaSigla = strtoupper((string) ($comune['SiglaProvincia'] ?? ''));
+            $provinciaId = 0;
+            if ($provinciaSigla !== '') {
+                $provinciaId = $this->upsert(Provincia::class, ['sigla' => $provinciaSigla], [
+                    'sigla'      => $provinciaSigla,
                     'nome'       => $this->clean($comune['Provincia'] ?? ''),
-                    'sigla'      => (string) ($comune['SiglaProvincia'] ?? ''),
+                    'regione_id' => $regioneId,
+                    'getrix_id'  => (string) ($comune['IDProvincia'] ?? ''),
                 ]);
             }
 
-            Comune::create([
-                'provider'      => self::KEY,
-                'codice'        => (string) ($comune['CodiceComune'] ?? ''),
-                'regione_id'    => $regioneCode,
-                'provincia_id'  => $provinciaCode,
+            $catastale = strtoupper((string) ($comune['CodiceCatastale'] ?? ''));
+            if ($catastale === '') {
+                continue;
+            }
+
+            $this->upsert(Comune::class, ['cod_catastale' => $catastale], [
+                'cod_catastale' => $catastale,
                 'nome'          => $this->clean($comune['Comune'] ?? ''),
+                'regione_id'    => $regioneId,
+                'provincia_id'  => $provinciaId,
                 'cap'           => (string) ($comune['CAP'] ?? ''),
-                'cod_catastale' => (string) ($comune['CodiceCatastale'] ?? ''),
                 'capoluogo'     => strtolower((string) ($comune['Capoluogo'] ?? '')),
                 'latitudine'    => (string) ($comune['Latitudine'] ?? ''),
                 'longitudine'   => (string) ($comune['Longitudine'] ?? ''),
+                'getrix_id'     => (string) ($comune['CodiceComune'] ?? ''),
             ]);
         }
     }
@@ -614,25 +628,26 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                 continue;
             }
 
-            $comune = Comune::find([
-                'provider' => self::KEY,
-                'codice'   => (string) ($attrs['CodiceComune'] ?? ''),
-            ], 1);
+            $comune = Taxonomy::byProviderCode(Comune::class, self::KEY, (string) ($attrs['CodiceComune'] ?? ''));
 
             if (!is_array($comune) || !isset($comune['id'])) {
                 continue;
             }
 
-            $result = Quartiere::create([
-                'provider'     => self::KEY,
-                'codice'       => (string) ($attrs['CodiceQuartiere'] ?? ''),
-                'regione_id'   => (string) ($comune['regione_id'] ?? ''),
-                'provincia_id' => (string) ($comune['provincia_id'] ?? ''),
-                'comune_id'    => (string) ($comune['id'] ?? ''),
-                'nome'         => $this->clean($attrs['Quartiere'] ?? ''),
-            ]);
+            $comuneId = (int) $comune['id'];
+            $nome = $this->clean($attrs['Quartiere'] ?? '');
 
-            $quartiereId = (string) ($result->insert_id ?? ($result->id ?? ''));
+            if ($nome === '') {
+                continue;
+            }
+
+            $quartiereId = $this->upsert(Quartiere::class, ['comune_id' => $comuneId, 'nome' => $nome], [
+                'nome'         => $nome,
+                'comune_id'    => $comuneId,
+                'regione_id'   => (int) ($comune['regione_id'] ?? 0),
+                'provincia_id' => (int) ($comune['provincia_id'] ?? 0),
+                'getrix_id'    => (string) ($attrs['CodiceQuartiere'] ?? ''),
+            ]);
 
             if (isset($zone['@attributes']) || isset($zone['CodiceQuartiereZona'])) {
                 $zone = [$zone];
@@ -640,15 +655,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
             foreach ($zone as $zona) {
                 $zona = $zona['@attributes'] ?? $zona;
+                $zonaNome = $this->clean($zona['QuartiereZona'] ?? '');
 
-                QuartiereZona::create([
-                    'provider'     => self::KEY,
-                    'codice'       => (string) ($zona['CodiceQuartiereZona'] ?? ''),
-                    'regione_id'   => (string) ($comune['regione_id'] ?? ''),
-                    'provincia_id' => (string) ($comune['provincia_id'] ?? ''),
-                    'comune_id'    => (string) ($comune['id'] ?? ''),
+                if ($zonaNome === '') {
+                    continue;
+                }
+
+                $this->upsert(QuartiereZona::class, ['quartiere_id' => $quartiereId, 'nome' => $zonaNome], [
+                    'nome'         => $zonaNome,
                     'quartiere_id' => $quartiereId,
-                    'nome'         => $this->clean($zona['QuartiereZona'] ?? ''),
+                    'comune_id'    => $comuneId,
+                    'getrix_id'    => (string) ($zona['CodiceQuartiereZona'] ?? ''),
                 ]);
             }
         }
@@ -656,24 +673,37 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
     // ------------------------------------------------------------------ Utils
 
-    private function exists(string $model, string $codice): bool
-    {
-        $row = $model::find(['provider' => self::KEY, 'codice' => $codice], 1);
-
-        return is_array($row) && isset($row['id']);
-    }
-
     /**
-     * @param mixed $rows
-     * @return array<int, array<string, mixed>>
+     * Upsert canonico: cerca per chiave naturale ($match); se esiste aggiorna
+     * solo i campi forniti (preserva le mappe degli altri gestionali),
+     * altrimenti crea. Ritorna l'id canonico.
+     *
+     * @param class-string $model
+     * @param array<string, mixed> $match
+     * @param array<string, mixed> $data
      */
-    private function rows(mixed $rows): array
+    private function upsert(string $model, array $match, array $data): int
     {
-        if (!is_array($rows)) {
-            return [];
+        $existing = $model::find($match, 1);
+
+        if (is_array($existing) && isset($existing['id'])) {
+            $id = (int) $existing['id'];
+            $model::update($data, $id);
+
+            return $id;
         }
 
-        return isset($rows['id']) ? [$rows] : array_values($rows);
+        $result = $model::create($data);
+
+        return (int) ($result->insert_id ?? ($result->id ?? 0));
+    }
+
+    /** Chiave canonica (slug del nome) con fallback se il nome è vuoto. */
+    private function chiave(string $nome, string $fallback): string
+    {
+        $nome = trim($nome);
+
+        return $nome === '' ? $fallback : Slug::base([$nome]);
     }
 
     /**
@@ -707,6 +737,27 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         $id = trim((string) $id);
 
         return $id === '' ? '' : 'https://www.youtube.com/embed/'.$id;
+    }
+
+    /**
+     * Normalizza una lista di URL in un array di stringhe non vuote, senza
+     * duplicati e reindicizzato. Usato per le colonne media JSON dell'immobile.
+     *
+     * @param array<int, mixed> $values
+     * @return array<int, string>
+     */
+    private function urlList(array $values): array
+    {
+        $urls = [];
+
+        foreach ($values as $value) {
+            $url = trim((string) $value);
+            if ($url !== '' && !in_array($url, $urls, true)) {
+                $urls[] = $url;
+            }
+        }
+
+        return $urls;
     }
 
     private function date(mixed $value): string

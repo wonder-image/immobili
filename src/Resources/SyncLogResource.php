@@ -9,13 +9,17 @@ use Wonder\App\ResourceSchema\PageSchema;
 use Wonder\App\ResourceSchema\PermissionSchema;
 use Wonder\App\ResourceSchema\TableColumn;
 use Wonder\App\ResourceSchema\TableLayoutSchema;
+use Wonder\Http\Route;
+use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\SyncLog;
 
 /**
  * Storico delle sincronizzazioni (sola lettura).
  *
  * Mostra i file/sorgenti importati, i conteggi e gli esiti di ogni run di
- * sincronizzazione e del secondo piano immagini.
+ * sincronizzazione e del secondo piano immagini. Le righe non sono eliminabili:
+ * sono un registro storico. Per ogni run è disponibile il download di un report
+ * (orari + problematiche + riferimento all'artifact archiviato).
  */
 final class SyncLogResource extends Resource
 {
@@ -70,8 +74,18 @@ final class SyncLogResource extends Resource
             TableColumn::key('source')->text(),
             TableColumn::key('immobili_count')->text()->size('little'),
             TableColumn::key('images_count')->text()->size('little'),
-            TableColumn::key('status')->badge()->size('little'),
-            TableColumn::key('actions')->button()->actions(['delete']),
+
+            // Esito come badge colorato (Successo/Errore), non testo semplice.
+            // Il formatter possiede l'intera cella e riceve la riga grezza.
+            TableColumn::key('status')->formatter(static function (array $row): string {
+                $ok = ($row['status'] ?? '') === 'ok';
+
+                return '<span class="badge text-bg-'.($ok ? 'success' : 'danger').'">'
+                    .($ok ? 'Successo' : 'Errore').'</span>';
+            })->size('little'),
+
+            // Nessun delete: le righe sono un registro storico. Solo download.
+            TableColumn::key('actions')->button()->actions(['download']),
         ];
     }
 
@@ -87,7 +101,8 @@ final class SyncLogResource extends Resource
 
     public static function pageSchema(): PageSchema
     {
-        return PageSchema::for(static::class)->only(['list', 'delete']);
+        // Sola lettura: nessuna pagina di delete.
+        return PageSchema::for(static::class)->only(['list']);
     }
 
     public static function apiSchema(): ApiSchema
@@ -97,8 +112,9 @@ final class SyncLogResource extends Resource
 
     public static function permissionSchema(): PermissionSchema
     {
+        // Nessun permesso di delete: le righe non si eliminano.
         return PermissionSchema::for(static::class)
-            ->backend(['list', 'delete'], ['admin', 'immobili_manager']);
+            ->backend(['list'], ['admin', 'immobili_manager']);
     }
 
     public static function navigationSchema(): NavigationSchema
@@ -108,5 +124,18 @@ final class SyncLogResource extends Resource
             ->title('Storico sync')
             ->order(30)
             ->authority(['admin', 'immobili_manager']);
+    }
+
+    /**
+     * Rotta backend custom: download del report di un run di sincronizzazione
+     * (orari + problematiche + riferimento all'artifact). Il nome
+     * `resource.{slug}.download` è quello che la tabella usa per l'azione
+     * "Scarica" per-riga.
+     */
+    public static function registerBackendRoutes(string $rootApp, string $slug): void
+    {
+        Route::get('/'.$slug.'/{id}/download/', Immobili::httpPath('backend/sync-log/download.php'))
+            ->name('resource.'.$slug.'.download')
+            ->permit(['admin', 'immobili_manager']);
     }
 }

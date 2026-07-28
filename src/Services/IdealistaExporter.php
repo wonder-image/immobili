@@ -46,10 +46,9 @@ final class IdealistaExporter
     private function ad(array $row): string
     {
         $id = (int) ($row['id'] ?? 0);
-        $provider = (string) ($row['provider'] ?? '');
         $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
 
-        $comune = Taxonomy::comuneNome($provider, (string) ($row['comune_id'] ?? '')) ?: (string) ($attributi['comune'] ?? '');
+        $comune = Taxonomy::comuneNomeById((int) ($row['comune_id'] ?? 0)) ?: (string) ($attributi['comune'] ?? '');
         $provincia = (string) ($attributi['provincia'] ?? '');
         $affitto = strtoupper((string) ($row['contratto_id'] ?? '')) === 'A';
 
@@ -160,7 +159,7 @@ final class IdealistaExporter
             return '';
         }
 
-        $upload = trim((string) ($row['upload'] ?? ''));
+        $upload = ImmobileImmagine::firstUploadedFile($row['upload'] ?? '');
         if ($upload !== '') {
             return $base.'/immobili/'.$upload;
         }

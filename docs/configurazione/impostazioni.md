@@ -1,7 +1,8 @@
 # Impostazioni
 
-Le impostazioni vivono sul singolo **feed** (`immobili_feed`), non a livello globale: così ogni feed
-può avere comportamenti diversi.
+Le **opzioni di import** vivono sul singolo **feed** (`immobili_feed`), così ogni feed può avere
+comportamenti diversi; le **impostazioni del modulo** (scheda PDF e scheda web) sono invece
+**globali** e comuni a tutti i feed (vedi sotto).
 
 ## Opzioni di import
 
@@ -16,18 +17,32 @@ I flag `visible`, `evidence`, `sold` impostati a mano dal backend sono **preserv
 sincronizzazioni successive. Fa eccezione `sold` quando il gestionale lo fornisce esplicitamente
 (es. Gestim), nel qual caso il feed è autoritativo.
 
-## Impostazioni PDF (globali)
+## Impostazioni del modulo (globali)
 
-La scheda PDF è **comune a tutti i feed**, quindi la sua configurazione vive in una **schermata unica**
-(**Immobili → Impostazioni PDF**), non sul singolo feed:
+La configurazione **comune a tutti i feed** vive in una **schermata unica**
+(**Immobili → Impostazioni**), risorsa singleton (`immobili_settings`, una sola riga). È la
+**centrale di controllo** del modulo, divisa in due card.
 
-- **Logo PDF**
-- **Colore primario** / **Colore secondario**
-- **Font** e **Font (grassetto)**: selezionabili dall'elenco dei font FPDF del framework
-  (`$FONT_FPDF` di wonder-image/app: Arial, Times, Montserrat, EB Garamond, …).
+### Scheda PDF
 
-È una risorsa singleton (`immobili_settings`, una sola riga). La scheda stampabile dell'immobile è
-raggiungibile su `/immobili/{slug}/pdf/`.
+- **Logo PDF**: selezione tra le varianti configurate in **Media → Logo**
+  (Logo, Logo nero, Logo bianco, Icona, Icona nera, Icona bianca).
+- **Colore primario** / **Colore secondario**.
+- **Font** e **Font (grassetto)**: selezionabili dall'**elenco completo** dei font FPDF del
+  framework, esposto da `Wonder\App\Support\FpdfFonts` (Arial, Times, Courier, Montserrat in tutti
+  i pesi, EB Garamond, Nunito Sans, American Typewriter, …).
+- **Dati mostrati sul PDF**: elenco **ordinabile** degli attributi da stampare nella scheda
+  (riferimento, zona, contratto, prezzo, superficie, locali, classe energetica, …). Se vuoto si
+  usano i default del codice / override del sito (`PdfConfig`).
+
+### Scheda immobile
+
+- **Dati mostrati nella scheda**: elenco **ordinabile** degli attributi mostrati nella scheda web
+  del dettaglio (componente `features`). Se vuoto si usano i default del catalogo.
+
+Le due liste pescano dal catalogo condiviso `Support\AttributeCatalog` (unica fonte di chiavi,
+etichette e default). La scheda PDF stampabile dell'immobile è raggiungibile su
+`/immobili/{slug}/pdf/`.
 
 ## Google Maps
 

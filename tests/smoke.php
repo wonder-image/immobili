@@ -9,22 +9,11 @@ declare(strict_types=1);
  * Esecuzione:  php tests/smoke.php
  */
 
-require __DIR__.'/../src/helpers.php';
-
-// Autoloader PSR-4 delle classi del modulo (senza framework): attivo per
-// l'intero file, così i formatter spostati in ImmobilePresenter (slug,
-// formatSurface, price) sono risolvibili anche nei test più in alto.
-spl_autoload_register(static function (string $class): void {
-    $prefix = 'Wonder\\Plugin\\Immobili\\';
-    if (!str_starts_with($class, $prefix)) {
-        return;
-    }
-    $rel = str_replace('\\', '/', substr($class, strlen($prefix)));
-    $file = __DIR__.'/../src/'.$rel.'.php';
-    if (is_file($file)) {
-        require $file;
-    }
-});
+// Autoloader di Composer: carica gli helper del modulo (files autoload), le
+// classi del modulo (`Wonder\Plugin\Immobili\`) e quelle del framework riusate
+// dagli helper puri (es. `Wonder\Support\Text\Slug`, usata da Slug::base).
+// Non avvia il runtime del framework: nessun bootstrap, DB o config.
+require __DIR__.'/../vendor/autoload.php';
 
 $failures = 0;
 $total = 0;
@@ -52,10 +41,22 @@ $assert(immobiliDecodeJsonArray('') === [], "vuoto => []");
 $assert(immobiliDecodeJsonArray('nope') === [], "non-JSON => []");
 $assert(immobiliDecodeJsonArray(['a']) === ['a'], "array passthrough");
 
-echo "ImmobilePresenter::slug\n";
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('Villa a Città Alta') === 'villa-a-citta-alta', "translittera e slugghifica");
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('  Trilocale, Via Roma 10  ') === 'trilocale-via-roma-10', "trim + separatori");
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::slug('') === '', "vuoto => vuoto");
+echo "Slug::base (slugify)\n";
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base(['Villa a Città Alta']) === 'villa-a-citta-alta', "translittera e slugghifica");
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base(['  Trilocale, Via Roma 10  ']) === 'trilocale-via-roma-10', "trim + separatori");
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base(['']) === 'immobile', "vuoto => fallback 'immobile'");
+
+echo "Slug dai campi del titolo\n";
+$slugRow = [
+    'tipologia_nome' => 'Trilocale',
+    'strada'         => 'via roma',
+    'indirizzo'      => '10',
+    'comune_nome'    => 'Milano',
+];
+$slugBase = \Wonder\Plugin\Immobili\Support\Slug::base([
+    \Wonder\Plugin\Immobili\Services\ImmobilePresenter::titolo($slugRow),
+]);
+$assert($slugBase === 'trilocale-via-roma-10-milano', "slug deriva da tipologia+strada+indirizzo+comune");
 
 echo "immobiliFormatPrice\n";
 $assert(immobiliFormatPrice(250000) === '€ 250.000', "prezzo formattato");
@@ -130,7 +131,11 @@ $getrixFeed = \Wonder\Plugin\Immobili\Feed\FeedSourceConfig::fromRow([
 $getrixListings = iterator_to_array($getrix->fetchListings($getrixFeed));
 $assert(count($getrixListings) === 1, 'legge un nodo Immobile dal file archiviato');
 $assert(($getrixListings[0]->externalId ?? '') === 'ABC-123', 'legge IDImmobile come attributo XML');
-$assert(($getrixListings[0]->fields['tipologia_id'] ?? '') === '10', 'legge IDTipologia come attributo XML');
+// tipologia_id ora è risolto all'id canonico durante normalize (via getrix_id);
+// senza DB delle tassonomie la risoluzione resta 0. Verifichiamo invece campi
+// XML indipendenti dalle tassonomie.
+$assert(($getrixListings[0]->fields['prezzo'] ?? '') === '250000', 'legge Prezzo dal nodo XML');
+$assert(($getrixListings[0]->fields['contratto_id'] ?? '') === 'V', 'legge Contratto dal nodo XML');
 $assert(is_file($getrix->lastArtifactPath()), 'conserva lo ZIP originale della sync');
 $assert(is_file(dirname($getrix->lastArtifactPath()).'/feed.xml'), 'conserva XML estratto');
 $assert(is_file(dirname($getrix->lastArtifactPath()).'/metadata.json'), 'conserva metadati e hash');
@@ -158,6 +163,7 @@ $Q = new \Wonder\Plugin\Immobili\Services\ImmobileQuery();
 $assert($Q->order('recenti') === ['evidence DESC, id', 'DESC'], "recenti => id DESC");
 $assert($Q->order('prezzo_asc') === ['evidence DESC, prezzo', 'ASC'], "prezzo_asc");
 $assert($Q->order('prezzo_desc') === ['evidence DESC, prezzo', 'DESC'], "prezzo_desc");
+$assert($Q->order('superficie_asc') === ['evidence DESC, superficie', 'ASC'], "superficie_asc");
 $assert($Q->order('superficie_desc') === ['evidence DESC, superficie', 'DESC'], "superficie_desc");
 $assert($Q->order('boh') === ['evidence DESC, id', 'DESC'], "default => recenti");
 
@@ -218,6 +224,89 @@ $sf = $P->searchFields($row);
 $assert(($sf['comune_nome'] ?? '') === 'Milano', "comune_nome da attributi (fallback Gestim)");
 $assert(($sf['tipologia_nome'] ?? '') === 'Villa', "tipologia_nome da attributi");
 $assert(!array_key_exists('ricerca', $sf), "searchFields non produce più 'ricerca'");
+
+echo "ImmobilePresenter::detailFields\n";
+$details = $P->detailFields([
+    'provider'       => 'getrix',
+    'n_camere'       => '2',
+    'n_balconi'      => '1',
+    'n_terrazzi'     => '0',
+    'n_posti_auto'   => '1',
+    'piani_edificio' => '5',
+    'attributi'      => [
+        'NrAltreCamere'       => '1',
+        'Cucina'              => '1',
+        'GiardinoPrivato'     => '2',
+        'BoxAuto'             => '1',
+        'Cantina'             => '1',
+        'Mansarda'            => '2',
+        'Arredamento'         => '255',
+        'InfissiEsterni'      => '5',
+        'ImpiantoTV'          => '1',
+        'PortaBlindata'       => 'true',
+        'Allarme'             => 'false',
+        'VideoCitofono'       => 'true',
+        'Caminetto'           => 'false',
+        'Tennis'              => 'false',
+        'TipoCostruzione'     => '4',
+        'StatoManutenzione'   => '6',
+        'NrAscensori'         => '1',
+    ],
+]);
+$assert(($details['altre_camere'] ?? null) === 1, 'legge la chiave Getrix NrAltreCamere');
+$assert(($details['totale_camere'] ?? null) === 3, 'calcola il totale camere dal presenter');
+$assert(($details['cucina'] ?? '') === 'Abitabile', 'traduce il codice Getrix Cucina');
+$assert(($details['giardino'] ?? '') === 'No', 'traduce il codice Getrix GiardinoPrivato');
+$assert(($details['box_auto'] ?? '') === 'Singolo', 'traduce il codice Getrix BoxAuto');
+$assert(($details['balcone'] ?? '') === 'Sì', 'presenta NrBalconi dalla colonna canonica');
+$assert(($details['terrazzo'] ?? '') === 'No', 'presenta NrTerrazzi dalla colonna canonica');
+$assert(($details['infissi_esterni'] ?? '') === 'Doppio vetro/legno', 'traduce InfissiEsterni');
+$assert(($details['videocitofono'] ?? '') === 'Sì', 'legge la chiave Getrix VideoCitofono');
+$assert(($details['camino'] ?? '') === 'No', 'legge la chiave Getrix Caminetto');
+$assert(($details['campo_tennis'] ?? '') === 'No', 'legge la chiave Getrix Tennis');
+$assert(($details['classe_immobile'] ?? '') === 'Signorile', 'deriva la classe da TipoCostruzione');
+$assert(($details['stato_immobile'] ?? '') === 'Ottimo', 'deriva lo stato da StatoManutenzione');
+$assert(($details['ascensore'] ?? '') === 'Sì', 'legge la chiave Getrix NrAscensori');
+
+echo "ImmobilePresenter::detailFields (manuale)\n";
+$manualDetails = $P->detailFields([
+    'provider'          => 'manual',
+    'n_camere'          => '2',
+    'n_altre_camere'    => '1',
+    'n_posti_auto'      => '1',
+    'n_balconi'         => 'true',
+    'n_terrazzi'        => 'false',
+    'n_ascensori'       => 'true',
+    'piani_edificio'    => '5',
+    'cucina_id'         => '1',
+    'box_auto_id'       => '1',
+    'arredamento_id'    => '255',
+    'infissi_esterni_id' => '5',
+    'impianto_tv_id'    => '1',
+    'cantina_id'        => '1',
+    'mansarda_id'       => '2',
+    'giardino_privato_id' => '2',
+    'giardino_condominiale' => 'true',
+    'porta_blindata'    => 'true',
+    'videocitofono'     => 'true',
+    'camino'            => 'false',
+    'tennis'            => 'false',
+    'tipo_costruzione_id' => '4',
+    'stato_costruzione_id' => '6',
+]);
+$assert(($manualDetails['altre_camere'] ?? null) === 1, 'manuale: altre camere dalla colonna n_altre_camere');
+$assert(($manualDetails['totale_camere'] ?? null) === 3, 'manuale: totale camere calcolato');
+$assert(($manualDetails['cucina'] ?? '') === 'Abitabile', 'manuale: traduce cucina_id');
+$assert(($manualDetails['box_auto'] ?? '') === 'Singolo', 'manuale: traduce box_auto_id');
+$assert(($manualDetails['arredamento'] ?? '') === 'Assente', 'manuale: traduce arredamento_id');
+$assert(($manualDetails['infissi_esterni'] ?? '') === 'Doppio vetro/legno', 'manuale: traduce infissi_esterni_id');
+$assert(($manualDetails['cantina'] ?? '') === 'Sì', 'manuale: presenza cantina_id');
+$assert(($manualDetails['giardino'] ?? '') === 'Condominiale', 'manuale: giardino da privato+condominiale');
+$assert(($manualDetails['balcone'] ?? '') === 'Sì', 'manuale: balcone booleano dalla colonna');
+$assert(($manualDetails['terrazzo'] ?? '') === 'No', 'manuale: terrazzo booleano dalla colonna');
+$assert(($manualDetails['ascensore'] ?? '') === 'Sì', 'manuale: ascensore booleano dalla colonna');
+$assert(($manualDetails['classe_immobile'] ?? '') === 'Signorile', 'manuale: classe da tipo_costruzione_id');
+$assert(($manualDetails['stato_immobile'] ?? '') === 'Ottimo', 'manuale: stato da stato_costruzione_id');
 
 echo "\n";
 echo $failures === 0

@@ -2,12 +2,14 @@
 
 namespace Wonder\Plugin\Immobili\Services;
 
+use Wonder\Plugin\Immobili\Models\Immobile;
+
 /**
  * Ricerca/paginazione degli immobili per il frontend (lista e venduti).
  *
  * Builder SQL su singola tabella `immobili`: `where()` costruisce la condizione
- * (compatibile con `pagination()`/`sqlSelect()` del framework), `order()`
- * l'ordinamento. I filtri operano su colonne (incluse le denormalizzate
+ * (compatibile con `pagination()` del framework e con `Immobile::find()`/
+ * `safeFind()`), `order()` l'ordinamento. I filtri operano su colonne (incluse le denormalizzate
  * `comune_nome`/`tipologia_nome`), così i conteggi della paginazione
  * sono corretti. Restituisce card già presentate e il GeoJSON per la mappa.
  * Condiviso tra `pages/frontend/list.php` e `http/api/frontend/search.php`.
@@ -36,7 +38,7 @@ final class ImmobileQuery
         $page = min(max(1, $page), $pages);
 
         $offset = ($page - 1) * $perPage;
-        $rows = sqlSelect('immobili', $where, "{$offset}, {$perPage}", $order, $direction)->row ?? [];
+        $rows = Immobile::safeFind($where, "{$offset}, {$perPage}", $order, $direction) ?? [];
 
         return [
             'items'   => $this->cards($rows),
@@ -69,6 +71,7 @@ final class ImmobileQuery
         return match ($ordina) {
             'prezzo_asc'      => ['evidence DESC, prezzo', 'ASC'],
             'prezzo_desc'     => ['evidence DESC, prezzo', 'DESC'],
+            'superficie_asc'  => ['evidence DESC, superficie', 'ASC'],
             'superficie_desc' => ['evidence DESC, superficie', 'DESC'],
             default           => ['evidence DESC, id', 'DESC'],
         };
@@ -177,10 +180,10 @@ final class ImmobileQuery
         $cols = 'id, nome, comune_nome, tipologia_nome, strada, prezzo, '
             .'contratto_id, trattativa_riservata, superficie, slug, latitudine, longitudine';
 
-        $result = sqlSelect('immobili', $where, null, 'id', 'DESC', $cols);
+        $rows = Immobile::find($where, null, 'id', 'DESC', $cols);
         $features = [];
 
-        foreach (($result->row ?? []) as $row) {
+        foreach ($this->rows($rows) as $row) {
             $lat = (float) ($row['latitudine'] ?? 0);
             $lng = (float) ($row['longitudine'] ?? 0);
             if ($lat === 0.0 || $lng === 0.0) {
@@ -219,30 +222,48 @@ final class ImmobileQuery
     }
 
     /**
-     * Comuni distinti degli immobili disponibili (per il filtro della lista).
-     * Ordinati alfabeticamente, case-insensitive.
+     * Valori distinti di una colonna denormalizzata (comune/tipologia) tra gli
+     * immobili disponibili, per i filtri della lista. `$column` è interno
+     * (mai da input utente). Ordinati alfabeticamente, case-insensitive.
      *
      * @return array<int, string>
      */
-    public function comuni(bool $sold = false): array
+    private function findDistinctColumnValue(string $column, bool $sold = false): array
     {
         $where = "`visible` = 'true' AND `deleted` = 'false' AND `sold` = '"
-            .($sold ? 'true' : 'false')."' AND `comune_nome` <> ''";
+            .($sold ? 'true' : 'false')."' AND `{$column}` <> ''";
 
-        $result = sqlSelect('immobili', $where, null, 'comune_nome', 'ASC', 'DISTINCT `comune_nome`');
+        $rows = Immobile::find($where, null, $column, 'ASC', 'DISTINCT `'.$column.'`');
+        $rows = is_array($rows) ? $rows : [];
 
-        $comuni = [];
-        foreach (($result->row ?? []) as $row) {
-            $nome = trim((string) ($row['comune_nome'] ?? ''));
-            if ($nome !== '') {
-                $comuni[$nome] = $nome;
+        // find() con limit nullo restituisce una lista di righe; normalizziamo
+        // comunque l'eventuale singola riga associativa (chiave = colonna).
+        if (array_key_exists($column, $rows)) {
+            $rows = [$rows];
+        }
+
+        $values = [];
+        foreach ($rows as $row) {
+            $value = is_array($row) ? trim((string) ($row[$column] ?? '')) : '';
+            if ($value !== '') {
+                $values[$value] = $value;
             }
         }
 
-        $comuni = array_values($comuni);
-        natcasesort($comuni);
+        $values = array_values($values);
+        natcasesort($values);
 
-        return array_values($comuni);
+        return array_values($values);
+    }
+
+    public function comuni(bool $sold = false): array
+    {
+        return $this->findDistinctColumnValue('comune_nome', $sold);
+    }
+
+    public function tipologie(bool $sold = false): array
+    {
+        return $this->findDistinctColumnValue('tipologia_nome', $sold);
     }
 
     /**

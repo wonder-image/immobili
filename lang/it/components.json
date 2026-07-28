@@ -17,14 +17,18 @@
             "price_min": "Prezzo min",
             "price_max": "Prezzo max",
             "surface_min": "Superficie min",
+            "surface_max": "Superficie max",
             "rooms": "Locali min",
+            "bathrooms": "Bagni min",
             "sort": "Ordina per",
             "sort_recent": "Più recenti",
             "sort_price_asc": "Prezzo crescente",
             "sort_price_desc": "Prezzo decrescente",
-            "sort_surface": "Superficie",
+            "sort_surface_asc": "Superficie crescente",
+            "sort_surface_desc": "Superficie decrescente",
             "apply": "Filtra",
-            "reset": "Azzera"
+            "reset": "Azzera",
+            "toggle": "Filtra gli immobili"
         },
         "features": {
             "type": "Tipologia",

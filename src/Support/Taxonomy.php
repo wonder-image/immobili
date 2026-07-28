@@ -2,65 +2,178 @@
 
 namespace Wonder\Plugin\Immobili\Support;
 
+use Throwable;
 use Wonder\Plugin\Immobili\Models\Categoria;
 use Wonder\Plugin\Immobili\Models\Comune;
 use Wonder\Plugin\Immobili\Models\Tipologia;
 
 /**
- * Risoluzione (con cache di richiesta) delle tassonomie scoping per provider.
+ * Risoluzione (con cache di richiesta) delle tassonomie CANONICHE.
  *
- * Le tabelle `immobili_*` sono uniche per tutti i gestionali: la coppia
- * (`provider`, `codice`) identifica la riga nativa. Usato sia in fase di
- * sincronizzazione (per costruire lo slug) sia in lettura (etichette).
+ * Le tabelle `immobili_*` hanno una sola riga per entità reale, condivisa da
+ * tutti i gestionali. Il codice nativo di un gestionale è conservato nella
+ * colonna mappa `{provider}_id` (getrix_id, gestim_id, …). Questo resolver
+ * traduce: codice nativo → riga/ id canonico, e id canonico → dati/nome.
  */
 final class Taxonomy
 {
     /** @var array<string, array<string, mixed>|null> */
     private static array $cache = [];
 
+    /** Colonna mappa del provider (getrix_id | gestim_id | …). */
+    public static function providerColumn(string $provider): string
+    {
+        $provider = trim($provider);
+
+        return $provider === '' ? '' : $provider.'_id';
+    }
+
     /**
+     * Riga canonica dato il codice nativo del gestionale.
+     *
      * @param class-string $model
      * @return array<string, mixed>|null
      */
-    public static function resolve(string $model, string $provider, string $codice): ?array
+    public static function byProviderCode(string $model, string $provider, string $code): ?array
     {
-        $provider = trim($provider);
-        $codice = trim($codice);
+        $column = self::providerColumn($provider);
+        $code = trim($code);
 
-        if ($provider === '' || $codice === '') {
+        if ($column === '' || $code === '') {
             return null;
         }
 
-        $cacheKey = $model.'|'.$provider.'|'.$codice;
+        $cacheKey = $model.'|'.$column.'|'.$code;
 
         if (array_key_exists($cacheKey, self::$cache)) {
             return self::$cache[$cacheKey];
         }
 
-        $row = $model::find(['provider' => $provider, 'codice' => $codice], 1);
-        $resolved = (is_array($row) && isset($row['id'])) ? $row : null;
+        try {
+            $row = $model::find([$column => $code], 1);
+        } catch (Throwable) {
+            return self::$cache[$cacheKey] = null;
+        }
 
-        return self::$cache[$cacheKey] = $resolved;
+        return self::$cache[$cacheKey] = (is_array($row) && isset($row['id'])) ? $row : null;
     }
 
-    public static function categoriaNome(string $provider, string $codice): string
+    /**
+     * Id canonico dato il codice nativo del gestionale (0 se non risolvibile).
+     *
+     * @param class-string $model
+     */
+    public static function idByProviderCode(string $model, string $provider, string $code): int
     {
-        return (string) (self::resolve(Categoria::class, $provider, $codice)['nome'] ?? '');
+        return (int) (self::byProviderCode($model, $provider, $code)['id'] ?? 0);
     }
 
-    public static function tipologiaNome(string $provider, string $codice): string
+    /**
+     * Riga canonica per id.
+     *
+     * @param class-string $model
+     * @return array<string, mixed>|null
+     */
+    public static function byId(string $model, int $id): ?array
     {
-        return (string) (self::resolve(Tipologia::class, $provider, $codice)['nome'] ?? '');
+        if ($id <= 0) {
+            return null;
+        }
+
+        $cacheKey = $model.'|id|'.$id;
+
+        if (array_key_exists($cacheKey, self::$cache)) {
+            return self::$cache[$cacheKey];
+        }
+
+        try {
+            $row = $model::findById($id);
+        } catch (Throwable) {
+            return self::$cache[$cacheKey] = null;
+        }
+
+        return self::$cache[$cacheKey] = (is_array($row) && isset($row['id'])) ? $row : null;
     }
 
-    /** @return array<string, mixed>|null */
-    public static function comune(string $provider, string $codice): ?array
+    /** @param class-string $model */
+    public static function nomeById(string $model, int $id): string
     {
-        return self::resolve(Comune::class, $provider, $codice);
+        return (string) (self::byId($model, $id)['nome'] ?? '');
     }
 
-    public static function comuneNome(string $provider, string $codice): string
+    /**
+     * Comune canonico per nome (+ opz. sigla provincia): usato dai gestionali
+     * che forniscono i nomi e non i codici (es. Gestim). Match case-insensitive.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function comuneByName(string $nome, string $provinciaSigla = ''): ?array
     {
-        return (string) (self::comune($provider, $codice)['nome'] ?? '');
+        $nome = trim($nome);
+
+        if ($nome === '') {
+            return null;
+        }
+
+        $sigla = strtoupper(trim($provinciaSigla));
+        $cacheKey = Comune::class.'|nome|'.mb_strtolower($nome).'|'.$sigla;
+
+        if (array_key_exists($cacheKey, self::$cache)) {
+            return self::$cache[$cacheKey];
+        }
+
+        try {
+            $rows = Comune::find(['nome' => $nome]);
+        } catch (Throwable) {
+            return self::$cache[$cacheKey] = null;
+        }
+
+        if (is_array($rows) && isset($rows['id'])) {
+            $rows = [$rows];
+        }
+
+        if (!is_array($rows)) {
+            return self::$cache[$cacheKey] = null;
+        }
+
+        $match = null;
+
+        foreach ($rows as $row) {
+            if (!is_array($row) || !isset($row['id'])) {
+                continue;
+            }
+
+            // Senza sigla provincia prende il primo; con sigla filtra la provincia.
+            if ($sigla === '') {
+                $match = $row;
+                break;
+            }
+
+            $prov = self::byId(\Wonder\Plugin\Immobili\Models\Provincia::class, (int) ($row['provincia_id'] ?? 0));
+
+            if (is_array($prov) && strtoupper(trim((string) ($prov['sigla'] ?? ''))) === $sigla) {
+                $match = $row;
+                break;
+            }
+        }
+
+        return self::$cache[$cacheKey] = $match;
+    }
+
+    // Convenienze usate dallo slug / dai presenter (per id canonico).
+
+    public static function categoriaNomeById(int $id): string
+    {
+        return self::nomeById(Categoria::class, $id);
+    }
+
+    public static function tipologiaNomeById(int $id): string
+    {
+        return self::nomeById(Tipologia::class, $id);
+    }
+
+    public static function comuneNomeById(int $id): string
+    {
+        return self::nomeById(Comune::class, $id);
     }
 }

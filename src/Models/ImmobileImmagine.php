@@ -3,6 +3,7 @@
 namespace Wonder\Plugin\Immobili\Models;
 
 use Wonder\App\Model;
+use Wonder\App\Support\MediaFileManager;
 use Wonder\Data\UploadSchema as Field;
 
 /**
@@ -15,8 +16,8 @@ use Wonder\Data\UploadSchema as Field;
  * `resized = 'true'`. Le due fasi restano su piani distinti perché gli immobili
  * hanno molte immagini pesanti.
  *
- * Le immagini caricate a mano (immobili manuali) arrivano già con `file`
- * valorizzato e `resized = 'true'`.
+ * Le immagini caricate a mano (immobili manuali) sono gestite dal campo
+ * `upload`, che conserva i filename e genera le varianti tramite il framework.
  */
 final class ImmobileImmagine extends Model
 {
@@ -67,9 +68,43 @@ final class ImmobileImmagine extends Model
             Field::key('file')->text()->sanitize(false),
             // Immagine caricata a mano (immobili manuali): il framework genera
             // automaticamente webp + varianti responsive all'upload.
-            Field::key('upload')->image(),
+            Field::key('upload')->image()
+                ->maxSize(3)
+                ->extensions(['png', 'jpg', 'jpeg']),
             // 'true' quando le varianti responsive sono state generate.
             Field::key('resized')->text(),
         ];
+    }
+
+    /**
+     * Il media manager persiste anche un singolo upload come array JSON.
+     * Manteniamo inoltre la compatibilità con eventuali filename legacy
+     * salvati come stringa semplice.
+     */
+    public static function firstUploadedFile(mixed $storedFiles): string
+    {
+        $files = MediaFileManager::decodeStoredFiles($storedFiles);
+
+        if (isset($files[0])) {
+            return $files[0];
+        }
+
+        if (!is_string($storedFiles)) {
+            return '';
+        }
+
+        $storedFiles = trim($storedFiles);
+
+        if ($storedFiles === '') {
+            return '';
+        }
+
+        $decoded = json_decode($storedFiles, true);
+
+        if (is_string($decoded)) {
+            return trim($decoded);
+        }
+
+        return json_last_error() === JSON_ERROR_NONE ? '' : $storedFiles;
     }
 }

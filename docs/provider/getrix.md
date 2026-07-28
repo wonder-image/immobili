@@ -17,14 +17,16 @@ Salva e premi **Sincronizza ora**.
 
 - **Immobili**: da `feed.getrix.it/xml/{id}.zip`.
 - **Tassonomie**: categorie, macrotipologie, tipologie, regioni, province, comuni, quartieri e zone
-  (endpoint `tipologie.asp`, `comuni.asp`, `quartieri.asp`), salvate con `provider = getrix`.
+  (endpoint `tipologie.asp`, `comuni.asp`, `quartieri.asp`). Getrix **semina le tabelle canoniche**
+  (upsert per chiave naturale) riempiendo la colonna mappa `getrix_id`.
 - **Immagini**: varianti `xs/m/xl/xxxl`; in locale se "Salva immagini" è attivo, altrimenti via URL.
 - **Descrizioni**: multilingua (IT/EN/…), una riga per lingua.
 
 ## Note
 
-- I codici nativi Getrix (categoria, tipologia, comune) sono conservati nei campi `*_id` e risolti in
-  etichette in lettura tramite le tassonomie.
+- I codici nativi Getrix (categoria, tipologia, comune) vengono risolti all'**id canonico** (via la
+  colonna mappa `getrix_id`) e salvati nelle FK `*_id` dell'immobile; le etichette si leggono per id
+  dalle tassonomie canoniche.
 - La sincronizzazione è idempotente: un immobile viene reimportato solo se la sua `DataModifica` è più
   recente di quella salvata.
 - Ogni esecuzione conserva lo ZIP originale, l'XML estratto e un file `metadata.json` (timestamp,

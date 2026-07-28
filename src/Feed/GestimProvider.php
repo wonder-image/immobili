@@ -5,6 +5,8 @@ namespace Wonder\Plugin\Immobili\Feed;
 use Wonder\App\ResourceSchema\FormField;
 use Wonder\Plugin\Gestim\Import;
 use Wonder\Plugin\Immobili\Feed\Contracts\FeedProvider;
+use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**
  * Provider Gestim.
@@ -91,7 +93,8 @@ final class GestimProvider implements FeedProvider
             return null;
         }
 
-        $tipologiaId = (string) ($immobile['Tipologia'] ?? '');
+        $tipologiaCode = (string) ($immobile['Tipologia'] ?? '');
+        $tipologiaNome = (string) $import->LookupValue('Tipologia', $immobile['Tipologia'] ?? '');
         $comune = $this->clean($immobile['Comune'] ?? '');
         $indirizzo = $this->clean($immobile['Indirizzo'] ?? '');
         $motivazione = (string) $import->LookupValue('Motivazione', $immobile['Motivazione'] ?? '');
@@ -102,14 +105,16 @@ final class GestimProvider implements FeedProvider
         $listing->createdAt = $this->date($immobile['prima_pubblicazione'] ?? '');
 
         $listing->set('nome', $listing->nome);
-        $listing->set('tipologia_id', $tipologiaId);
-        // Senza un file tipologie separato la macrotipologia non è disponibile.
+        // Gestim non ha un file tassonomie: la tipologia canonica si risolve per
+        // nome (match sulle righe canoniche seminate da Getrix / seed), riempiendo
+        // gestim_id. La macrotipologia la deriva poi il FeedSyncService.
+        $listing->set('tipologia_id', (string) $this->resolveTipologiaId($tipologiaNome, $tipologiaCode));
         $listing->set('macrotipologia_id', '');
         $listing->set('categoria_id', '');
 
-        // Localizzazione (Gestim fornisce nomi, non codici: comune_id resta vuoto
-        // e i nomi vanno negli attributi come fallback per il presenter).
-        $listing->set('comune_id', '');
+        // Localizzazione: il comune canonico si risolve per nome (Gestim fornisce
+        // i nomi, non i codici). Su miss resta 0 e i nomi restano negli attributi.
+        $listing->set('comune_id', (string) $this->resolveComuneId($comune));
         $listing->set('indirizzo', $indirizzo);
         $listing->set('strada', '');
         $listing->set('civico', (string) ($immobile['civico'] ?? ''));
@@ -147,7 +152,7 @@ final class GestimProvider implements FeedProvider
         $listing->attribute('comune', $comune);
         $listing->attribute('provincia', $this->clean($immobile['Provincia'] ?? ''));
         $listing->attribute('regione', $this->clean($immobile['Regione'] ?? ''));
-        $listing->attribute('tipologia', (string) $import->LookupValue('Tipologia', $immobile['Tipologia'] ?? ''));
+        $listing->attribute('tipologia', $tipologiaNome);
         $listing->attribute('motivazione', $motivazione);
 
         foreach ([
@@ -246,6 +251,44 @@ final class GestimProvider implements FeedProvider
     }
 
     // ------------------------------------------------------------------ Utils
+
+    /**
+     * Id canonico del comune dato il nome (match per nome; Gestim non fornisce
+     * codici geografici). 0 se non presente tra i comuni canonici.
+     */
+    private function resolveComuneId(string $nome): int
+    {
+        $row = Taxonomy::comuneByName($nome);
+
+        return is_array($row) ? (int) ($row['id'] ?? 0) : 0;
+    }
+
+    /**
+     * Id canonico della tipologia dato il nome; registra la mappa gestim_id se
+     * ancora assente. 0 se la tipologia non è fra quelle canoniche.
+     */
+    private function resolveTipologiaId(string $nome, string $gestimCode): int
+    {
+        $nome = trim($nome);
+
+        if ($nome === '') {
+            return 0;
+        }
+
+        $row = Tipologia::find(['nome' => $nome], 1);
+
+        if (!is_array($row) || !isset($row['id'])) {
+            return 0;
+        }
+
+        $id = (int) $row['id'];
+
+        if ($gestimCode !== '' && trim((string) ($row['gestim_id'] ?? '')) === '') {
+            Tipologia::update(['gestim_id' => $gestimCode], $id);
+        }
+
+        return $id;
+    }
 
     /**
      * @param array<string, mixed> $immobile

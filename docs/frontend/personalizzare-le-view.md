@@ -21,12 +21,39 @@ Il meccanismo è gestito da `Immobili::viewPath()`, che controlla prima l'overri
 | Componente | Argomenti                    |
 | ---------- | ---------------------------- |
 | `card`     | `['immobile' => $card]`      |
+| `cards-grid` | `['immobili' => $cards, 'class' => 'mt-4']` |
+| `cards-swiper` | `['immobili' => $cards, 'id' => 'in-evidenza', 'class' => 'mt-6', 'slide_class' => '', 'aria_label' => '…']` |
 | `filters`  | `['filters' => [...], 'action' => $url]` |
 | `map`      | `['features' => $geojson, 'zoom' => 15, 'mapId' => 'id-opzionale']` |
 | `gallery`  | `['images' => [...]]`        |
 | `features` | `['immobile' => $immobile]`  |
 
 Richiamali con `Immobili::component('card', ['immobile' => $card])`.
+
+I componenti di collezione hanno nomi paralleli e ricevono entrambi oggetti già preparati da
+`ImmobileQuery::cards()`:
+
+```php
+<?php Immobili::component('cards-grid', [
+    'immobili' => $cards,
+    'class' => 'mt-4',
+]); ?>
+
+<?php Immobili::component('cards-swiper', [
+    'immobili' => $cards,
+    'id' => 'immobili-in-evidenza',
+    'class' => 'mt-6',
+    'aria_label' => __t('pages.home.content.properties.carousel_label'),
+]); ?>
+```
+
+`cards-grid` riusa la griglia responsive del modulo. `cards-swiper` riusa lo stesso componente
+`card`, abilita la dipendenza Swiper e applica i breakpoint standard mobile-first: 1,05 card,
+2 card da 769 px e 3 card da 993 px. Entrambi non producono markup quando `immobili` è vuoto;
+titoli, messaggi vuoti e paginazione restano responsabilità della pagina.
+
+Il prefisso `immobili-` non è necessario nei nomi: il namespace è già espresso dalla chiamata
+`Immobili::component(...)`.
 
 ## Galleria della scheda immobile
 

@@ -13,6 +13,8 @@
             "back": "Torna agli immobili",
             "description": "Descrizione",
             "plans": "Planimetrie",
+            "video": "Video",
+            "virtual_tour": "Tour virtuale",
             "pdf": "Scarica la scheda",
             "print": "Stampa"
         },

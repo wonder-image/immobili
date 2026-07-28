@@ -14,6 +14,78 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
 final class ImmobilePresenter
 {
     /**
+     * Dizionari di dominio condivisi tra la lettura dei feed (chiavi native in
+     * `attributi`) e quella degli immobili manuali (colonne `*_id`): il codice
+     * numerico è lo stesso, cambia solo la sorgente.
+     *
+     * @var array<string, string>
+     */
+    private const KITCHEN = [
+        '1' => 'Abitabile',
+        '2' => 'Angolo cottura',
+        '3' => 'Cucinino',
+        '4' => 'Semi abitabile',
+        '5' => 'Tinello',
+        '6' => 'A vista',
+        '255' => 'Non presente',
+    ];
+
+    /** @var array<string, string> */
+    private const GARAGE = [
+        '1' => 'Singolo',
+        '2' => 'Doppio',
+        '3' => 'Triplo',
+        '255' => 'Assente',
+    ];
+
+    /** @var array<string, string> */
+    private const FURNISHING = [
+        '1' => 'Parziale',
+        '2' => 'Completo',
+        '255' => 'Assente',
+    ];
+
+    /** @var array<string, string> */
+    private const WINDOW_FRAMES = [
+        '1' => 'Vetro/plastica',
+        '2' => 'Vetro/legno',
+        '3' => 'Vetro/metallo',
+        '4' => 'Doppio vetro/plastica',
+        '5' => 'Doppio vetro/legno',
+        '6' => 'Doppio vetro/metallo',
+    ];
+
+    /** @var array<string, string> */
+    private const TV_SYSTEM = [
+        '1' => 'Centralizzato',
+        '2' => 'Singolo',
+        '255' => 'Assente',
+    ];
+
+    /** @var array<string, string> */
+    private const CONSTRUCTION_TYPE = [
+        '1' => 'Economica',
+        '2' => 'Civile',
+        '3' => 'Medio signorile',
+        '4' => 'Signorile',
+        '5' => 'Epoca',
+        '6' => 'Ringhiera',
+        '7' => 'Lusso',
+        '255' => 'Altro',
+    ];
+
+    /** @var array<string, string> */
+    private const MAINTENANCE_STATE = [
+        '1' => 'Nuovo',
+        '2' => 'Buono',
+        '3' => 'Ristrutturato',
+        '4' => 'Mediocre',
+        '5' => 'Da ristrutturare',
+        '6' => 'Ottimo',
+        '7' => 'Discreto',
+    ];
+
+    /**
      * Presentazione completa (dettaglio): include immagini e descrizione.
      *
      * @param array<string, mixed> $row
@@ -67,6 +139,136 @@ final class ImmobilePresenter
     }
 
     /**
+     * Campi pronti per le card di composizione e caratteristiche.
+     *
+     * Ogni provider viene letto usando le sue chiavi canoniche: la view non
+     * deve conoscere i nomi del feed né tentare liste di alias.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public function detailFields(array $row): array
+    {
+        $provider = (string) ($row['provider'] ?? '');
+        $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
+
+        $details = [
+            'altre_camere'          => null,
+            'totale_camere'         => null,
+            'cucina'                => null,
+            'giardino'              => null,
+            'box_auto'              => null,
+            'posti_auto'            => self::positiveInt($row['n_posti_auto'] ?? null),
+            'balcone'               => self::countFeature($row['n_balconi'] ?? null),
+            'terrazzo'              => self::countFeature($row['n_terrazzi'] ?? null),
+            'cantina'               => null,
+            'mansarda'              => null,
+            'taverna'               => null,
+            'arredamento'           => null,
+            'infissi_esterni'       => null,
+            'impianto_tv'           => null,
+            'portineria'            => null,
+            'porta_blindata'        => null,
+            'impianto_allarme'      => null,
+            'cancello_elettrico'    => null,
+            'videocitofono'         => null,
+            'fibra_ottica'          => null,
+            'camino'                => null,
+            'idromassaggio'         => null,
+            'piscina'               => null,
+            'campo_tennis'          => null,
+            'classe_immobile'       => null,
+            'stato_immobile'        => null,
+            'numero_piani_stabile'  => self::positiveInt($row['piani_edificio'] ?? null),
+            'ascensore'             => null,
+        ];
+
+        if ($provider === 'getrix') {
+            $camere = self::positiveInt($row['n_camere'] ?? null);
+            $altreCamere = self::positiveInt($attributi['NrAltreCamere'] ?? null);
+
+            return array_replace($details, [
+                'altre_camere'       => $altreCamere,
+                'totale_camere'      => $camere !== null && $altreCamere !== null ? $camere + $altreCamere : null,
+                'cucina'             => self::enumValue($attributi['Cucina'] ?? null, self::KITCHEN),
+                'giardino'           => self::gardenValue(
+                    $attributi['GiardinoPrivato'] ?? null,
+                    $attributi['GiardinoCondominiale'] ?? null
+                ),
+                'box_auto'           => self::enumValue($attributi['BoxAuto'] ?? null, self::GARAGE),
+                'cantina'            => self::presenceValue($attributi['Cantina'] ?? null),
+                'mansarda'           => self::presenceValue($attributi['Mansarda'] ?? null),
+                'taverna'            => self::presenceValue($attributi['Taverna'] ?? null),
+                'arredamento'        => self::enumValue($attributi['Arredamento'] ?? null, self::FURNISHING),
+                'infissi_esterni'    => self::enumValue($attributi['InfissiEsterni'] ?? null, self::WINDOW_FRAMES),
+                'impianto_tv'        => self::enumValue($attributi['ImpiantoTV'] ?? null, self::TV_SYSTEM),
+                'portineria'         => self::booleanValue($attributi['Portineria'] ?? null),
+                'porta_blindata'     => self::booleanValue($attributi['PortaBlindata'] ?? null),
+                'impianto_allarme'   => self::booleanValue($attributi['Allarme'] ?? null),
+                'cancello_elettrico' => self::booleanValue($attributi['CancelloElettrico'] ?? null),
+                'videocitofono'      => self::booleanValue($attributi['VideoCitofono'] ?? null),
+                'fibra_ottica'       => self::booleanValue($attributi['FibraOttica'] ?? null),
+                'camino'             => self::booleanValue($attributi['Caminetto'] ?? null),
+                'idromassaggio'      => self::booleanValue($attributi['Idromassaggio'] ?? null),
+                'piscina'            => self::booleanValue($attributi['Piscina'] ?? null),
+                'campo_tennis'       => self::booleanValue($attributi['Tennis'] ?? null),
+                'classe_immobile'    => self::enumValue($attributi['TipoCostruzione'] ?? null, self::CONSTRUCTION_TYPE),
+                'stato_immobile'     => self::enumValue($attributi['StatoManutenzione'] ?? null, self::MAINTENANCE_STATE),
+                'ascensore'          => self::countFeature($attributi['NrAscensori'] ?? null),
+            ]);
+        }
+
+        if ($provider === 'gestim') {
+            return array_replace($details, [
+                'cucina'      => self::stringValue($attributi['cucina'] ?? null),
+                'giardino'    => self::stringValue($attributi['giardino'] ?? null),
+                'box_auto'    => self::stringValue($attributi['box'] ?? null),
+                'posti_auto'  => self::stringValue($attributi['posto_auto'] ?? null),
+                'balcone'     => self::stringValue($attributi['balconi'] ?? null),
+                'terrazzo'    => self::stringValue($attributi['terrazzo'] ?? null),
+                'mansarda'    => self::stringValue($attributi['soffitta'] ?? null),
+            ]);
+        }
+
+        // Immobili manuali (e seed): i valori sono già nelle colonne canoniche
+        // `*_id`, con lo stesso codice numerico dei feed. I flag booleani sono
+        // persistiti come 'true'/'false'; le presenze come '1'/'2'.
+        $camere = self::positiveInt($row['n_camere'] ?? null);
+        $altreCamere = self::positiveInt($row['n_altre_camere'] ?? null);
+
+        return array_replace($details, [
+            'altre_camere'       => $altreCamere,
+            'totale_camere'      => $camere !== null && $altreCamere !== null ? $camere + $altreCamere : null,
+            'cucina'             => self::enumValue($row['cucina_id'] ?? null, self::KITCHEN),
+            'giardino'           => self::gardenValue(
+                $row['giardino_privato_id'] ?? null,
+                $row['giardino_condominiale'] ?? null
+            ),
+            'box_auto'           => self::enumValue($row['box_auto_id'] ?? null, self::GARAGE),
+            'balcone'            => self::booleanValue($row['n_balconi'] ?? null),
+            'terrazzo'           => self::booleanValue($row['n_terrazzi'] ?? null),
+            'cantina'            => self::presenceValue($row['cantina_id'] ?? null),
+            'mansarda'           => self::presenceValue($row['mansarda_id'] ?? null),
+            'taverna'            => self::presenceValue($row['taverna_id'] ?? null),
+            'arredamento'        => self::enumValue($row['arredamento_id'] ?? null, self::FURNISHING),
+            'infissi_esterni'    => self::enumValue($row['infissi_esterni_id'] ?? null, self::WINDOW_FRAMES),
+            'impianto_tv'        => self::enumValue($row['impianto_tv_id'] ?? null, self::TV_SYSTEM),
+            'porta_blindata'     => self::booleanValue($row['porta_blindata'] ?? null),
+            'impianto_allarme'   => self::booleanValue($row['allarme'] ?? null),
+            'cancello_elettrico' => self::booleanValue($row['cancello_elettrico'] ?? null),
+            'videocitofono'      => self::booleanValue($row['videocitofono'] ?? null),
+            'fibra_ottica'       => self::booleanValue($row['fibra_ottica'] ?? null),
+            'camino'             => self::booleanValue($row['camino'] ?? null),
+            'idromassaggio'      => self::booleanValue($row['idromassaggio'] ?? null),
+            'piscina'            => self::booleanValue($row['piscina'] ?? null),
+            'campo_tennis'       => self::booleanValue($row['tennis'] ?? null),
+            'classe_immobile'    => self::enumValue($row['tipo_costruzione_id'] ?? null, self::CONSTRUCTION_TYPE),
+            'stato_immobile'     => self::enumValue($row['stato_costruzione_id'] ?? null, self::MAINTENANCE_STATE),
+            'ascensore'          => self::booleanValue($row['n_ascensori'] ?? null),
+        ]);
+    }
+
+    /**
      * Campi base derivati comuni a card e dettaglio.
      *
      * @param array<string, mixed> $row
@@ -81,7 +283,7 @@ final class ImmobilePresenter
 
         $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
 
-        $tipologia = Taxonomy::tipologiaNome($provider, (string) ($row['tipologia_id'] ?? ''));
+        $tipologia = Taxonomy::tipologiaNomeById((int) ($row['tipologia_id'] ?? 0));
         if ($tipologia === '') {
             $tipologia = (string) ($attributi['tipologia'] ?? '');
         }
@@ -109,11 +311,81 @@ final class ImmobilePresenter
             'sold'          => immobiliIsTrue($row['sold'] ?? ''),
             'latitudine'    => (string) ($row['latitudine'] ?? ''),
             'longitudine'   => (string) ($row['longitudine'] ?? ''),
-            'prettyName'    => $this->prettyName($tipologia, $comune, (string) ($row['strada'] ?? '')),
+            'prettyName'    => self::titolo($row),
             'prettyAddress' => $this->prettyAddress($row, $comune),
             'attributi'     => $attributi,
-        ]);
+        ], $this->detailFields($row));
 
+    }
+
+    private static function positiveInt(mixed $value): ?int
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        $value = (int) $value;
+
+        return $value > 0 ? $value : null;
+    }
+
+    private static function stringValue(mixed $value): ?string
+    {
+        $value = trim((string) ($value ?? ''));
+
+        return $value === '' ? null : $value;
+    }
+
+    /** @param array<string, string> $values */
+    private static function enumValue(mixed $value, array $values): ?string
+    {
+        $value = self::stringValue($value);
+
+        return $value === null ? null : ($values[$value] ?? $value);
+    }
+
+    private static function booleanValue(mixed $value): ?string
+    {
+        $value = self::stringValue($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return immobiliIsTrue($value) ? 'Sì' : 'No';
+    }
+
+    private static function presenceValue(mixed $value): ?string
+    {
+        return self::enumValue($value, [
+            '1' => 'Sì',
+            '2' => 'No',
+        ]);
+    }
+
+    private static function countFeature(mixed $value): ?string
+    {
+        if (!is_numeric($value)) {
+            return null;
+        }
+
+        return (int) $value > 0 ? 'Sì' : 'No';
+    }
+
+    private static function gardenValue(mixed $privateGarden, mixed $sharedGarden): ?string
+    {
+        $private = self::presenceValue($privateGarden);
+        $shared = self::booleanValue($sharedGarden);
+
+        if ($private === 'Sì') {
+            return 'Privato';
+        }
+
+        if ($shared === 'Sì') {
+            return 'Condominiale';
+        }
+
+        return $private ?? $shared;
     }
 
     /**
@@ -126,8 +398,7 @@ final class ImmobilePresenter
      */
     public function comuneName(array $row, ?array $attributi = null): string
     {
-        $provider = (string) ($row['provider'] ?? '');
-        $comune = Taxonomy::comuneNome($provider, (string) ($row['comune_id'] ?? ''));
+        $comune = Taxonomy::comuneNomeById((int) ($row['comune_id'] ?? 0));
 
         if ($comune === '') {
             $attributi ??= immobiliDecodeJsonArray($row['attributi'] ?? []);
@@ -151,7 +422,7 @@ final class ImmobilePresenter
         $provider = (string) ($row['provider'] ?? '');
         $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
 
-        $tipologia = Taxonomy::tipologiaNome($provider, (string) ($row['tipologia_id'] ?? ''));
+        $tipologia = Taxonomy::tipologiaNomeById((int) ($row['tipologia_id'] ?? 0));
         if ($tipologia === '') {
             $tipologia = (string) ($attributi['tipologia'] ?? '');
         }
@@ -162,14 +433,6 @@ final class ImmobilePresenter
             'comune_nome'    => $comune,
             'tipologia_nome' => $tipologia,
         ];
-    }
-
-    private function prettyName(string $tipologia, string $comune, string $strada): string
-    {
-        $left = $tipologia !== '' ? $tipologia : 'Immobile';
-        $right = $strada !== '' ? $strada : $comune;
-
-        return trim($right !== '' ? $left.' · '.$right : $left);
     }
 
     /**
@@ -210,39 +473,13 @@ final class ImmobilePresenter
     }
 
     /**
-     * Slug URL-friendly da un testo (translitterazione ASCII deterministica,
-     * indipendente dal locale). '' se il testo è vuoto.
+     * URL leggero usato per l'anteprima di una singola riga immagine nel form.
+     *
+     * @param array<string, mixed> $row
      */
-    public static function slug(string $text): string
+    public function imagePreview(array $row): string
     {
-        $text = trim($text);
-
-        if ($text === '') {
-            return '';
-        }
-
-        // Translitterazione deterministica dei diacritici più comuni.
-        $map = [
-            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a', 'å' => 'a',
-            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
-            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
-            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o', 'õ' => 'o',
-            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
-            'ñ' => 'n', 'ç' => 'c', 'ß' => 'ss',
-        ];
-
-        $text = mb_strtolower($text, 'UTF-8');
-        $text = strtr($text, $map);
-
-        // Diacritici residui: tentativo con iconv, poi rimozione.
-        $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
-        if ($ascii !== false) {
-            $text = $ascii;
-        }
-
-        $text = preg_replace('/[^a-z0-9]+/', '-', $text) ?? '';
-
-        return trim($text, '-');
+        return (string) ($this->imageEntry($row)['thumb'] ?? '');
     }
 
     /**
@@ -293,8 +530,16 @@ final class ImmobilePresenter
      */
     public static function nome(array $row): string
     {
-        $nome = htmlspecialchars((string) ($row['nome'] ?? ''), ENT_QUOTES);
+        $nome = e($row['nome'] ?? '');
+        $titolo = e(self::titolo($row));
 
+
+        return '<span class="text-decoration-none fw-normal">'.$nome.($titolo !== '' ? "<span class=\"d-block text-muted small\">{$titolo}</span>" : '').'</span>';
+
+    }
+
+    public static function titolo(array $row): string
+    {
         $tipologia = trim((string) ($row['tipologia_nome'] ?? ''));
         $strada    = ucwords(strtolower(trim((string) ($row['strada'] ?? ''))));
         $indirizzo = trim((string) ($row['indirizzo'] ?? ''));
@@ -302,15 +547,14 @@ final class ImmobilePresenter
 
         $via = trim($strada.' '.$indirizzo);
         $loc = trim($via.($comune !== '' ? ', '.$comune : ''), ', ');
-        $sub = $tipologia;
+        $titolo = $tipologia;
 
         if ($loc !== '') {
-            $sub = $sub !== '' ? $sub.' | '.$loc : $loc;
+            $titolo = $titolo !== '' ? $titolo.' | '.$loc : $loc;
         }
 
-        $sub = htmlspecialchars($sub, ENT_QUOTES);
+        return $titolo;
 
-        return $nome.($sub !== '' ? "<span class=\"d-block text-muted small\">{$sub}</span>" : '');
     }
 
     /**
@@ -413,7 +657,7 @@ final class ImmobilePresenter
         $planimetria = immobiliIsTrue($row['planimetria'] ?? '');
         $source = trim((string) ($row['source_url'] ?? ''));
         $file = trim((string) ($row['file'] ?? ''));
-        $upload = trim((string) ($row['upload'] ?? ''));
+        $upload = ImmobileImmagine::firstUploadedFile($row['upload'] ?? '');
 
         $path = $GLOBALS['PATH'] ?? null;
         $uploadBase = is_object($path) ? rtrim((string) ($path->upload ?? ''), '/') : '';

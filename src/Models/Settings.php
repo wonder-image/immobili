@@ -28,22 +28,33 @@ final class Settings extends Model
             Column::key('pdf_color_secondary')->length(10)->null(),
             Column::key('pdf_font')->length(100)->null(),
             Column::key('pdf_font_bold')->length(100)->null(),
+
+            // Attributi mostrati sul PDF e nella scheda web: liste ordinate di
+            // chiavi (righe repeater), decodificate via AttributeCatalog.
+            Column::key('pdf_facts')->json()->null(),
+            Column::key('scheda_facts')->json()->null(),
         ];
     }
 
     public static function dataSchema(): array
     {
         return [
-            Field::key('pdf_logo')->file()->sanitize(false),
+            Field::key('pdf_logo')->text()->sanitize(false),
             Field::key('pdf_color_primary')->text()->upper(),
             Field::key('pdf_color_secondary')->text()->upper(),
             Field::key('pdf_font')->text()->sanitize(false),
             Field::key('pdf_font_bold')->text()->sanitize(false),
+
+            Field::key('pdf_facts')->json(),
+            Field::key('scheda_facts')->json(),
         ];
     }
 
     public static function decorate($row): array
     {
+        // Compatibilità con i record creati quando pdf_logo era un upload
+        // autonomo del modulo. Le nuove righe salvano invece la chiave della
+        // variante configurata in Media → Logo.
         $urls = static::storedFileUrls(
             MediaFileManager::decodeStoredFiles($row['pdf_logo'] ?? ''),
             []

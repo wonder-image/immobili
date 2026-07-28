@@ -1,6 +1,9 @@
 <?php
 
 use Wonder\App\Dependencies;
+use Wonder\Elements\Components\Accordion;
+use Wonder\Elements\Components\Container;
+use Wonder\Elements\Media\Iframe;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
@@ -29,17 +32,30 @@ $SEO->breadcrumb = [
 
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
-$videos = array_values(array_filter([
-    (string) ($row['youtube_1'] ?? ''),
-    (string) ($row['youtube_2'] ?? ''),
-    (string) ($row['youtube_3'] ?? ''),
-    (string) ($row['youtube_4'] ?? ''),
-], static fn (string $v): bool => $v !== ''));
+// Le colonne media sono gia normalizzate e validate da Immobile::decorate().
+$videos = array_values(array_unique(array_merge(
+    $row['youtube'] ?? [],
+    $row['video'] ?? []
+)));
+$virtualTours = $row['virtual_tour'] ?? [];
+
+$iframes = static fn (array $urls): array => array_map(
+    static fn (string $url): Iframe => Iframe::url($url)
+        ->attr('allowfullscreen', true)
+        ->class('w-100')
+        ->style('aspect-ratio', '16 / 9')
+        ->style('display', 'block'),
+    $urls
+);
+
+$mediaGrid = static fn (array $urls): Container => (new Container())
+    ->columns(['default' => 1, 'md' => 2, 'lg' => 3])
+    ->gap(3)
+    ->components($iframes($urls));
 
 Dependencies::swiper();
 Dependencies::fancyapps();
 
-// I builder del framework accettano la forma ['sorgente' => 'alt/caption'].
 $slides = is_array($immobile->imagesAlt ?? null) ? $immobile->imagesAlt : [];
 $planSlides = is_array($immobile->planimetrieAlt ?? null) ? $immobile->planimetrieAlt : [];
 
@@ -69,13 +85,13 @@ Immobili::layout('main');
             
             <div class="col-2 col-p-1">
                 
-                <style>
-                    #immobile-swiper .swiper-slide{aspect-ratio:16/9}
-                    #immobile-swiper-thumbs .swiper-slide{aspect-ratio:4/3;cursor:pointer;opacity:.55;transition:opacity .2s}
-                    #immobile-swiper-thumbs .swiper-slide-thumb-active{opacity:1}
-                </style>
-                <div class="w-100 b-r-10 o-hidden">
-                    <?= __swiper($slides)->id('immobile-swiper')->thumbnails()->lightbox()->navigation() ?>
+                <div class="w-100 o-hidden">
+                    <?= __swiper($slides)->id('immobile-swiper')
+                            ->ratio('3:2')
+                            ->thumbnails()
+                            ->thumbsRatio('3:2')
+                            ->lightbox()
+                            ->navigation() ?>
                 </div>
 
                 <?php if ($planSlides !== []) { ?>
@@ -83,21 +99,12 @@ Immobili::layout('main');
                     <div class="mt-3"><?= __gallery($planSlides)->columns(2, 2, 1)->format('4-3') ?></div>
                 <?php } ?>
 
-                <?php if (($immobile->descrizione ?? '') !== '') { ?>
-                    <h2 class="subtitle mt-8"><?= e(__t('pages.immobili.detail.description')) ?></h2>
-                    <div class="text mt-3"><?= nl2br(e($immobile->descrizione)) ?></div>
-                <?php } ?>
-
-                <?php foreach ($videos as $video) { ?>
-                    <div class="mt-6" style="position:relative;aspect-ratio:16/9;">
-                        <iframe src="<?= e($video) ?>" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:10px;" allowfullscreen loading="lazy"></iframe>
-                    </div>
-                <?php } ?>
             </div>
 
             <aside>
+
                 <?php if (($immobile->prezzo ?? '') !== '') { ?>
-                    <div class="title-big"><?= e($immobile->prezzo) ?></div>
+                    <div class="title-big"><?= e($immobile->prettyPrezzo) ?></div>
                 <?php } ?>
 
                 <div class="mt-6">
@@ -106,11 +113,6 @@ Immobili::layout('main');
                     </a>
                 </div>
 
-                <?php if (!empty($immobile->geo_json)) { ?>
-                    <div class="mt-6">
-                        <?php Immobili::component('map', ['features' => [$immobile->geo_json], 'zoom' => 15]); ?>
-                    </div>
-                <?php } ?>
             </aside>
 
         </div>
@@ -124,6 +126,46 @@ Immobili::layout('main');
 
     </div>
 </section>
+
+<section class="pt-0">
+    <div class="content">
+
+        <div class="w-100 d-grid col-1 gap-5">
+
+            <?php
+                if (($immobile->descrizione ?? '') !== '') {
+                    echo Accordion::make(__t('pages.immobili.detail.description'))
+                        ->description($immobile->descrizione)
+                        ->descriptionSize('text-small')
+                        ->icon('plus');
+                }
+            ?>
+
+            <?php if ($videos !== []) { ?>
+                <?= Accordion::make(__t('pages.immobili.detail.video'))
+                    ->components([$mediaGrid($videos)])
+                    ->icon('plus') ?>
+            <?php } ?>
+
+            <?php if ($virtualTours !== []) { ?>
+                <?= Accordion::make(__t('pages.immobili.detail.virtual_tour'))
+                    ->components([$mediaGrid($virtualTours)])
+                    ->icon('plus') ?>
+            <?php } ?>
+        </div>
+
+    </div>
+</section>
+
+<?php if (!empty($immobile->geo_json)) { ?>
+<section class="pt-0">
+    <div class="content">
+
+        <?php Immobili::component('map', [ 'features' => [ $immobile->geo_json ], 'zoom' => 15 ]); ?>
+
+    </div>
+</section>
+<?php } ?>
 
 <section>
     <div class="content">

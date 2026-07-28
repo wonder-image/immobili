@@ -30,8 +30,12 @@ secondario nel pannello del feed (vedi [API e sincronizzazione](../riferimento/a
 
 - **Immobili**: dallo ZIP indicato in `callback` (agenzie + lookup + annunci).
 - **Etichette / tipologie**: risolte inline dai lookup Gestim (`LookupValue`, dal `lookup.xml` dello
-  ZIP) e salvate negli attributi. Non esiste un file tipologie separato.
-- **Comune/Provincia/Regione**: forniti come nomi (non codici) e usati direttamente nelle view.
+  ZIP). Non esistendo un file tipologie separato, la **tipologia canonica si aggancia per nome** alle
+  righe esistenti (seminate da Getrix / seed) riempiendo `gestim_id`; su miss il nome resta negli
+  attributi.
+- **Comune/Provincia/Regione**: forniti come **nomi** (non codici). Il comune si aggancia al canonico
+  **per nome** (`Taxonomy::comuneByName`); su miss il nome resta negli attributi e nei campi
+  denormalizzati.
 - `sold` è derivato dallo stato Gestim (`stato_immo`) ed è autoritativo dal feed.
 
 ## Cron (Gestim = push)

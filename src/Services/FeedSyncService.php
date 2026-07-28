@@ -186,13 +186,20 @@ final class FeedSyncService
         // Macrotipologia derivata dalla tassonomia Tipologia: il feed dell'immobile
         // porta solo la tipologia, la macro si risolve dalla tassonomia importata.
         $fields['macrotipologia_id'] = $this->macrotipologiaId(
-            $feed->provider,
             (string) ($fields['tipologia_id'] ?? ''),
             (string) ($fields['macrotipologia_id'] ?? '')
         );
 
         // Campi derivati denormalizzati per la ricerca SQL della lista frontend.
         $fields = array_merge($fields, ($this->presenter ??= new ImmobilePresenter())->searchFields($fields));
+
+        // FK tassonomia non risolte (0/vuote) → rimosse: l'insert le lascia NULL,
+        // senza violare il vincolo di chiave esterna (l'id 0 non esiste).
+        foreach (['categoria_id', 'macrotipologia_id', 'tipologia_id', 'comune_id', 'quartiere_id', 'quartiere_zona_id'] as $fk) {
+            if (!isset($fields[$fk]) || (int) $fields[$fk] <= 0) {
+                unset($fields[$fk]);
+            }
+        }
 
         if ($existing !== null) {
             $id = (int) $existing['id'];
@@ -276,24 +283,22 @@ final class FeedSyncService
             return (string) $existing['slug'];
         }
 
-        $tipologia = Taxonomy::tipologiaNome($feed->provider, (string) ($listing->fields['tipologia_id'] ?? ''));
+        $tipologia = Taxonomy::tipologiaNomeById((int) ($listing->fields['tipologia_id'] ?? 0));
         if ($tipologia === '') {
             $tipologia = (string) ($listing->attributi['tipologia'] ?? '');
         }
 
-        $comune = Taxonomy::comuneNome($feed->provider, (string) ($listing->fields['comune_id'] ?? ''));
+        $comune = Taxonomy::comuneNomeById((int) ($listing->fields['comune_id'] ?? 0));
         if ($comune === '') {
             $comune = (string) ($listing->attributi['comune'] ?? '');
         }
 
-        $base = Slug::base([
-            $tipologia,
-            (string) ($listing->fields['strada'] ?? ''),
-            (string) ($listing->fields['indirizzo'] ?? ''),
-            $comune,
-        ]);
-
-        return Slug::unique($base, $existing !== null ? (int) $existing['id'] : null);
+        return Slug::fromRow([
+            'tipologia_nome' => $tipologia,
+            'strada'         => (string) ($listing->fields['strada'] ?? ''),
+            'indirizzo'      => (string) ($listing->fields['indirizzo'] ?? ''),
+            'comune_nome'    => $comune,
+        ], $existing !== null ? (int) $existing['id'] : null);
     }
 
     /**
@@ -301,17 +306,19 @@ final class FeedSyncService
      * porta il codice macro). Preserva un eventuale valore già fornito dal
      * provider; '' se non risolvibile.
      */
-    private function macrotipologiaId(string $provider, string $tipologiaId, string $current): string
+    private function macrotipologiaId(string $tipologiaId, string $current): string
     {
-        if ($current !== '') {
+        if ($current !== '' && $current !== '0') {
             return $current;
         }
 
-        if ($tipologiaId === '') {
+        $id = (int) $tipologiaId;
+
+        if ($id <= 0) {
             return '';
         }
 
-        $tipologia = Taxonomy::resolve(Tipologia::class, $provider, $tipologiaId);
+        $tipologia = Taxonomy::byId(Tipologia::class, $id);
 
         return (string) ($tipologia['macrotipologia_id'] ?? '');
     }

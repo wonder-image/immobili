@@ -2,18 +2,21 @@
 
 namespace Wonder\Plugin\Immobili\Resources;
 
-use Wonder\App\ResourceSchema\FormField;
-use Wonder\App\ResourceSchema\NavigationSchema;
-use Wonder\App\ResourceSchema\PermissionSchema;
+use Wonder\App\ResourceSchema\{ FormField, NavigationSchema, PermissionSchema, RepeaterColumn };
 use Wonder\App\Resources\Support\SingletonResource;
 use Wonder\Plugin\Immobili\Models\Settings;
+use Wonder\Plugin\Immobili\Support\AttributeCatalog;
+use Wonder\App\Support\FpdfFonts;
+use Wonder\Elements\Form\{ Form };
+use Wonder\Elements\Components\{ Container, Card, SectionTitle };
 
 /**
- * Impostazioni PDF globali (schermata unica, singleton).
+ * Centrale di controllo del modulo Immobili.
  *
- * Il PDF è comune a tutti i feed, quindi la sua configurazione (logo, colori,
- * font) vive qui e non sul singolo feed. `font`/`font_bold` sono scelti
- * dall'array `$FONT_FPDF` di wonder-image/app.
+ * Da qui si configura la scheda PDF (logo, colori, font e quali attributi
+ * dell'immobile mostrare, nell'ordine scelto) e la scheda web (quali attributi
+ * mostrare). Le liste di attributi pescano dal catalogo condiviso
+ * `AttributeCatalog`; l'ordine è quello dei repeater ordinabili.
  */
 final class SettingsResource extends SingletonResource
 {
@@ -26,14 +29,14 @@ final class SettingsResource extends SingletonResource
 
     public static function icon(): string
     {
-        return 'bi bi-filetype-pdf';
+        return 'bi bi-sliders';
     }
 
     public static function textSchema(): array
     {
         return [
-            'label'        => 'impostazioni PDF',
-            'plural_label' => 'impostazioni PDF',
+            'label'        => 'impostazioni',
+            'plural_label' => 'impostazioni',
         ];
     }
 
@@ -44,21 +47,111 @@ final class SettingsResource extends SingletonResource
             'pdf_color_primary'   => 'Colore primario',
             'pdf_color_secondary' => 'Colore secondario',
             'pdf_font'            => 'Font',
-            'pdf_font_bold'       => 'Font (grassetto)',
+            'pdf_font_bold'       => 'Font (grassetto)'
         ];
     }
 
     public static function formSchema(): array
     {
-        $fonts = self::fpdfFonts();
+        $fonts   = FpdfFonts::all();
+        $catalog = AttributeCatalog::options();
 
         return [
-            FormField::key('pdf_logo')->fileDragDrop(),
+            FormField::key('pdf_logo')->select(self::logoOptions())->value('main')->required(),
             FormField::key('pdf_color_primary')->color(),
             FormField::key('pdf_color_secondary')->color(),
             FormField::key('pdf_font')->select($fonts),
             FormField::key('pdf_font_bold')->select($fonts),
+
+            // Liste ordinabili di attributi (righe [{key: <attributo>}]).
+            FormField::key('pdf_facts')
+                ->repeater([RepeaterColumn::key('key')->select($catalog)->label('Attributo')->columnSpan(12)])
+                ->repeaterSortable(true)
+                ->repeaterAddLabel('Aggiungi dato')
+                ->label(false),
+
+            FormField::key('scheda_facts')
+                ->repeater([RepeaterColumn::key('key')->select($catalog)->label('Attributo')->columnSpan(12)])
+                ->repeaterSortable(true)
+                ->repeaterAddLabel('Aggiungi dato'),
         ];
+    }
+
+    public static function formLayoutSchema(): ?Form
+    {
+        return (new Form())->components([
+            (new Container())->components([
+
+                // Scheda PDF: branding + dati mostrati.
+                (new Card())->components([
+
+                    (new SectionTitle('Scheda PDF'))->columnSpan(12),
+                    static::getInput('pdf_logo')->columnSpan(12),
+
+                    (new SectionTitle('Colori'))->columnSpan(12),
+                    static::getInput('pdf_color_primary')->columnSpan(6),
+                    static::getInput('pdf_color_secondary')->columnSpan(6),
+
+                    (new SectionTitle('Font'))->columnSpan(12),
+                    static::getInput('pdf_font')->columnSpan(6),
+                    static::getInput('pdf_font_bold')->columnSpan(6),
+
+                    (new SectionTitle('Dati mostrati sul PDF'))->columnSpan(12),
+                    static::getInput('pdf_facts')->columnSpan(12),
+
+                ])->columns(12)->columnSpan(6),
+
+                // Scheda web dell'immobile: dati mostrati.
+                (new Card())->components([
+
+                    (new SectionTitle('Scheda immobile'))->columnSpan(12),
+                    static::getInput('scheda_facts')->columnSpan(12),
+
+                ])->columns(12)->columnSpan(6),
+
+            ])->columns(12),
+        ]);
+    }
+
+    /**
+     * I campi `pdf_facts` / `scheda_facts` sono repeater SENZA relazione: il
+     * framework non li converte da/verso la colonna JSON in automatico. In
+     * SCRITTURA trasformiamo le righe POST del repeater ([{key: attributo}, …])
+     * nella lista ordinata di chiavi valide salvata come JSON.
+     */
+    public static function mutateRequestValues(
+        array $values,
+        string $action,
+        string $context = 'backend',
+        ?array $oldValues = null
+    ): array {
+        foreach (['pdf_facts', 'scheda_facts'] as $key) {
+            $values[$key] = AttributeCatalog::keysFrom($values[$key] ?? null);
+        }
+
+        return $values;
+    }
+
+    /**
+     * In LETTURA: la lista JSON di chiavi salvata torna righe repeater
+     * ([{key: attributo}, …]) così l'input mostra la selezione corrente. Se non
+     * ancora configurato, mostra i default del contesto (WYSIWYG: quanto salvi è
+     * ciò che viene usato da PDF e scheda).
+     */
+    public static function mutateFormValues(
+        array $values,
+        string $mode,
+        string $context = 'backend'
+    ): array {
+        foreach (['pdf_facts' => 'pdf', 'scheda_facts' => 'scheda'] as $key => $ctx) {
+            $keys = AttributeCatalog::selectedKeys($values[$key] ?? null, $ctx);
+            $values[$key] = array_map(
+                static fn (string $attr): array => ['key' => $attr],
+                $keys
+            );
+        }
+
+        return $values;
     }
 
     public static function permissionSchema(): PermissionSchema
@@ -71,29 +164,25 @@ final class SettingsResource extends SingletonResource
     {
         return NavigationSchema::for(static::class)
             ->section('immobili', 'Immobili', 'bi-house-door', 500, ['admin', 'immobili_manager'])
-            ->title('Impostazioni PDF')
+            ->title('Impostazioni')
             ->order(40)
             ->authority(['admin', 'immobili_manager']);
     }
 
     /**
-     * Opzioni font dalla tabella FPDF del framework (`$FONT_FPDF`).
+     * Varianti disponibili nella risorsa Media → Logo del framework.
      *
      * @return array<string, string>
      */
-    private static function fpdfFonts(): array
+    private static function logoOptions(): array
     {
-        $fonts = $GLOBALS['FONT_FPDF'] ?? null;
-
-        if (is_array($fonts) && $fonts !== []) {
-            return $fonts;
-        }
-
-        // Fallback ai font FPDF di base se l'array non è ancora caricato.
         return [
-            'helvetica' => 'Arial',
-            'times'     => 'Times',
-            'courier'   => 'Courier',
+            'main'       => 'Logo',
+            'black'      => 'Logo nero',
+            'white'      => 'Logo bianco',
+            'icon'       => 'Icona',
+            'icon_black' => 'Icona nera',
+            'icon_white' => 'Icona bianca',
         ];
     }
 }

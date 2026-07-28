@@ -10,6 +10,8 @@ namespace App\Immobili;
 use Wonder\Plugin\Immobili\Feed\Contracts\FeedProvider;
 use Wonder\Plugin\Immobili\Feed\FeedSourceConfig;
 use Wonder\Plugin\Immobili\Feed\NormalizedListing;
+use Wonder\Plugin\Immobili\Models\Comune;
+use Wonder\Plugin\Immobili\Support\Taxonomy;
 use Wonder\App\ResourceSchema\FormInput;
 
 final class MioGestionaleProvider implements FeedProvider
@@ -24,15 +26,23 @@ final class MioGestionaleProvider implements FeedProvider
 
     public function syncTaxonomies(FeedSourceConfig $feed): void
     {
-        // Popola le tabelle immobili_* con provider = 'miogestionale'.
+        // Upsert delle tassonomie CANONICHE per chiave naturale (cod_catastale,
+        // sigla, slug), riempiendo la colonna mappa `miogestionale_id`.
+        // Riferimento: GetrixProvider::syncCategorie / syncComuni.
     }
 
     public function fetchListings(FeedSourceConfig $feed): iterable
     {
-        // Leggi il feed e restituisci NormalizedListing.
+        // Le FK tassonomia vanno impostate come ID CANONICO (INT), risolto dal
+        // codice/nome nativo:
+        //   - con i codici:  Taxonomy::idByProviderCode(Comune::class, $this->key(), $codiceComune)
+        //   - con i nomi:    Taxonomy::comuneByName($nomeComune)['id'] ?? 0
+        // Se non risolvibile lascia 0/'' (il sync lo salva come NULL) e conserva
+        // il nome in `attributi` come fallback per il presenter.
         $listing = new NormalizedListing($externalId);
         $listing->set('prezzo', '250000');
-        $listing->set('comune_id', $codiceComune);      // o attributi['comune'] se hai solo il nome
+        $listing->set('comune_id', (string) Taxonomy::idByProviderCode(Comune::class, $this->key(), $codiceComune));
+        $listing->attribute('comune', $nomeComune); // fallback se non risolto
         $listing->addImage([ 'tipo' => 'F', 'url' => $url, 'medium' => $url ]);
         $listing->addDescription([ 'lingua' => 'it', 'testo' => $descrizione ]);
         yield $listing;

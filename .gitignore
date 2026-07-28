@@ -5,3 +5,4 @@ composer.phar
 *.claude
 /resources/assets/upload/
 tests/*
+!tests/resource-form.php

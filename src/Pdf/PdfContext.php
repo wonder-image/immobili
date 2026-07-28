@@ -36,9 +36,38 @@ final class PdfContext
         $secondary = Color::fromHex((string) ($settings['pdf_color_secondary'] ?? ''), [11, 61, 145]);
         $font = trim((string) ($settings['pdf_font'] ?? '')) ?: 'helvetica';
         $fontBold = trim((string) ($settings['pdf_font_bold'] ?? ''));
-        $logo = (string) ($settings['pdf_logo_url'] ?? '');
+        $logo = self::selectedLogo(
+            (string) ($settings['pdf_logo'] ?? ''),
+            $society,
+            (string) ($settings['pdf_logo_url'] ?? '')
+        );
 
         return new self($primary, $secondary, $font, $fontBold, $logo, self::contacts($society));
+    }
+
+    private static function selectedLogo(string $selection, mixed $society, string $legacyUrl = ''): string
+    {
+        if (!is_object($society)) {
+            return $legacyUrl;
+        }
+
+        $property = match (trim($selection) ?: 'main') {
+            'main'       => 'logo',
+            'black'      => 'logoBlack',
+            'white'      => 'logoWhite',
+            'icon'       => 'icon',
+            'icon_black' => 'iconBlack',
+            'icon_white' => 'iconWhite',
+            default      => null,
+        };
+
+        if ($property === null) {
+            return $legacyUrl;
+        }
+
+        $logo = trim((string) ($society->{$property} ?? ''));
+
+        return $logo !== '' ? $logo : $legacyUrl;
     }
 
     private static function contacts(mixed $society): Contacts

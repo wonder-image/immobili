@@ -5,6 +5,7 @@
  */
 
 use Wonder\Plugin\Immobili\Immobili;
+use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Services\ImmobileQuery;
 
 $PAGE_KEY = 'immobili.list';
@@ -28,9 +29,8 @@ $query = new ImmobileQuery();
 $where = $query->where($filters, false);
 [$order, $direction] = $query->order((string) ($filters['ordina'] ?? 'recenti'));
 
-// Paginazione del framework: conta, genera l'HTML e il limit SQL.
 $PAGINATION = pagination('immobili', $where, $perPage);
-$rows = sqlSelect('immobili', $where, $PAGINATION->limit, $order, $direction)->row ?? [];
+$rows = Immobile::safeFind( $where, $PAGINATION->limit, $order, $direction);
 
 $items = $query->cards($rows);
 $total = (int) sqlCount('immobili', $where);
@@ -46,7 +46,7 @@ Immobili::layout('main');
         <h1 class="title-big"><?= e(__t('pages.immobili.list.title')) ?></h1>
 
         <div class="mt-4">
-            <?php Immobili::component('filters', ['filters' => $filters]); ?>
+            <?php Immobili::component('filters', [ 'filters' => $filters, 'action' => __r('immobili.list') ]); ?>
         </div>
 
     </div>
@@ -68,11 +68,10 @@ Immobili::layout('main');
         <?php if ($items === []) { ?>
             <p class="text mt-4"><?= e(__t('pages.immobili.list.empty')) ?></p>
         <?php } else { ?>
-            <div class="w-100 d-grid col-3 col-t-2 col-p-1 gap-5 mt-4">
-                <?php foreach ($items as $immobile) {
-                    Immobili::component('card', ['immobile' => $immobile]);
-                } ?>
-            </div>
+            <?php Immobili::component('cards-grid', [
+                'immobili' => $items,
+                'class' => 'mt-4',
+            ]); ?>
         <?php } ?>
 
         <div class="w-100 d-flex j-content-center mt-8">

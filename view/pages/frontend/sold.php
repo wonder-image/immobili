@@ -5,6 +5,7 @@
  */
 
 use Wonder\Plugin\Immobili\Immobili;
+use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Services\ImmobileQuery;
 
 $PAGE_KEY = 'immobili.sold';
@@ -26,7 +27,7 @@ $where = $query->where([], true);
 [$order, $direction] = $query->order('recenti');
 
 $PAGINATION = pagination('immobili', $where, $perPage);
-$rows = sqlSelect('immobili', $where, $PAGINATION->limit, $order, $direction)->row ?? [];
+$rows = Immobile::safeFind($where, $PAGINATION->limit, $order, $direction) ?? [];
 
 $items = $query->cards($rows);
 $geojson = $query->geojson($where);
@@ -50,11 +51,10 @@ Immobili::layout('main');
     <?php if ($items === []) { ?>
         <p class="text"><?= e(__t('pages.immobili.sold.empty')) ?></p>
     <?php } else { ?>
-        <div class="d-grid col-3 col-t-2 col-p-1 gap-5 mt-4">
-            <?php foreach ($items as $immobile) {
-                Immobili::component('card', ['immobile' => $immobile]);
-            } ?>
-        </div>
+        <?php Immobili::component('cards-grid', [
+            'immobili' => $items,
+            'class' => 'mt-4',
+        ]); ?>
     <?php } ?>
 
     <div class="d-flex j-content-center mt-8">

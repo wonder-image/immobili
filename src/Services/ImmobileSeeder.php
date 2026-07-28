@@ -136,11 +136,12 @@ final class ImmobileSeeder
      */
     private function createImmobile(array $data): int
     {
-        $slug = Slug::unique(Slug::base([
-            (string) ($data['tipologia_nome'] ?? ''),
-            (string) ($data['strada'] ?? ''),
-            (string) ($data['comune_nome'] ?? ''),
-        ]));
+        $slug = Slug::fromRow([
+            'tipologia_nome' => (string) ($data['tipologia_nome'] ?? ''),
+            'strada'         => (string) ($data['strada'] ?? ''),
+            'indirizzo'      => (string) ($data['indirizzo'] ?? ''),
+            'comune_nome'    => (string) ($data['comune_nome'] ?? ''),
+        ]);
 
         $fields = [
             'provider'             => 'seed',

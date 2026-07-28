@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Wonder\Plugin\Immobili\Pdf;
 
 use Wonder\Plugin\Immobili\Immobili;
+use Wonder\Plugin\Immobili\Models\Settings;
+use Wonder\Plugin\Immobili\Support\AttributeCatalog;
 
 /**
  * Configurazione dei documenti PDF: default del modulo fusi con l'override del
@@ -63,8 +65,40 @@ final class PdfConfig
     public static function scheda(): array
     {
         $all = self::all();
+        $scheda = is_array($all['scheda'] ?? null) ? $all['scheda'] : [];
 
-        return is_array($all['scheda'] ?? null) ? $all['scheda'] : [];
+        // I dati configurati in backend (Settings → centrale di controllo) hanno
+        // la precedenza sull'ordine di default del codice / override del sito.
+        $configured = self::settingsFacts();
+        if ($configured !== []) {
+            $scheda['facts'] = $configured;
+        }
+
+        return $scheda;
+    }
+
+    /**
+     * Chiavi dei dati PDF configurate in `Settings` (vuoto se non configurate).
+     *
+     * @return array<int, string>
+     */
+    private static function settingsFacts(): array
+    {
+        if (!class_exists(Settings::class)) {
+            return [];
+        }
+
+        try {
+            $row = Settings::find([], 1);
+
+            if (!is_array($row) || !isset($row['id'])) {
+                return [];
+            }
+
+            return AttributeCatalog::keysFrom($row['pdf_facts'] ?? null);
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     /**
