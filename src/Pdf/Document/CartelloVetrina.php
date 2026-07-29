@@ -48,11 +48,23 @@ final class CartelloVetrina extends ImmobileDocument
         $this->pdf->Rect(0, 0, 297, 210, 'F');
 
         // Foto di copertina a tutto riquadro.
-        $cover = (string) ($this->immobile->cover ?? '');
-        if ($cover === '') {
-            $images = is_array($this->immobile->images ?? null) ? $this->immobile->images : [];
-            $cover = (string) ($images[0]['url'] ?? ($images[0]['src'] ?? ''));
+        $coverCandidates = [(string) ($this->immobile->cover ?? '')];
+        $images = is_array($this->immobile->images ?? null) ? $this->immobile->images : [];
+
+        foreach ($images as $image) {
+            $coverCandidates[] = is_string($image)
+                ? $image
+                : (string) ($image['url'] ?? ($image['src'] ?? ''));
         }
+
+        $cover = '';
+        foreach ($coverCandidates as $candidate) {
+            $cover = ImageFitter::resolve($candidate);
+            if ($cover !== '') {
+                break;
+            }
+        }
+
         $geom = ImageFitter::contain($cover, 7.5, 7.5, 282, 195, 'center');
         if ($geom['w'] > 0.0) {
             $this->pdf->Image($cover, $geom['x'], $geom['y'], $geom['w'], $geom['h']);
@@ -98,7 +110,8 @@ final class CartelloVetrina extends ImmobileDocument
         }
 
         // Testo breve (banda inferiore, sinistra).
-        $breve = (string) ($this->immobile->descrizione_breve ?? '');
+        $breve = trim((string) ($this->immobile->descrizione_breve ?? ''))
+            ?: (string) ($this->immobile->prettyName ?? '');
         if ($breve !== '') {
             $this->text($this->ctx->primary->neutral());
             $this->pdf->Font(12);

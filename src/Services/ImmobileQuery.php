@@ -169,16 +169,17 @@ final class ImmobileQuery
 
     /**
      * Feature GeoJSON per la mappa su TUTTI gli immobili che soddisfano $where.
-     * Query leggera: solo le colonne necessarie al popup (id, nome, prezzo,
-     * superficie, url, coordinate). Nessun lookup immagini (il JS mappa non usa
-     * `cover`).
+     * Query leggera: solo le colonne necessarie al marker (id, nome, prezzo,
+     * superficie, stato, url, coordinate). Nessun lookup immagini: il marker
+     * usa il proprio fallback grafico quando `cover` è vuota.
      *
      * @return array<int, array<string, mixed>>
      */
     public function geojson(string $where): array
     {
         $cols = 'id, nome, comune_nome, tipologia_nome, strada, prezzo, '
-            .'contratto_id, trattativa_riservata, superficie, slug, latitudine, longitudine';
+            .'contratto_id, trattativa_riservata, superficie, evidence, sold, '
+            .'slug, latitudine, longitudine';
 
         $rows = Immobile::find($where, null, 'id', 'DESC', $cols);
         $features = [];
@@ -201,19 +202,33 @@ final class ImmobileQuery
                 : immobiliFormatPrice($row['prezzo'] ?? 0);
             if ($prezzo !== '' && strtoupper((string) ($row['contratto_id'] ?? '')) === 'A'
                 && !immobiliIsTrue($row['trattativa_riservata'] ?? '')) {
-                $prezzo .= '/mese';
+                $prezzo .= ' /mese';
             }
+
+            $isSold = immobiliIsTrue($row['sold'] ?? '');
+            $isFeatured = immobiliIsTrue($row['evidence'] ?? '');
+            $isRent = strtoupper((string) ($row['contratto_id'] ?? '')) === 'A';
+            $variant = $isSold ? 'sold' : ($isFeatured ? 'featured' : ($isRent ? 'rent' : 'default'));
+            $variantLabel = match ($variant) {
+                'sold' => 'Venduto',
+                'featured' => 'In evidenza',
+                'rent' => 'Affitto',
+                default => 'Vendita',
+            };
 
             $features[] = [
                 'type' => 'Feature',
                 'geometry' => ['type' => 'Point', 'coordinates' => [$lng, $lat]],
                 'properties' => [
-                    'id'      => (int) ($row['id'] ?? 0),
-                    'name'    => $name,
-                    'price'   => $prezzo,
-                    'surface' => ImmobilePresenter::formatSurface($row['superficie'] ?? 0),
-                    'url'     => __r('immobile.view', ['slug' => (string) ($row['slug'] ?? '')]),
-                    'cover'   => '',
+                    'id'           => (int) ($row['id'] ?? 0),
+                    'name'         => $name,
+                    'price'        => $prezzo,
+                    'surface'      => ImmobilePresenter::formatSurface($row['superficie'] ?? 0),
+                    'url'          => __r('immobile.view', ['slug' => (string) ($row['slug'] ?? '')]),
+                    'cover'        => '',
+                    'category'     => $tipologia,
+                    'variant'      => $variant,
+                    'variantLabel' => $variantLabel,
                 ],
             ];
         }

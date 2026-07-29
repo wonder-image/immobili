@@ -14,11 +14,30 @@ namespace Wonder\Plugin\Immobili\Pdf\Support;
 final class PdfText
 {
     /**
+     * Porta HTML/testo editoriale a testo semplice mantenendo i paragrafi.
+     */
+    public static function plain(string $text): string
+    {
+        if ($text === '') {
+            return '';
+        }
+
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = strip_tags($text);
+        $text = preg_replace('/[ \t]+/u', ' ', $text) ?? $text;
+        $text = preg_replace('/\R{3,}/u', "\n\n", $text) ?? $text;
+
+        return trim($text);
+    }
+
+    /**
      * @param bool $upper se true, applica il maiuscolo (UTF-8-aware) prima della
      *                    conversione, così gli accenti maiuscoli restano corretti.
      */
     public static function encode(string $text, bool $upper = false): string
     {
+        $text = self::plain($text);
+
         if ($text === '') {
             return '';
         }

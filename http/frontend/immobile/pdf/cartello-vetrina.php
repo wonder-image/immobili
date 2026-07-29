@@ -18,9 +18,12 @@ if (!is_array($row) || !isset($row['id'])) {
     exit;
 }
 
-$sold = array_key_exists('sold', $_GET)
-    ? immobiliIsTrue((string) $_GET['sold'])
-    : immobiliIsTrue((string) ($row['sold'] ?? ''));
+$forcedSold = immobiliIsTrue($GLOBALS['ROUTE_META']['sold'] ?? false);
+$sold = $forcedSold || (
+    array_key_exists('sold', $_GET)
+        ? immobiliIsTrue((string) $_GET['sold'])
+        : immobiliIsTrue((string) ($row['sold'] ?? ''))
+);
 
 PdfRenderer::vetrina($row, $sold)->download();
 exit;

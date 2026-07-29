@@ -22,12 +22,13 @@ final class LogoBlock
         float $maxH,
         string $align = 'left',
     ): void {
-        $geom = ImageFitter::contain($logo, $x, $y, $maxW, $maxH, $align);
+        $file = ImageFitter::resolve($logo);
+        $geom = ImageFitter::contain($file, $x, $y, $maxW, $maxH, $align);
 
         if ($geom['w'] <= 0.0) {
             return;
         }
 
-        $pdf->Image($logo, $geom['x'], $geom['y'], $geom['w'], $geom['h']);
+        $pdf->Image($file, $geom['x'], $geom['y'], $geom['w'], $geom['h']);
     }
 }

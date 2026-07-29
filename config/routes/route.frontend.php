@@ -47,8 +47,12 @@ Route::area('frontend')
                 Route::get('/cartello-vetrina/', Immobili::httpPath('frontend/immobile/pdf/cartello-vetrina.php'))
                     ->name('cartello.vetrina');
 
-                Route::get('/cartello-vetrina-venduto/', Immobili::httpPath('frontend/immobile/pdf/cartello-vetrina.php?sold=1'))
-                    ->name('cartello.vetrina-venduto');
+                Route::get(
+                    '/cartello-vetrina-venduto/',
+                    Immobili::httpPath('frontend/immobile/pdf/cartello-vetrina.php'),
+                    ['sold' => true]
+                )
+                    ->name('cartello.vetrina.venduto');
 
             });
             

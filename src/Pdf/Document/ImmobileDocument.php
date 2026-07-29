@@ -17,6 +17,8 @@ use Wonder\Plugin\Immobili\Pdf\Support\PdfText;
  */
 abstract class ImmobileDocument
 {
+    private const CACHE_VERSION = '2026-07-28.3';
+
     protected Pdf $pdf;
 
     /**
@@ -54,7 +56,7 @@ abstract class ImmobileDocument
         [$left, $top, $right] = $this->margins();
         $this->pdf->SetMargins($left, $top, $right);
         $this->pdf->SetAutoPageBreak(false);
-        $this->pdf->LoadFont($this->ctx->font ?: 'helvetica', $this->ctx->fontBold);
+        $this->loadFont();
         $this->pdf->AliasNbPages();
         $this->pdf->AddPage();
 
@@ -62,6 +64,44 @@ abstract class ImmobileDocument
         $this->pdf->SetTitle(PdfText::encode($title));
         $this->pdf->SetAuthor(PdfText::encode($this->ctx->contacts->name));
         $this->pdf->SetCreator('wonder-image/immobili');
+    }
+
+    /**
+     * FPDF 1.90 emette un E_USER_DEPRECATED quando carica le definizioni font
+     * PHP storiche fornite dal framework. Con display_errors attivo l'avviso
+     * finisce prima di "%PDF-" e corrompe lo stream scaricato. Finché gli asset
+     * del framework non saranno migrati al formato JSON, silenziamo soltanto
+     * questo specifico avviso durante LoadFont(), lasciando invariati tutti gli
+     * altri errori e ripristinando subito l'handler precedente.
+     */
+    private function loadFont(): void
+    {
+        $previousHandler = null;
+        $previousHandler = set_error_handler(
+            static function (
+                int $severity,
+                string $message,
+                string $file,
+                int $line
+            ) use (&$previousHandler): bool {
+                if (
+                    $severity === E_USER_DEPRECATED
+                    && str_contains($message, 'PHP font definition files are deprecated')
+                ) {
+                    return true;
+                }
+
+                return is_callable($previousHandler)
+                    ? (bool) $previousHandler($severity, $message, $file, $line)
+                    : false;
+            }
+        );
+
+        try {
+            $this->pdf->LoadFont($this->ctx->font ?: 'helvetica', $this->ctx->fontBold);
+        } finally {
+            restore_error_handler();
+        }
     }
 
     /** Genera il PDF e lo ritorna come stringa (senza emettere header). */
@@ -131,6 +171,7 @@ abstract class ImmobileDocument
         unset($row['synced_at']);
 
         return md5(serialize([
+            'renderer'  => self::CACHE_VERSION,
             'immobile' => $presented,
             'row'      => $row,
             'branding' => [

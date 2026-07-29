@@ -55,7 +55,7 @@ Immobili::layout('main');
 <?php if (!empty($geojson)) { ?>
 <section>
     <div class="content">
-        <?php Immobili::component('map', ['features' => $geojson]); ?>
+        <?php Immobili::component('map', [ 'features' => $geojson, 'markerMode' => 'icon' ]); ?>
     </div>
 </section>
 <?php } ?>

@@ -308,6 +308,73 @@ $assert(($manualDetails['ascensore'] ?? '') === 'Sì', 'manuale: ascensore boole
 $assert(($manualDetails['classe_immobile'] ?? '') === 'Signorile', 'manuale: classe da tipo_costruzione_id');
 $assert(($manualDetails['stato_immobile'] ?? '') === 'Ottimo', 'manuale: stato da stato_costruzione_id');
 
+echo "PDF con font personalizzati\n";
+$GLOBALS['ROOT_APP'] = dirname(__DIR__).'/vendor/wonder-image/app/app';
+$pdfContext = new \Wonder\Plugin\Immobili\Pdf\PdfContext(
+    new \Wonder\Plugin\Immobili\Pdf\Support\Color(31, 111, 235),
+    new \Wonder\Plugin\Immobili\Pdf\Support\Color(11, 61, 145),
+    'Montserrat-Regular',
+    'Montserrat-Bold',
+    '',
+    new \Wonder\Plugin\Immobili\Pdf\Contacts(
+        'Agenzia Test',
+        '+39 02 123456',
+        'info@example.test',
+        'example.test',
+        'Via Roma 1, Milano'
+    ),
+);
+$pdfImmobile = (object) [
+    'id'            => 1,
+    'slug'          => 'test',
+    'titolo'        => 'Appartamento | Via Roma 10, Milano',
+    'prettyName'    => 'Appartamento in centro',
+    'prettyAddress' => 'Via Roma 10, Milano',
+    'contratto'     => 'Vendita',
+    'prezzo'        => '€ 250.000',
+    'descrizione'   => 'Appartamento luminoso.',
+    'images'        => [],
+];
+$pdfRow = [
+    'id'           => 1,
+    'slug'         => 'test',
+    'nome'         => 'RIF-001',
+    'contratto_id' => 'V',
+    'prezzo'       => 250000,
+];
+
+ob_start();
+$pdfBytes = (new \Wonder\Plugin\Immobili\Pdf\Document\SchedaImmobile(
+    $pdfImmobile,
+    $pdfRow,
+    $pdfContext,
+    \Wonder\Plugin\Immobili\Pdf\PdfConfig::defaults()['scheda'],
+))->build();
+$pdfNoise = ob_get_clean();
+
+$assert($pdfNoise === '', 'il caricamento dei font non stampa avvisi prima del PDF');
+$assert(str_starts_with($pdfBytes, '%PDF-'), 'lo stream inizia direttamente con la firma PDF');
+$assert(
+    \Wonder\Plugin\Immobili\Pdf\Support\PdfText::plain('All&#8217;esterno') === 'All’esterno',
+    'le entità HTML editoriali diventano testo leggibile'
+);
+
+$GLOBALS['ROOT'] = dirname(__DIR__);
+$resolvedPdfFile = \Wonder\Plugin\Immobili\Pdf\Support\ImageFitter::resolve('https://example.test/composer.json');
+$assert(
+    realpath($resolvedPdfFile) === realpath(dirname(__DIR__).'/composer.json'),
+    'gli URL locali sono risolti sul filesystem'
+);
+
+echo "Route cartello vetrina venduto\n";
+$pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
+$soldRoute = current(array_filter(
+    $pdfRoutes,
+    static fn (array $route): bool => ($route['name'] ?? '') === 'immobile.cartello.vetrina.venduto'
+));
+$assert(is_array($soldRoute) && is_file((string) ($soldRoute['handler'] ?? '')), 'la route usa un handler esistente');
+$assert(($soldRoute['sold'] ?? false) === true, 'la route forza la variante venduto senza query nel path');
+
 echo "\n";
 echo $failures === 0
     ? "OK — {$total} asserzioni passate\n"

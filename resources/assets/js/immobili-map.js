@@ -1,231 +1,318 @@
 /**
- * Mappa immobili — inizializzazione Google Maps dal GeoJSON del modulo.
+ * Adapter dei marker immobili per Wonder\Elements\Media\GoogleMap.
  *
- * Uso (dal componente view/components/map.php):
- *
- *     initMap('immobili-google-maps', GEO_JSON, { zoom: 15 });
- *
- * Il contenitore deve esporre `data-api-key` (obbligatorio, chiave Google
- * Maps JS API) ed eventualmente `data-map-id` (Map ID vettoriale, default
- * DEMO_MAP_ID) e `data-zoom`. L'API viene caricata dinamicamente una sola
- * volta; senza chiave la mappa non viene inizializzata e il contenitore
- * resta vuoto (warning in console).
- *
- * Ogni feature è un Point GeoJSON con properties { id, name, price,
- * surface, url, cover } (vedi ImmobilePresenter::geoJson()).
+ * Il ciclo di vita Google Maps è centralizzato dall'Element nell'API
+ * window.WonderMaps, che inizializza MapManager (e, per i percorsi,
+ * MapNavigator). Qui resta soltanto il markup specifico del dominio.
  */
 
-(function () {
+(function (root) {
     'use strict';
 
-    var pending = [];
-    var apiState = 'idle'; // idle | loading | ready | failed
+    var categoryIconRules = [
+        {
+            keywords: ['box', 'garage', 'autorimessa', 'posto auto', 'parking'],
+            icon: 'bi-car-front',
+        },
+        {
+            keywords: ['terreno', 'agricolo', 'lotto', 'land'],
+            icon: 'bi-tree',
+        },
+        {
+            keywords: [
+                'capannone',
+                'magazzino',
+                'deposito',
+                'laboratorio',
+                'industriale',
+                'warehouse',
+                'factory',
+            ],
+            icon: 'bi-box-seam',
+        },
+        {
+            keywords: ['negozio', 'commerciale', 'showroom', 'retail', 'shop'],
+            icon: 'bi-shop',
+        },
+        {
+            keywords: ['ufficio', 'studio professionale', 'office'],
+            icon: 'bi-briefcase',
+        },
+        {
+            keywords: [
+                'villa',
+                'villetta',
+                'villino',
+                'casa',
+                'casale',
+                'rustico',
+                'chalet',
+                'house',
+            ],
+            icon: 'bi-house-door',
+        },
+        {
+            keywords: [
+                'appartamento',
+                'attico',
+                'loft',
+                'mansarda',
+                'monolocale',
+                'bilocale',
+                'trilocale',
+                'quadrilocale',
+                'penthouse',
+                'apartment',
+            ],
+            icon: 'bi-building',
+        },
+        {
+            keywords: ['hotel', 'albergo', 'residence', 'bed and breakfast'],
+            icon: 'bi-buildings',
+        },
+    ];
 
-    function parseGeoJson(geoJson) {
-        if (typeof geoJson === 'string') {
-            try {
-                geoJson = JSON.parse(geoJson);
-            } catch (error) {
-                return [];
+    var allowedMarkerIcons = categoryIconRules
+        .map(function (rule) {
+            return rule.icon;
+        })
+        .concat(['bi-building']);
+
+    function safeUrl(value) {
+        var candidate = String(value || '').trim();
+
+        if (candidate === '') {
+            return '';
+        }
+
+        try {
+            var url = new URL(candidate, document.baseURI);
+
+            return url.protocol === 'http:' || url.protocol === 'https:'
+                ? url.href
+                : '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function text(value) {
+        return value === undefined || value === null
+            ? ''
+            : String(value).trim();
+    }
+
+    function markerVariant(value) {
+        var variant = text(value).toLowerCase();
+
+        return ['default', 'featured', 'rent', 'sold'].indexOf(variant) !== -1
+            ? variant
+            : 'default';
+    }
+
+    function markerMode(value) {
+        var mode = text(value)
+            .toLowerCase()
+            .replace(/[_+\s]+/g, '-');
+
+        return mode === 'icon' ? 'icon' : 'icon-price';
+    }
+
+    function normalizedCategory(value) {
+        var category = text(value).toLowerCase();
+
+        if (typeof category.normalize === 'function') {
+            category = category.normalize('NFD');
+        }
+
+        return category
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
+    }
+
+    function categoryIcon(properties) {
+        var explicitIcon = text(properties.markerIcon).toLowerCase();
+
+        if (explicitIcon !== '' && explicitIcon.indexOf('bi-') !== 0) {
+            explicitIcon = 'bi-' + explicitIcon;
+        }
+
+        if (allowedMarkerIcons.indexOf(explicitIcon) !== -1) {
+            return explicitIcon;
+        }
+
+        var category = normalizedCategory(properties.category);
+
+        for (var i = 0; i < categoryIconRules.length; i += 1) {
+            var rule = categoryIconRules[i];
+            var matches = rule.keywords.some(function (keyword) {
+                return category.indexOf(keyword) !== -1;
+            });
+
+            if (matches) {
+                return rule.icon;
             }
         }
 
-        if (!geoJson || typeof geoJson !== 'object') {
-            return [];
-        }
-
-        var features = Array.isArray(geoJson.features) ? geoJson.features : [geoJson];
-
-        return features.filter(function (feature) {
-            var coords = feature
-                && feature.geometry
-                && feature.geometry.type === 'Point'
-                && feature.geometry.coordinates;
-
-            return Array.isArray(coords)
-                && isFinite(coords[0])
-                && isFinite(coords[1]);
-        });
+        return 'bi-building';
     }
 
-    function loadApi(apiKey) {
-        if (apiState === 'ready' || (window.google && window.google.maps)) {
-            apiState = 'ready';
-            flush();
-            return;
-        }
-
-        if (apiState === 'loading') {
-            return;
-        }
-
-        apiState = 'loading';
-
-        window.__immobiliMapsReady = function () {
-            apiState = 'ready';
-            flush();
-        };
-
-        var script = document.createElement('script');
-        script.src = 'https://maps.googleapis.com/maps/api/js'
-            + '?key=' + encodeURIComponent(apiKey)
-            + '&v=weekly&libraries=marker&loading=async'
-            + '&callback=__immobiliMapsReady';
-        script.async = true;
-        script.onerror = function () {
-            apiState = 'failed';
-            console.warn('[immobili] Caricamento Google Maps JS API fallito.');
-            pending = [];
-        };
-
-        document.head.appendChild(script);
-    }
-
-    function flush() {
-        var queue = pending;
-        pending = [];
-        queue.forEach(render);
+    function appendIcon(element, iconName) {
+        var icon = document.createElement('i');
+        icon.className = 'bi ' + iconName;
+        icon.setAttribute('aria-hidden', 'true');
+        element.appendChild(icon);
     }
 
     function markerContent(properties) {
-        var content = document.createElement('div');
-        content.className = 'property';
+        properties = properties && typeof properties === 'object'
+            ? properties
+            : {};
 
-        var icon = document.createElement('div');
-        icon.className = 'icon';
-        icon.innerHTML = '<i class="bi bi-house-door"></i>';
-        content.appendChild(icon);
+        var nameText = text(properties.name) || 'Immobile';
+        var priceText = text(properties.price);
+        var surfaceText = text(properties.surface);
+        var variant = markerVariant(properties.variant);
+        var variantLabel = text(properties.variantLabel);
+        var requestedMode = markerMode(properties.markerMode);
+        var compactMode = requestedMode === 'icon-price' && priceText !== ''
+            ? 'icon-price'
+            : 'icon';
+        var iconName = categoryIcon(properties);
+
+        var content = document.createElement('div');
+        content.classList.add('wi-marker', 'property');
+        content.classList.add('property--' + variant);
+        content.classList.add('property--mode-' + compactMode);
+        content.setAttribute('aria-expanded', 'false');
+        content.setAttribute('aria-label', nameText);
+        content.dataset.markerMode = requestedMode;
+        content.dataset.markerIcon = iconName;
+
+        if (properties.id !== undefined && properties.id !== null) {
+            content.dataset.propertyId = String(properties.id).replace(/[^A-Za-z0-9_-]/g, '');
+        }
+
+        var compact = document.createElement('div');
+        compact.className = 'property__compact';
+
+        var icon = document.createElement('span');
+        icon.className = 'property__compact-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        appendIcon(icon, iconName);
+        compact.appendChild(icon);
+
+        if (compactMode === 'icon-price') {
+            var compactLabel = document.createElement('span');
+            compactLabel.className = 'property__compact-label';
+            compactLabel.textContent = priceText;
+            compact.appendChild(compactLabel);
+        }
+
+        content.appendChild(compact);
+
+        var card = document.createElement('article');
+        card.className = 'property__card';
+
+        var media = document.createElement('div');
+        media.className = 'property__media';
+
+        var cover = safeUrl(properties.cover);
+        if (cover !== '') {
+            var image = document.createElement('img');
+            image.className = 'property__image';
+            image.src = cover;
+            image.alt = '';
+            image.loading = 'lazy';
+            image.decoding = 'async';
+            image.addEventListener('error', function () {
+                image.remove();
+                media.classList.add('property__media--fallback');
+            }, { once: true });
+            media.appendChild(image);
+        } else {
+            media.classList.add('property__media--fallback');
+        }
+
+        var mediaFallback = document.createElement('span');
+        mediaFallback.className = 'property__media-fallback';
+        mediaFallback.setAttribute('aria-hidden', 'true');
+        appendIcon(mediaFallback, iconName);
+        media.appendChild(mediaFallback);
+        card.appendChild(media);
 
         var details = document.createElement('div');
-        details.className = 'details';
+        details.className = 'property__details';
 
-        var name = document.createElement('a');
-        name.className = 'name';
-        name.textContent = String(properties.name || '');
-        if (properties.url) {
-            name.href = String(properties.url);
+        if (variantLabel !== '') {
+            var eyebrow = document.createElement('span');
+            eyebrow.className = 'property__eyebrow';
+            eyebrow.textContent = variantLabel;
+            details.appendChild(eyebrow);
         }
+
+        var href = safeUrl(properties.url);
+        var name = document.createElement(href !== '' ? 'a' : 'div');
+        name.className = 'property__name';
+        name.textContent = nameText;
+
+        if (href !== '') {
+            name.href = href;
+            name.setAttribute('aria-label', 'Apri la scheda di ' + nameText);
+            name.addEventListener('click', function (event) {
+                event.stopPropagation();
+            });
+        }
+
         details.appendChild(name);
 
-        var features = document.createElement('div');
-        features.className = 'features';
+        var facts = document.createElement('div');
+        facts.className = 'property__facts';
 
-        [properties.price, properties.surface].forEach(function (value) {
-            if (!value) {
-                return;
-            }
-            var span = document.createElement('span');
-            span.textContent = String(value);
-            features.appendChild(span);
-        });
+        if (priceText !== '') {
+            var price = document.createElement('strong');
+            price.className = 'property__price';
+            price.textContent = priceText;
+            facts.appendChild(price);
+        }
 
-        details.appendChild(features);
-        content.appendChild(details);
+        if (surfaceText !== '') {
+            var surface = document.createElement('span');
+            surface.className = 'property__surface';
+            appendIcon(surface, 'bi-arrows-fullscreen');
+
+            var surfaceLabel = document.createElement('span');
+            surfaceLabel.textContent = surfaceText;
+            surface.appendChild(surfaceLabel);
+            facts.appendChild(surface);
+        }
+
+        details.appendChild(facts);
+        card.appendChild(details);
+        content.appendChild(card);
+
+        function syncExpandedState() {
+            var expanded = content.classList.contains('highlight');
+            content.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            compact.setAttribute('aria-hidden', expanded ? 'true' : 'false');
+            card.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+        }
+
+        syncExpandedState();
+
+        if (typeof MutationObserver === 'function') {
+            var observer = new MutationObserver(syncExpandedState);
+            observer.observe(content, {
+                attributes: true,
+                attributeFilter: ['class'],
+            });
+        }
 
         return content;
     }
 
-    function render(job) {
-        var element = job.element;
-        var features = job.features;
-        var maps = window.google.maps;
-
-        maps.importLibrary('marker').then(function (markerLib) {
-            var bounds = new maps.LatLngBounds();
-
-            features.forEach(function (feature) {
-                var coords = feature.geometry.coordinates;
-                bounds.extend({ lat: Number(coords[1]), lng: Number(coords[0]) });
-            });
-
-            var map = new maps.Map(element, {
-                center: bounds.getCenter(),
-                zoom: job.zoom,
-                mapId: job.gmapId,
-                clickableIcons: false,
-                mapTypeControl: false,
-                streetViewControl: false,
-            });
-
-            var markers = [];
-
-            features.forEach(function (feature) {
-                var coords = feature.geometry.coordinates;
-                var properties = feature.properties || {};
-                var content = markerContent(properties);
-
-                var marker = new markerLib.AdvancedMarkerElement({
-                    map: map,
-                    position: { lat: Number(coords[1]), lng: Number(coords[0]) },
-                    content: content,
-                    title: String(properties.name || ''),
-                    gmpClickable: true,
-                });
-
-                marker.addListener('click', function () {
-                    var active = content.classList.contains('highlight');
-
-                    markers.forEach(function (other) {
-                        other.content.classList.remove('highlight');
-                        other.zIndex = null;
-                    });
-
-                    if (!active) {
-                        content.classList.add('highlight');
-                        marker.zIndex = 1;
-                    }
-                });
-
-                markers.push(marker);
-            });
-
-            if (features.length > 1) {
-                map.fitBounds(bounds);
-            }
-
-            maps.event.addListenerOnce(map, 'tilesloaded', function () {
-                element.classList.remove('skeleton');
-            });
-        });
-    }
-
-    window.initMap = function (mapId, geoJson, options) {
-        options = options || {};
-
-        var element = document.getElementById(mapId);
-
-        if (!element || element.dataset.immobiliMap === 'done') {
-            return;
-        }
-
-        var features = parseGeoJson(geoJson);
-
-        if (features.length === 0) {
-            element.classList.remove('skeleton');
-            return;
-        }
-
-        var apiKey = String(options.apiKey || element.dataset.apiKey || '');
-
-        if (apiKey === '') {
-            console.warn('[immobili] Google Maps API key mancante: configura google_maps_api_key nel config del modulo.');
-            element.classList.remove('skeleton');
-            return;
-        }
-
-        element.dataset.immobiliMap = 'done';
-
-        pending.push({
-            element: element,
-            features: features,
-            zoom: parseInt(options.zoom || element.dataset.zoom, 10) || 15,
-            gmapId: String(options.gmapId || element.dataset.mapId || 'DEMO_MAP_ID'),
-        });
-
-        if (apiState === 'ready') {
-            flush();
-        } else {
-            loadApi(apiKey);
-        }
-    };
-})();
+    var api = root.ImmobiliMaps || {};
+    api.markerContent = markerContent;
+    root.ImmobiliMaps = api;
+})(window);

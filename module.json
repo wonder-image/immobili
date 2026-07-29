@@ -1,7 +1,7 @@
 {
     "name": "Wonder Immobili",
     "slug": "immobili",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "Modulo immobiliare con frontend, backend e API per wonder-image/app, pronto per wonder-image/new-site. Collega uno o più feed da gestionali immobiliari (Getrix, Gestim, …), bilingua it/en.",
     "namespace": "Wonder\\Plugin\\Immobili\\",
     "entrypoint": "Wonder\\Plugin\\Immobili\\Immobili",

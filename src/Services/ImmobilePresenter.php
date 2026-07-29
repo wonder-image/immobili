@@ -773,14 +773,50 @@ final class ImmobilePresenter
                 'coordinates' => [$lng, $lat],
             ],
             'properties' => [
-                'id'      => $data['id'],
-                'name'    => $data['prettyName'],
-                'price'   => $data['prezzo'],
-                'surface' => $data['superficie'],
-                'url'     => $data['url'],
-                'cover'   => $data['cover'] ?? '',
+                'id'           => $data['id'],
+                'name'         => $data['prettyName'],
+                'price'        => $data['prettyPrezzo'],
+                'surface'      => $data['prettySuperficie'],
+                'url'          => $data['url'],
+                'cover'        => $data['cover'] ?? '',
+                'category'     => (string) ($data['tipologia'] ?? ''),
+                'variant'      => $this->markerVariant($data),
+                'variantLabel' => $this->markerVariantLabel($data),
             ],
         ];
+    }
+
+    /**
+     * Variante visuale sicura del marker della mappa.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function markerVariant(array $data): string
+    {
+        if (!empty($data['sold'])) {
+            return 'sold';
+        }
+
+        if (!empty($data['evidence'])) {
+            return 'featured';
+        }
+
+        return ($data['contratto'] ?? '') === 'Affitto' ? 'rent' : 'default';
+    }
+
+    /**
+     * Etichetta breve mostrata nella scheda espansa del marker.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function markerVariantLabel(array $data): string
+    {
+        return match ($this->markerVariant($data)) {
+            'sold' => 'Venduto',
+            'featured' => 'In evidenza',
+            'rent' => 'Affitto',
+            default => 'Vendita',
+        };
     }
 
     /**

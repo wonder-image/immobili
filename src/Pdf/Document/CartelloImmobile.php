@@ -57,7 +57,7 @@ final class CartelloImmobile extends ImmobileDocument
         $this->pdf->SetFillColor(255, 255, 255);
         $this->pdf->Rect(15, 95, 267, 62, 'F');
 
-        $prezzo = (string) ($this->immobile->prezzo ?? '');
+        $prezzo = (string) ($this->immobile->prettyPrezzo ?? ($this->immobile->prezzo ?? ''));
         if ($prezzo !== '') {
             $this->text($this->ctx->primary);
             $this->pdf->FontBold(34);
@@ -65,7 +65,8 @@ final class CartelloImmobile extends ImmobileDocument
             $this->pdf->MultiCell(267, 16, $this->t($prezzo), 0, 'C', false);
         }
 
-        $breve = (string) ($this->immobile->descrizione_breve ?? ($this->immobile->prettyName ?? ''));
+        $breve = trim((string) ($this->immobile->descrizione_breve ?? ''))
+            ?: (string) ($this->immobile->prettyName ?? '');
         if ($breve !== '') {
             $this->text(new \Wonder\Plugin\Immobili\Pdf\Support\Color(30, 30, 30));
             $this->pdf->Font(16);

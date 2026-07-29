@@ -108,7 +108,7 @@ Immobili::layout('main');
                 <?php } ?>
 
                 <div class="mt-6">
-                    <a class="btn btn-primary" href="<?= e($immobile->url_scheda) ?>">
+                    <a class="btn btn-primary" href="<?= e($immobile->url_scheda) ?>" target="_blank" rel="noopener noreferrer">
                         <i class="bi bi-file-earmark-pdf"></i> <?= e(__t('pages.immobili.detail.pdf')) ?>
                     </a>
                 </div>
@@ -161,7 +161,9 @@ Immobili::layout('main');
 <section class="pt-0">
     <div class="content">
 
-        <?php Immobili::component('map', [ 'features' => [ $immobile->geo_json ], 'zoom' => 15 ]); ?>
+        <div class="f-3-1">
+            <?php Immobili::component('map', [ 'features' => [ $immobile->geo_json ], 'zoom' => 15 ]); ?>
+        </div>
 
     </div>
 </section>

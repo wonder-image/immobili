@@ -15,6 +15,63 @@ namespace Wonder\Plugin\Immobili\Pdf\Support;
 final class ImageFitter
 {
     /**
+     * Risolve una sorgente immagine in un file locale leggibile da FPDF.
+     *
+     * Il presenter espone URL pubblici (per esempio
+     * https://site.test/assets/upload/immobili/...), mentre FPDF e
+     * getimagesize() lavorano in modo affidabile sul filesystem. La conversione
+     * usa prima la coppia PATH->upload/PATH->rUpload e poi la document root.
+     */
+    public static function resolve(string $source): string
+    {
+        $source = trim($source);
+
+        if ($source === '') {
+            return '';
+        }
+
+        if (is_file($source)) {
+            return $source;
+        }
+
+        $urlPath = parse_url($source, PHP_URL_PATH);
+        if (!is_string($urlPath) || $urlPath === '') {
+            return '';
+        }
+
+        $urlPath = rawurldecode($urlPath);
+        $candidates = [];
+        $path = $GLOBALS['PATH'] ?? null;
+
+        if (is_object($path)) {
+            $uploadUrlPath = parse_url((string) ($path->upload ?? ''), PHP_URL_PATH);
+            $uploadRoot = rtrim((string) ($path->rUpload ?? ''), '/');
+
+            if (
+                is_string($uploadUrlPath) && $uploadUrlPath !== ''
+                && $uploadRoot !== ''
+                && ($urlPath === $uploadUrlPath || str_starts_with($urlPath, rtrim($uploadUrlPath, '/').'/'))
+            ) {
+                $relative = ltrim(substr($urlPath, strlen(rtrim($uploadUrlPath, '/'))), '/');
+                $candidates[] = $uploadRoot.($relative !== '' ? '/'.$relative : '');
+            }
+        }
+
+        $root = rtrim((string) ($GLOBALS['ROOT'] ?? ''), '/');
+        if ($root !== '') {
+            $candidates[] = $root.'/'.ltrim($urlPath, '/');
+        }
+
+        foreach (array_unique($candidates) as $candidate) {
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    /**
      * Dimensioni di un'immagine `srcW × srcH` scalata per stare dentro
      * `maxW × maxH` (tocca almeno un lato). Ritorna 0 se la sorgente è degenere.
      *

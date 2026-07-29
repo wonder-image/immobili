@@ -1,113 +1,272 @@
 /**
- * Mappa immobili — stile dei marker (Google Maps AdvancedMarkerElement).
+ * Mappa immobili, marker compatto ed espanso.
  *
- * Tutte le regole sono scopate su `.immobili-map` (la classe del contenitore
- * renderizzato da view/components/map.php) per non inquinare il resto della
- * pagina. Un sito può sovrascrivere questo file pubblicandolo con
- * `php forge publish:module immobili --assets`.
+ * I token `--immobili-marker-*` sono intenzionalmente pubblici: un sito può
+ * personalizzarli dopo `php forge publish:module immobili --assets`.
  */
 
+.immobili-map {
+    --immobili-marker-accent: var(--primary-color, oklch(0.48 0.12 207));
+    --immobili-marker-featured: var(--warning-color, oklch(0.65 0.14 72));
+    --immobili-marker-rent: var(--info-color, oklch(0.55 0.11 232));
+    --immobili-marker-sold: var(--secondary-color, oklch(0.43 0.025 235));
+    --immobili-marker-surface: oklch(0.985 0.006 90);
+    --immobili-marker-ink: oklch(0.24 0.018 235);
+    --immobili-marker-muted: oklch(0.52 0.018 235);
+    --immobili-marker-border: oklch(0.88 0.012 235);
+}
+
 .immobili-map .property {
-    align-items: center;
-    background-color: #FFFFFF;
-    border-radius: 50%;
-    color: #263238;
+    --marker-accent: var(--immobili-marker-accent);
+
+    color: var(--immobili-marker-ink);
     cursor: pointer;
-    display: flex;
     font-size: 14px;
-    gap: 15px;
-    height: 30px;
-    justify-content: center;
-    padding: 4px;
+    isolation: isolate;
     position: relative;
-    transition: all 0.3s ease-out;
-    width: 30px;
+    transform: translateY(0);
+    transition:
+        filter 160ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.immobili-map .property:hover {
+    filter: brightness(1.04);
+    transform: translateY(-2px);
 }
 
 .immobili-map .property::after {
-    border-left: 9px solid transparent;
-    border-right: 9px solid transparent;
-    border-top: 9px solid #FFFFFF;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 8px solid var(--marker-accent);
     content: "";
     height: 0;
     left: 50%;
     position: absolute;
-    top: 95%;
-    transform: translate(-50%, 0);
-    transition: all 0.3s ease-out;
+    top: calc(100% - 1px);
+    transform: translateX(-50%);
     width: 0;
-    z-index: 1;
+    z-index: -1;
 }
 
-.immobili-map .property .icon {
+.immobili-map .property--featured {
+    --marker-accent: var(--immobili-marker-featured);
+}
+
+.immobili-map .property--rent {
+    --marker-accent: var(--immobili-marker-rent);
+}
+
+.immobili-map .property--sold {
+    --marker-accent: var(--immobili-marker-sold);
+}
+
+.immobili-map .property__compact {
     align-items: center;
-    color: var(--primary-color, #263238);
+    background: var(--marker-accent);
+    border: 1px solid color-mix(
+        in oklab,
+        var(--marker-accent),
+        var(--immobili-marker-surface) 24%
+    );
+    border-radius: 999px;
+    box-shadow:
+        0 2px 5px color-mix(in oklab, var(--immobili-marker-ink), transparent 78%),
+        0 8px 18px color-mix(in oklab, var(--immobili-marker-ink), transparent 84%);
+    box-sizing: border-box;
+    color: oklch(0.985 0.006 90);
     display: flex;
+    min-height: 40px;
+    padding: 4px 12px 4px 4px;
+}
+
+.immobili-map .property__compact-icon {
+    align-items: center;
+    background: color-mix(in oklab, var(--immobili-marker-surface), transparent 5%);
+    border-radius: 50%;
+    color: var(--marker-accent);
+    display: inline-flex;
+    flex: 0 0 30px;
+    height: 30px;
     justify-content: center;
+    width: 30px;
 }
 
-.immobili-map .property .icon i {
-    font-size: 15px;
+.immobili-map .property--mode-icon .property__compact {
+    justify-content: center;
+    padding: 4px;
+    width: 40px;
 }
 
-.immobili-map .property .details {
-    display: none;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-}
-
-.immobili-map .property .details .name {
-    color: inherit;
-    font-weight: 600;
+.immobili-map .property__compact-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    margin-left: 8px;
+    max-width: 150px;
     overflow: hidden;
-    text-decoration: none;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.immobili-map .property .details .name:hover {
-    text-decoration: underline;
+.immobili-map .property__card {
+    background: var(--immobili-marker-surface);
+    border: 1px solid var(--immobili-marker-border);
+    border-radius: 14px;
+    box-shadow:
+        0 4px 10px color-mix(in oklab, var(--immobili-marker-ink), transparent 88%),
+        0 18px 36px color-mix(in oklab, var(--immobili-marker-ink), transparent 75%);
+    display: none;
+    grid-template-columns: 84px minmax(0, 1fr);
+    min-height: 96px;
+    overflow: hidden;
+    width: clamp(250px, 76vw, 316px);
 }
 
-.immobili-map .property .features {
-    align-items: flex-end;
+.immobili-map .property__media {
+    background:
+        linear-gradient(
+            145deg,
+            color-mix(in oklab, var(--marker-accent), var(--immobili-marker-surface) 76%),
+            color-mix(in oklab, var(--marker-accent), var(--immobili-marker-surface) 90%)
+        );
+    min-height: 96px;
+    overflow: hidden;
+    position: relative;
+}
+
+.immobili-map .property__image {
+    height: 100%;
+    inset: 0;
+    object-fit: cover;
+    position: absolute;
+    width: 100%;
+}
+
+.immobili-map .property__media-fallback {
+    align-items: center;
+    color: var(--marker-accent);
+    display: none;
+    font-size: 24px;
+    height: 100%;
+    justify-content: center;
+    min-height: 96px;
+}
+
+.immobili-map .property__media--fallback .property__media-fallback {
     display: flex;
-    flex-direction: row;
-    gap: var(--spacer, 8px);
+}
+
+.immobili-map .property__details {
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 10px 12px;
+}
+
+.immobili-map .property__eyebrow {
+    color: var(--marker-accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.immobili-map .property__name {
+    color: var(--immobili-marker-ink);
+    display: -webkit-box;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    overflow: hidden;
+    text-decoration: none;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.immobili-map .property__name:hover {
+    color: var(--marker-accent);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.immobili-map .property__name:focus-visible {
+    border-radius: 3px;
+    outline: 2px solid var(--marker-accent);
+    outline-offset: 3px;
+}
+
+.immobili-map .property__facts {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin-top: 8px;
+}
+
+.immobili-map .property__price {
+    color: var(--immobili-marker-ink);
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.immobili-map .property__surface {
+    align-items: center;
+    color: var(--immobili-marker-muted);
+    display: inline-flex;
+    font-size: 11px;
+    gap: 4px;
+    line-height: 1.2;
     white-space: nowrap;
 }
 
 .immobili-map .property.highlight {
-    background-color: #FFFFFF;
-    border-radius: 8px;
-    box-shadow: 10px 10px 5px rgba(0, 0, 0, 0.2);
-    height: 90px;
-    padding: 8px 15px;
-    width: 290px;
+    cursor: default;
+    filter: none;
+    transform: translateY(-3px);
     z-index: 2;
 }
 
 .immobili-map .property.highlight::after {
-    border-top: 9px solid #FFFFFF;
+    border-top-color: var(--immobili-marker-surface);
 }
 
-.immobili-map .property.highlight .details {
-    display: flex;
+.immobili-map .property.highlight .property__compact {
+    display: none;
 }
 
-.immobili-map .property.highlight .icon i {
-    font-size: 20px;
+.immobili-map .property.highlight .property__card {
+    display: grid;
 }
 
-.immobili-map .property:not(.highlight) {
-    background-color: var(--primary-color, #FFFFFF);
+.immobili-map .gm-style-iw .property {
+    cursor: default;
+    transform: none;
 }
 
-.immobili-map .property:not(.highlight) .icon {
-    color: #FFFFFF;
+.immobili-map .gm-style-iw .property::after {
+    display: none;
 }
 
-.immobili-map .property:not(.highlight)::after {
-    border-top: 9px solid var(--primary-color, #FFFFFF);
+.immobili-map .gm-style-iw .property__card {
+    border: 0;
+    box-shadow: none;
+}
+
+@media (max-width: 575.98px) {
+    .immobili-map .property__card {
+        grid-template-columns: 72px minmax(0, 1fr);
+        width: min(276px, calc(100vw - 64px));
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .immobili-map .property {
+        transition: none;
+    }
 }

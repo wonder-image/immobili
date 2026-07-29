@@ -18,10 +18,11 @@ if (class_exists(ProviderRegistry::class)) {
 return [
     'default_locale_fallback' => 'it',
 
-    // Google Maps JS API (componente view/components/map.php). Il sito imposta
-    // la chiave in custom/config/modules/immobili.php; senza chiave la mappa
-    // non viene inizializzata. `google_maps_map_id` è il Map ID vettoriale
-    // (console Google Cloud), default DEMO_MAP_ID lato js.
+    // Fallback legacy per Google Maps. Le credenziali framework
+    // GCP_CLIENT_API_KEY / G_MAPS_MAP_ID hanno la precedenza.
     'google_maps_api_key' => '',
     'google_maps_map_id' => '',
+
+    // Aspetto compatto del marker: `icon` oppure `icon-price`.
+    'map_marker_mode' => 'icon-price',
 ];

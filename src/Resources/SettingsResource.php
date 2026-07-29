@@ -63,17 +63,21 @@ final class SettingsResource extends SingletonResource
             FormField::key('pdf_font')->select($fonts),
             FormField::key('pdf_font_bold')->select($fonts),
 
-            // Liste ordinabili di attributi (righe [{key: <attributo>}]).
+            // Liste ordinabili di attributi (righe [{key: <attributo>}]). `nested()`
+            // è indispensabile: senza, i campi si chiamerebbero `key[]` e non
+            // finirebbero in `$_POST['pdf_facts']` (il valore non verrebbe salvato).
             FormField::key('pdf_facts')
                 ->repeater([RepeaterColumn::key('key')->select($catalog)->label('Attributo')->columnSpan(12)])
                 ->repeaterSortable(true)
                 ->repeaterAddLabel('Aggiungi dato')
+                ->nested()
                 ->label(false),
 
             FormField::key('scheda_facts')
                 ->repeater([RepeaterColumn::key('key')->select($catalog)->label('Attributo')->columnSpan(12)])
                 ->repeaterSortable(true)
-                ->repeaterAddLabel('Aggiungi dato'),
+                ->repeaterAddLabel('Aggiungi dato')
+                ->nested(),
         ];
     }
 
