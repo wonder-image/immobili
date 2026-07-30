@@ -182,7 +182,7 @@
         var iconName = categoryIcon(properties);
 
         var content = document.createElement('div');
-        content.classList.add('wi-marker', 'property');
+        content.classList.add('property');
         content.classList.add('property--' + variant);
         content.classList.add('property--mode-' + compactMode);
         content.setAttribute('aria-expanded', 'false');
