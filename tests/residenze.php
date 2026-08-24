@@ -245,8 +245,8 @@ $assert(
     'relazioni: '.implode(', ', $residenzaRelations)
 );
 $assert(
-    ResidenzaResource::stripRelationInputValues(['nome' => 'X', 'images' => [['id' => '1']]]) === ['nome' => 'X'],
-    'stripRelationInputValues rimuove la relazione images dal payload tabella'
+    ResidenzaResource::stripRelationInputValues(['nome' => 'X', 'images' => [['id' => '1']], 'immobili_collegati' => ['3']]) === ['nome' => 'X'],
+    'stripRelationInputValues rimuove images e il campo virtuale immobili_collegati'
 );
 
 echo "ResidenzaResource::deriveStato / normalizeFeatures / sanitizeUrl\n";
@@ -266,7 +266,7 @@ echo "ResidenzaResource::linkedImmobiliDiff\n";
 $diff = ResidenzaResource::linkedImmobiliDiff(['3', '4', '4'], ['4', '5']);
 $assert(
     $diff['attach'] === [3, 4] && $diff['detach'] === [5],
-    'linkedImmobiliDiff calcola attach (nuovi) e detach (rimossi) come interi unici',
+    'linkedImmobiliDiff: attach = selezione completa (idempotente), detach = rimossi; interi unici',
     'attach: '.implode(',', $diff['attach']).' detach: '.implode(',', $diff['detach'])
 );
 

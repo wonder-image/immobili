@@ -2,7 +2,6 @@
 
 namespace Wonder\Plugin\Immobili\Resources;
 
-use Wonder\App\LegacyGlobals;
 use Wonder\App\Resource;
 use Wonder\App\ResourceSchema\ApiSchema;
 use Wonder\App\ResourceSchema\FormField;
@@ -303,9 +302,7 @@ final class ResidenzaResource extends Resource
     /** @param array<string, mixed> $row */
     private static function coverCell(array $row): string
     {
-        $cover = (new ResidenzaPresenter())->cover($row);
-
-        return $cover === '' ? '' : '<img src="'.htmlspecialchars($cover, ENT_QUOTES).'" alt="" class="w-100 h-100 object-fit-cover">';
+        return (new ResidenzaPresenter())->cover($row);
     }
 
     /** @param array<string, mixed> $row */
@@ -467,6 +464,19 @@ final class ResidenzaResource extends Resource
                 $values['images']
             ));
         }
+
+        return $values;
+    }
+
+    /**
+     * `immobili_collegati` è un campo virtuale (multiselect): la selezione è
+     * applicata alla FK `immobili.residenza_id` negli hook after*, non è una
+     * colonna di `immobili_residenze` e va esclusa dal payload della tabella.
+     */
+    public static function stripRelationInputValues(array $values): array
+    {
+        $values = parent::stripRelationInputValues($values);
+        unset($values['immobili_collegati']);
 
         return $values;
     }
