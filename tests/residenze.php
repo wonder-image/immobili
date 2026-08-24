@@ -160,6 +160,52 @@ $assert(
     'le classi energetiche riusano il catalogo immobili (A4…G)'
 );
 
+echo "ResidenzaPresenter::timelineLabel\n";
+use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
+$assert(ResidenzaPresenter::timelineLabel(2025, null) === '2025', 'anno senza mese → "2025"');
+$assert(ResidenzaPresenter::timelineLabel(2025, 3) === '03/2025', 'anno+mese → "03/2025"');
+$assert(ResidenzaPresenter::timelineLabel(2025, 0) === '2025', 'mese 0 → solo anno');
+$assert(ResidenzaPresenter::timelineLabel(null, 5) === '', 'anno nullo → stringa vuota');
+$assert(ResidenzaPresenter::timelineLabel(0, 5) === '', 'anno 0 → stringa vuota');
+
+echo "ResidenzaPresenter::stato\n";
+$assert(
+    ResidenzaPresenter::stato(['sold' => 'true'], 2026, 8) === 'venduto',
+    'sold prevale su tutto → venduto'
+);
+$assert(
+    ResidenzaPresenter::stato(['stato' => 'completato', 'sold' => 'false'], 2026, 8) === 'completato',
+    'override manuale valido rispettato'
+);
+$assert(
+    ResidenzaPresenter::stato(['inizio_anno' => '2027', 'fine_anno' => '2028'], 2026, 8) === 'in_arrivo',
+    'oggi prima dell\'inizio → in_arrivo'
+);
+$assert(
+    ResidenzaPresenter::stato(['inizio_anno' => '2025', 'fine_anno' => '2027'], 2026, 8) === 'in_corso',
+    'oggi tra inizio e fine → in_corso'
+);
+$assert(
+    ResidenzaPresenter::stato(['inizio_anno' => '2023', 'fine_anno' => '2024'], 2026, 8) === 'completato',
+    'oggi dopo la fine → completato'
+);
+
+echo "ResidenzaPresenter::imageUrl / imagePreview\n";
+$GLOBALS['PATH'] = (object) ['upload' => 'https://cdn.example.test/uploads'];
+$assert(
+    ResidenzaPresenter::imageUrl('a.jpg') === 'https://cdn.example.test/uploads/immobili/residenze/a.jpg',
+    'imageUrl compone l\'URL upload della cartella residenze'
+);
+$assert(
+    (new ResidenzaPresenter())->imagePreview(['upload' => '["a.jpg"]']) === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
+    'imagePreview costruisce la variante webp -620 dell\'upload manuale'
+);
+$assert(
+    (new ResidenzaPresenter())->imagePreview(['upload' => '']) === '',
+    'imagePreview vuota se non c\'è upload'
+);
+unset($GLOBALS['PATH']);
+
 echo "\n";
 echo $failures === 0
     ? "OK \u{2014} {$assertions} asserzioni passate\n"
