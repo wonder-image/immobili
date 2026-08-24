@@ -150,6 +150,7 @@ final class Immobile extends Model
         'comune_id'         => 'immobili_comuni',
         'quartiere_id'      => 'immobili_quartieri',
         'quartiere_zona_id' => 'immobili_quartieri_zone',
+        'residenza_id'      => 'immobili_residenze',
     ];
 
     public static function tableSchema(): array
@@ -204,6 +205,7 @@ final class Immobile extends Model
             'ind_visible'    => ['index' => 'visible'],
             'ind_sold'       => ['index' => 'sold'],
             'ind_comune'     => ['index' => 'comune_id'],
+            'ind_residenza'  => ['index' => 'residenza_id'],
             'ind_contratto'  => ['index' => 'contratto_id'],
             'ind_tipologia'  => ['index' => 'tipologia_id'],
             'ind_slug'       => ['index' => 'slug'],
@@ -241,6 +243,10 @@ final class Immobile extends Model
             Field::key('categoria_id')->number()->decimals(0),
             Field::key('macrotipologia_id')->number()->decimals(0),
             Field::key('tipologia_id')->number()->decimals(0),
+
+            // Residenza di appartenenza (reparto Residenze). FK a immobili_residenze,
+            // gestita a mano dal backend delle residenze; il sync non la tocca.
+            Field::key('residenza_id')->number()->decimals(0),
 
             // Localizzazione (comune/quartiere/zona = FK intere canoniche)
             Field::key('comune_id')->number()->decimals(0),
