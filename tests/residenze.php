@@ -132,6 +132,34 @@ $assert(
     'Immobile indicizza residenza_id'
 );
 
+echo "ResidenzaForm::features\n";
+$features = \Wonder\Plugin\Immobili\Support\ResidenzaForm::features();
+$expectedFeatureIds = [
+    'ascensore', 'giardino', 'box_auto', 'domotica', 'fotovoltaico',
+    'climatizzazione', 'area_verde', 'videosorveglianza', 'cantina', 'terrazzo',
+];
+$assert(
+    array_keys($features) === $expectedFeatureIds,
+    'il catalogo features espone gli id previsti nell\'ordine dichiarato',
+    'ottenuti: '.implode(', ', array_keys($features))
+);
+$assert(
+    $features['ascensore'] === 'forms.residenze.features.ascensore',
+    'le label delle features passano dalle traduzioni forms.residenze.features.*'
+);
+$assert(
+    \Wonder\Plugin\Immobili\Support\ResidenzaForm::featureIcon('fotovoltaico') !== ''
+        && \Wonder\Plugin\Immobili\Support\ResidenzaForm::featureIcon('inesistente') === '',
+    'ogni feature nota ha un\'icona; le ignote restituiscono stringa vuota'
+);
+
+echo "ResidenzaForm::energyClasses (delega)\n";
+$energy = \Wonder\Plugin\Immobili\Support\ResidenzaForm::energyClasses();
+$assert(
+    isset($energy['A4']) && isset($energy['G']) && ($energy[''] ?? null) === '--',
+    'le classi energetiche riusano il catalogo immobili (A4…G)'
+);
+
 echo "\n";
 echo $failures === 0
     ? "OK \u{2014} {$assertions} asserzioni passate\n"
