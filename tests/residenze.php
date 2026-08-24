@@ -206,6 +206,70 @@ $assert(
 );
 unset($GLOBALS['PATH']);
 
+echo "ResidenzaResource::formSchema\n";
+use Wonder\Plugin\Immobili\Resources\ResidenzaResource;
+
+$residenzaFormFields = ResidenzaResource::formSchema();
+$residenzaFormKeys = array_map(
+    static fn (object $field): string => property_exists($field, 'name') ? (string) $field->name : '',
+    $residenzaFormFields
+);
+$expectedResidenzaFields = [
+    'nome', 'sito_url',
+    'inizio_anno', 'inizio_mese', 'fine_anno', 'fine_mese',
+    'descrizione_breve', 'descrizione_lunga',
+    'indirizzo', 'civico', 'cap', 'comune_id', 'latitudine', 'longitudine', 'zoom',
+    'logo', 'images', 'immobili_collegati', 'features',
+    'classe_energetica', 'unita_abitative', 'capitolato',
+    'stato', 'sold', 'evidence', 'visible', 'position',
+];
+$assert(
+    $residenzaFormKeys === $expectedResidenzaFields,
+    'i campi del form residenza coincidono con quelli attesi',
+    'ottenuti: '.implode(', ', $residenzaFormKeys)
+);
+
+echo "Persistenza form residenza\n";
+$residenzaColumns = array_keys(\Wonder\Plugin\Immobili\Models\Residenza::getColumns());
+$residenzaRelations = array_keys(ResidenzaResource::repeaterRelations());
+$virtualResidenzaFields = ['immobili_collegati'];
+$nonPersistable = array_values(array_diff($residenzaFormKeys, $residenzaColumns, $residenzaRelations, $virtualResidenzaFields));
+$assert(
+    $nonPersistable === [],
+    'ogni input del form residenza è colonna, relazione o campo virtuale dichiarato',
+    'senza destinazione: '.implode(', ', $nonPersistable)
+);
+$assert(
+    $residenzaRelations === ['images'],
+    'images è l\'unica relazione fisica della residenza',
+    'relazioni: '.implode(', ', $residenzaRelations)
+);
+$assert(
+    ResidenzaResource::stripRelationInputValues(['nome' => 'X', 'images' => [['id' => '1']]]) === ['nome' => 'X'],
+    'stripRelationInputValues rimuove la relazione images dal payload tabella'
+);
+
+echo "ResidenzaResource::deriveStato / normalizeFeatures / sanitizeUrl\n";
+$assert(ResidenzaResource::sanitizeUrl('https://ok.test/x') === 'https://ok.test/x', 'URL https valido conservato');
+$assert(ResidenzaResource::sanitizeUrl('javascript:alert(1)') === '', 'schema non http/https scartato');
+$assert(ResidenzaResource::sanitizeUrl('  ') === '', 'stringa vuota → vuota');
+$assert(
+    ResidenzaResource::normalizeFeatures(['ascensore', 'inesistente', 'giardino', 'ascensore']) === ['ascensore', 'giardino'],
+    'normalizeFeatures tiene solo id noti, unici e nell\'ordine di input'
+);
+$assert(
+    ResidenzaResource::normalizeFeatures('non-array') === [],
+    'normalizeFeatures su input non-array → []'
+);
+
+echo "ResidenzaResource::linkedImmobiliDiff\n";
+$diff = ResidenzaResource::linkedImmobiliDiff(['3', '4', '4'], ['4', '5']);
+$assert(
+    $diff['attach'] === [3, 4] && $diff['detach'] === [5],
+    'linkedImmobiliDiff calcola attach (nuovi) e detach (rimossi) come interi unici',
+    'attach: '.implode(',', $diff['attach']).' detach: '.implode(',', $diff['detach'])
+);
+
 echo "\n";
 echo $failures === 0
     ? "OK \u{2014} {$assertions} asserzioni passate\n"
