@@ -235,5 +235,77 @@
             "add_image": "Aggiungi immagine",
             "add_floor_plan": "Aggiungi planimetria"
         }
+    },
+    "residenze": {
+        "fields": {
+            "nome": "Nome residenza",
+            "sito_url": "Link sito",
+            "inizio_anno": "Anno inizio",
+            "inizio_mese": "Mese inizio",
+            "fine_anno": "Anno fine (stimato)",
+            "fine_mese": "Mese fine",
+            "descrizione_breve": "Descrizione breve",
+            "descrizione_lunga": "Descrizione lunga",
+            "indirizzo": "Indirizzo",
+            "civico": "Civico",
+            "cap": "CAP",
+            "comune_id": "Comune",
+            "latitudine": "Latitudine",
+            "longitudine": "Longitudine",
+            "zoom": "Zoom mappa",
+            "logo": "Logo",
+            "image": "Immagine",
+            "images": "Galleria",
+            "immobili_collegati": "Immobili collegati",
+            "features": "Caratteristiche",
+            "classe_energetica": "Classe energetica",
+            "unita_abitative": "Unità abitative",
+            "capitolato": "Capitolato (PDF)",
+            "stato": "Stato",
+            "sold": "Venduto tutto",
+            "evidence": "In evidenza",
+            "visible": "Visibile",
+            "position": "Ordine",
+            "timeline": "Timeline"
+        },
+        "sections": {
+            "timeline": "Timeline",
+            "location": "Localizzazione",
+            "media": "Media",
+            "linked": "Immobili collegati",
+            "features": "Caratteristiche",
+            "capitolato": "Capitolato",
+            "energy": "Energia e unità",
+            "publish": "Stato e pubblicazione"
+        },
+        "buttons": {
+            "save": "Salva",
+            "add_image": "Aggiungi immagine"
+        },
+        "titles": {
+            "list": "Residenze",
+            "create": "Aggiungi residenza",
+            "edit": "Modifica residenza"
+        },
+        "options": {
+            "stato": {
+                "auto": "Automatico",
+                "in_arrivo": "In arrivo",
+                "in_corso": "In corso",
+                "completato": "Completato"
+            }
+        },
+        "features": {
+            "ascensore": "Ascensore",
+            "giardino": "Giardino",
+            "box_auto": "Box / posto auto",
+            "domotica": "Domotica",
+            "fotovoltaico": "Fotovoltaico",
+            "climatizzazione": "Climatizzazione",
+            "area_verde": "Area verde comune",
+            "videosorveglianza": "Videosorveglianza",
+            "cantina": "Cantina",
+            "terrazzo": "Terrazzo"
+        }
     }
 }

@@ -235,5 +235,77 @@
             "add_image": "Add image",
             "add_floor_plan": "Add floor plan"
         }
+    },
+    "residenze": {
+        "fields": {
+            "nome": "Development name",
+            "sito_url": "Website link",
+            "inizio_anno": "Start year",
+            "inizio_mese": "Start month",
+            "fine_anno": "End year (estimated)",
+            "fine_mese": "End month",
+            "descrizione_breve": "Short description",
+            "descrizione_lunga": "Long description",
+            "indirizzo": "Address",
+            "civico": "Street number",
+            "cap": "Postcode",
+            "comune_id": "Town",
+            "latitudine": "Latitude",
+            "longitudine": "Longitude",
+            "zoom": "Map zoom",
+            "logo": "Logo",
+            "image": "Image",
+            "images": "Gallery",
+            "immobili_collegati": "Linked properties",
+            "features": "Features",
+            "classe_energetica": "Energy class",
+            "unita_abitative": "Housing units",
+            "capitolato": "Specification sheet (PDF)",
+            "stato": "Status",
+            "sold": "Fully sold",
+            "evidence": "Featured",
+            "visible": "Visible",
+            "position": "Order",
+            "timeline": "Timeline"
+        },
+        "sections": {
+            "timeline": "Timeline",
+            "location": "Location",
+            "media": "Media",
+            "linked": "Linked properties",
+            "features": "Features",
+            "capitolato": "Specification sheet",
+            "energy": "Energy and units",
+            "publish": "Status and publishing"
+        },
+        "buttons": {
+            "save": "Save",
+            "add_image": "Add image"
+        },
+        "titles": {
+            "list": "Developments",
+            "create": "Add development",
+            "edit": "Edit development"
+        },
+        "options": {
+            "stato": {
+                "auto": "Automatic",
+                "in_arrivo": "Coming soon",
+                "in_corso": "In progress",
+                "completato": "Completed"
+            }
+        },
+        "features": {
+            "ascensore": "Lift",
+            "giardino": "Garden",
+            "box_auto": "Garage / parking space",
+            "domotica": "Home automation",
+            "fotovoltaico": "Photovoltaic",
+            "climatizzazione": "Air conditioning",
+            "area_verde": "Shared green area",
+            "videosorveglianza": "Video surveillance",
+            "cantina": "Cellar",
+            "terrazzo": "Terrace"
+        }
     }
 }

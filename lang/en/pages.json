@@ -50,5 +50,30 @@
                 "posti_auto": "Parking"
             }
         }
+    },
+    "residenze": {
+        "list": {
+            "title": "Our developments",
+            "seo": {
+                "title": "Developments",
+                "description": "The residential developments and construction sites we manage."
+            },
+            "empty": "No developments at the moment."
+        },
+        "detail": {
+            "back": "Back to developments",
+            "visit_site": "Visit the website",
+            "download_capitolato": "Download the specification sheet",
+            "linked": "Properties in this development",
+            "units": "Housing units",
+            "energy": "Energy class",
+            "timeline": "Timeline"
+        },
+        "stato": {
+            "in_arrivo": "Coming soon",
+            "in_corso": "In progress",
+            "completato": "Completed",
+            "venduto": "Fully sold"
+        }
     }
 }

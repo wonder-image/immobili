@@ -49,5 +49,30 @@
                 "posti_auto": "Posti auto"
             }
         }
+    },
+    "residenze": {
+        "list": {
+            "title": "Le nostre residenze",
+            "seo": {
+                "title": "Residenze",
+                "description": "Le residenze e i cantieri gestiti da noi."
+            },
+            "empty": "Nessuna residenza al momento."
+        },
+        "detail": {
+            "back": "Torna alle residenze",
+            "visit_site": "Visita il sito",
+            "download_capitolato": "Scarica il capitolato",
+            "linked": "Immobili in questa residenza",
+            "units": "Unità abitative",
+            "energy": "Classe energetica",
+            "timeline": "Tempistiche"
+        },
+        "stato": {
+            "in_arrivo": "In arrivo",
+            "in_corso": "In corso",
+            "completato": "Completato",
+            "venduto": "Venduto tutto"
+        }
     }
 }
