@@ -16,7 +16,7 @@ $cover = (string) ($immobile->cover ?? '');
 $url = (string) ($immobile->url ?? '#');
 
 ?>
-<a class="d-block b-r-15 o-hidden bg-white tx-black" href="<?= e($url) ?>">
+<a class="d-block b-r-15 o-hidden bg-white tx-black b-shadow" href="<?= e($url) ?>">
     <div class="f-3-2 p-r bg-cover o-hidden" style="background-image:url('<?= e($cover) ?>')">
         <?php if (!empty($immobile->sold)) { ?>
             <span class="p-a badge text-bg-danger" style="top:.6rem;left:.6rem"><?= e(__t('components.immobili.card.sold')) ?></span>
@@ -33,7 +33,7 @@ $url = (string) ($immobile->url ?? '#');
             <div class="text-small tx-muted"><i class="bi bi-geo-alt"></i> <?= e($immobile->prettyAddress) ?></div>
         <?php } ?>
         <?php if (($immobile->prezzo ?? '') !== '') { ?>
-            <div class="text fw-700 tx-primary"><?= e($immobile->prezzo) ?></div>
+            <div class="text fw-700 tx-primary"><?= e($immobile->prettyPrezzo) ?></div>
         <?php } ?>
         <div class="d-flex gap-4 text-small tx-muted mt-1">
             <?php if (($immobile->superficie ?? '') !== '') { ?>

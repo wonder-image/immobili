@@ -94,11 +94,6 @@ Immobili::layout('main');
                             ->navigation() ?>
                 </div>
 
-                <?php if ($planSlides !== []) { ?>
-                    <h2 class="subtitle mt-8"><?= e(__t('pages.immobili.detail.plans')) ?></h2>
-                    <div class="mt-3"><?= __gallery($planSlides)->columns(2, 2, 1)->format('4-3') ?></div>
-                <?php } ?>
-
             </div>
 
             <aside>
@@ -113,11 +108,38 @@ Immobili::layout('main');
                     </a>
                 </div>
 
+                <div class="mt-8">
+                    <?php Immobili::component('energy-class/energy-class', ['immobile' => $immobile]); ?>
+                </div>
+
             </aside>
 
         </div>
     </div>
 </section>
+
+<?php if ($planSlides !== []) { ?>
+<section class="pt-0">
+    <div class="content">
+
+        <h2 class="subtitle mt-8"><?= e(__t('pages.immobili.detail.plans')) ?></h2>
+        <div class="w-100 mt-3 o-hidden">
+            <?= __swiper($planSlides)->id('immobile-planimetrie-swiper')
+                    ->ratio('4:3')
+                    ->slidesPerView(1)
+                    ->spaceBetween(16)
+                    ->breakpoints([
+                        768 => ['slidesPerView' => 2],
+                        992 => ['slidesPerView' => 3],
+                    ])
+                    ->slideClass(['b-1', 'tx-gray', 'b-r-5'])
+                    ->lightbox()
+                    ->navigation() ?>
+        </div>
+
+    </div>
+</section>
+<?php } ?>
 
 <section class="pt-0">
     <div class="content">

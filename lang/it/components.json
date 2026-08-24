@@ -39,6 +39,12 @@
             "bathrooms": "Bagni",
             "energy_class": "Classe energetica"
         },
+        "energy": {
+            "title": "Prestazione energetica",
+            "class": "Classe",
+            "ipe": "IPE",
+            "unit": "kWh/mq anno"
+        },
         "backend": {
             "sync_all": {
                 "button": "Aggiorna immobili",
