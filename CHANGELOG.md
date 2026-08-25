@@ -3,6 +3,16 @@
 Tutte le modifiche rilevanti a `wonder-image/immobili` sono documentate qui.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
+## [Unreleased]
+
+### Aggiunto
+- Reparto **Residenze** (cantieri/costruzioni): Model `Residenza` + gallery
+  `ResidenzaImmagine`, `ResidenzaResource` (CRUD backend), frontend
+  `/residenze/` e `/residenze/{slug}/` con timeline, features, capitolato PDF,
+  classe energetica, unità abitative, mappa e immobili collegati (FK
+  `immobili.residenza_id`). Traduzioni it/en. Cover = prima immagine della
+  gallery.
+
 ## [1.0.0] - non ancora rilasciato
 
 ### Tassonomie canoniche, centrale impostazioni e UI

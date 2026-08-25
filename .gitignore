@@ -6,3 +6,4 @@ composer.phar
 /resources/assets/upload/
 tests/*
 !tests/resource-form.php
+!tests/residenze.php

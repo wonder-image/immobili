@@ -93,7 +93,7 @@ final class ResidenzaForm
 
     /**
      * Opzioni per il multiselect "Immobili collegati": tutti gli immobili,
-     * etichettati con nome + comune. `['' => '--']` se il DB non è disponibile.
+     * etichettati con nome + comune. `[]` se il DB non è disponibile.
      *
      * @return array<string, string>
      */
