@@ -6,6 +6,10 @@ use Wonder\App\Resource;
 use Wonder\App\LegacyGlobals;
 use Wonder\App\ResourceSchema\ApiSchema;
 use Wonder\App\ResourceSchema\FormField;
+use Wonder\App\ResourceSchema\Inputs\InputCheckBoolean;
+use Wonder\App\ResourceSchema\Inputs\InputNumber;
+use Wonder\App\ResourceSchema\Inputs\InputPrice;
+use Wonder\App\ResourceSchema\Inputs\InputRepeater;
 use Wonder\App\ResourceSchema\NavigationSchema;
 use Wonder\App\ResourceSchema\PageSchema;
 use Wonder\App\ResourceSchema\PermissionSchema;
@@ -329,7 +333,7 @@ final class ImmobileResource extends Resource
             ->columnSpan(12);
     }
 
-    private static function numberField(string $key, int $decimals = 0, ?string $symbol = null): FormField
+    private static function numberField(string $key, int $decimals = 0, ?string $symbol = null): InputNumber
     {
         $field = FormField::key($key)
             ->number()
@@ -344,7 +348,7 @@ final class ImmobileResource extends Resource
         return $field;
     }
 
-    private static function priceField(string $key, ?string $symbol = null): FormField
+    private static function priceField(string $key, ?string $symbol = null): InputPrice
     {
         $field = FormField::key($key)
             ->price()
@@ -359,7 +363,7 @@ final class ImmobileResource extends Resource
         return $field;
     }
 
-    private static function booleanField(string $key): FormField
+    private static function booleanField(string $key): InputCheckBoolean
     {
         return FormField::key($key)->checkBoolean(
             ['', 'true', 'false'],
@@ -368,7 +372,7 @@ final class ImmobileResource extends Resource
         );
     }
 
-    private static function presenceField(string $key): FormField
+    private static function presenceField(string $key): InputCheckBoolean
     {
         return FormField::key($key)->checkBoolean(
             ['', '1', '2'],
@@ -377,7 +381,7 @@ final class ImmobileResource extends Resource
         );
     }
 
-    private static function mediaRepeater(string $key, string $fieldLabel, string $addLabel): FormField
+    private static function mediaRepeater(string $key, string $fieldLabel, string $addLabel): InputRepeater
     {
         return FormField::key($key)
             ->repeater([
@@ -396,7 +400,7 @@ final class ImmobileResource extends Resource
         string $fieldLabel,
         string $addLabel,
         bool $related = false
-    ): FormField {
+    ): InputRepeater {
         $field = FormField::key($key)
             ->repeater([
                 RepeaterColumn::key('id')->hidden(),

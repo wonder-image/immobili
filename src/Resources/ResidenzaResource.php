@@ -5,6 +5,8 @@ namespace Wonder\Plugin\Immobili\Resources;
 use Wonder\App\Resource;
 use Wonder\App\ResourceSchema\ApiSchema;
 use Wonder\App\ResourceSchema\FormField;
+use Wonder\App\ResourceSchema\Inputs\InputNumber;
+use Wonder\App\ResourceSchema\Inputs\InputRepeater;
 use Wonder\App\ResourceSchema\NavigationSchema;
 use Wonder\App\ResourceSchema\PageSchema;
 use Wonder\App\ResourceSchema\PermissionSchema;
@@ -247,17 +249,17 @@ final class ResidenzaResource extends Resource
         return SectionTitle::make(ResidenzaForm::text('sections.'.$key))->level(5)->columnSpan(12);
     }
 
-    private static function numberField(string $key): FormField
+    private static function numberField(string $key): InputNumber
     {
         return FormField::key($key)->number()->decimal(0)->decimalSeparator(',')->groupSeparator('');
     }
 
-    private static function yearField(string $key): FormField
+    private static function yearField(string $key): InputNumber
     {
         return FormField::key($key)->number()->decimal(0)->groupSeparator('');
     }
 
-    private static function monthField(string $key): FormField
+    private static function monthField(string $key): InputNumber
     {
         return FormField::key($key)->number()->decimal(0)->groupSeparator('');
     }
@@ -273,7 +275,7 @@ final class ResidenzaResource extends Resource
         ];
     }
 
-    private static function imageRepeater(): FormField
+    private static function imageRepeater(): InputRepeater
     {
         return FormField::key('images')
             ->repeater([
