@@ -51,5 +51,10 @@
                 "confirm": "Start synchronizing all active feeds now?"
             }
         }
+    },
+    "residenze": {
+        "card": {
+            "part_of": "Part of the development:"
+        }
     }
 }

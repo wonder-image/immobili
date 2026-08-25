@@ -18,6 +18,21 @@ if (!is_array($row) || !isset($row['id'])) {
 
 $immobile = (new ImmobilePresenter())->present($row);
 
+$residenzaLink = null;
+$residenzaId = (int) ($row['residenza_id'] ?? 0);
+if ($residenzaId > 0) {
+    $residenzaRow = \Wonder\Plugin\Immobili\Models\Residenza::safeFind(
+        ['id' => $residenzaId, 'visible' => 'true', 'deleted' => 'false'],
+        1
+    );
+    if (is_array($residenzaRow) && isset($residenzaRow['slug'])) {
+        $residenzaLink = [
+            'nome' => (string) ($residenzaRow['nome'] ?? ''),
+            'url'  => __r('residenze.detail', ['slug' => (string) $residenzaRow['slug']]),
+        ];
+    }
+}
+
 $PAGE_KEY = 'immobili.detail';
 $SEO->title = $immobile->titolo.' - '.$SOCIETY->name;
 $SEO->description = mb_substr(strip_tags((string) ($immobile->descrizione ?: $immobile->prettyName)), 0, 160);
@@ -74,6 +89,14 @@ Immobili::layout('main');
 
         <?php if (($immobile->prettyAddress ?? '') !== '') { ?>
             <p class="p-r f-start w-100 text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e($immobile->prettyAddress) ?></p>
+        <?php } ?>
+
+        <?php if ($residenzaLink !== null) { ?>
+            <p class="p-r f-start w-100 text mt-2">
+                <i class="bi bi-buildings"></i>
+                <?= e(__t('components.residenze.card.part_of')) ?>
+                <a href="<?= e($residenzaLink['url']) ?>" class="tx-primary fw-600"><?= e($residenzaLink['nome']) ?></a>
+            </p>
         <?php } ?>
 
     </div>

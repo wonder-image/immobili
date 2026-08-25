@@ -55,5 +55,10 @@
     "navigation": {
         "immobili": "Immobili",
         "immobili_sold": "Immobili venduti"
+    },
+    "residenze": {
+        "card": {
+            "part_of": "Parte della residenza:"
+        }
     }
 }
