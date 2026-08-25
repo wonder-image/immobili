@@ -364,15 +364,6 @@ final class ResidenzaResource extends Resource
     }
 
     /**
-     * Stato canonico derivato (delega al presenter) usato al salvataggio quando
-     * l'utente non forza un override.
-     */
-    public static function deriveStato(array $values): string
-    {
-        return ResidenzaPresenter::stato($values);
-    }
-
-    /**
      * Calcola gli immobili da agganciare/sganciare confrontando la selezione
      * con lo stato corrente.
      *
@@ -425,11 +416,13 @@ final class ResidenzaResource extends Resource
             $values[$flag] = self::isTrue($values[$flag] ?? '') ? 'true' : 'false';
         }
 
-        // Stato: override valido o derivato dalla timeline.
+        // Stato: override valido o "Automatico" (vuoto).
         $override = strtolower(trim((string) ($values['stato'] ?? '')));
+        // "Automatico": non congelare uno stato concreto — si salva vuoto e il
+        // ResidenzaPresenter::stato() lo deriva in lettura dalla timeline.
         $values['stato'] = in_array($override, ['in_arrivo', 'in_corso', 'completato'], true)
             ? $override
-            : self::deriveStato($values);
+            : '';
 
         // Slug stabile: generato solo se non esiste già sul record.
         if (empty($oldValues['slug'])) {
