@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b3733c7c4fd1caff322fdd5a3f750a6c",
+    "content-hash": "8558d6a0e56070a3dd1da0ecbbfd2511",
     "packages": [
         {
             "name": "chillerlan/php-qrcode",
@@ -3203,17 +3203,11 @@
         },
         {
             "name": "wonder-image/app",
-            "version": "dev-main",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/wonder-image/app.git",
-                "reference": "e9124a04e82d9e71de2c8b77d90f45cf824ab761"
-            },
+            "version": "2.2.0",
             "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/wonder-image/app/zipball/e9124a04e82d9e71de2c8b77d90f45cf824ab761",
-                "reference": "e9124a04e82d9e71de2c8b77d90f45cf824ab761",
-                "shasum": ""
+                "type": "path",
+                "url": "../app",
+                "reference": "5ec9ffa49ada397d19644bcefb7bdc68c04bbf1c"
             },
             "require": {
                 "chillerlan/php-qrcode": "^5.0",
@@ -3233,14 +3227,12 @@
                 "symfony/routing": "^6.4 || ^7.0",
                 "vlucas/phpdotenv": "^5.6"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
                     "Wonder\\": "class/"
                 }
             },
-            "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
@@ -3257,19 +3249,16 @@
                 "Wonderimage",
                 "framework"
             ],
-            "support": {
-                "issues": "https://github.com/wonder-image/app/issues",
-                "source": "https://github.com/wonder-image/app/tree/main"
-            },
-            "time": "2026-07-28T11:23:19+00:00"
+            "transport-options": {
+                "symlink": true,
+                "relative": true
+            }
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "wonder-image/app": 20
-    },
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

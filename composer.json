@@ -5,8 +5,17 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "wonder-image/app": "dev-main"
+        "wonder-image/app": "^2.2"
     },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../app",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
     "autoload": {
         "psr-4": {
             "Wonder\\Plugin\\Immobili\\": "src/"
