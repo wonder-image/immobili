@@ -1,15 +1,14 @@
 <?php
 
 /**
- * Classe energetica — tipologia "badge": badge della classe corrente + IPE.
- *
- * Usabile da sola (`['immobile' => $immobile]`) o composta dall'orchestratore
- * (`['scale' => $scale]`). Solo classi di wonder-image/lib; gli unici stili
- * inline sono i colori APE canonici (standard normativo, nessun token equivalente).
+ * Classe energetica — tipologia "badge": pastiglia colorata con la classe +
+ * valore IPE. Stile in resources/assets/css/immobili-energy.css; inline solo il
+ * colore APE della classe corrente (dato) via custom properties --ie-*.
  *
  * @var array $args ['immobile' => object] | ['scale' => EnergyScale]
  */
 
+use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Support\EnergyScale;
 
 $scale = EnergyScale::fromArgs($args);
@@ -18,23 +17,26 @@ if (!$scale instanceof EnergyScale) {
     return;
 }
 
-$cols = $scale->hasIpe() ? 'col-2' : 'col-1';
+Immobili::styleOnce('css/immobili-energy.css');
 
 ?>
 
-<div class="w-100 d-grid <?= $cols ?> gap-2">
+<div class="w-100 immobili-energy__badge">
 
-    <div class="a-c p-4 b-r-15" style="background:<?= e($scale->currentBg()) ?>;color:<?= e($scale->currentText()) ?>">
-        <div class="small"><?= e(__t('components.immobili.energy.class')) ?></div>
-        <div class="title-big fw-700"><?= e($scale->classe()) ?></div>
+    <div class="immobili-energy__chip" style="--ie-bg:<?= e($scale->currentBg()) ?>;--ie-fg:<?= e($scale->currentText()) ?>">
+        <?= e($scale->classe()) ?>
     </div>
 
     <?php if ($scale->hasIpe()) { ?>
-        <div class="a-c p-4 b-r-15 b-1">
-            <div class="small tx-muted"><?= e(__t('components.immobili.energy.ipe')) ?></div>
-            <div class="subtitle fw-700"><?= e($scale->ipe()) ?></div>
-            <div class="small tx-muted"><?= e(__t('components.immobili.energy.unit')) ?></div>
+        <div class="immobili-energy__ipe">
+            <div class="text-small tx-muted tx-upper"><?= e(__t('components.immobili.energy.ipe')) ?></div>
+            <div>
+                <span class="text immobili-energy__ipe-value"><?= e($scale->ipe()) ?></span>
+                <span class="text-small tx-muted"><?= e(__t('components.immobili.energy.unit')) ?></span>
+            </div>
         </div>
+    <?php } else { ?>
+        <div class="text tx-muted"><?= e(__t('components.immobili.energy.class')) ?></div>
     <?php } ?>
 
 </div>

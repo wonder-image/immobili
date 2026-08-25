@@ -112,6 +112,28 @@ final class Immobili implements ModuleInterface
     }
 
     /**
+     * Emette il tag <link> per un CSS del modulo una sola volta per richiesta,
+     * anche se il componente che lo usa viene incluso più volte. Nessun output
+     * se l'asset non esiste (framework < 2.2 o file assente).
+     */
+    public static function styleOnce(string $file): void
+    {
+        static $emitted = [];
+
+        if (isset($emitted[$file])) {
+            return;
+        }
+
+        $emitted[$file] = true;
+
+        $url = self::asset($file);
+
+        if ($url !== '') {
+            echo '<link rel="stylesheet" href="'.htmlspecialchars($url, ENT_QUOTES).'">';
+        }
+    }
+
+    /**
      * Risolve il path di una view del modulo, dando priorità all'override del
      * sito in `custom/modules/immobili/view/<path>`.
      */

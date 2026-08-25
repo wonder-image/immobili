@@ -1,0 +1,107 @@
+/**
+ * Componente frontend della classe energetica (view/components/energy-class/*).
+ *
+ * Struttura e stile consumano i token del sito (wonder-image/lib): radius, colore
+ * primario e grigio. Gli unici valori passati inline dal componente sono i "dati"
+ * della scala APE — colore banda (--ie-bg / --ie-fg) e larghezza (--ie-w) — che
+ * sono uno standard normativo senza token equivalente.
+ */
+
+.immobili-energy {
+    max-width: 22rem;
+}
+
+.immobili-energy__part {
+    margin-top: .9rem;
+}
+
+.immobili-energy__part + .immobili-energy__part {
+    padding-top: .9rem;
+    border-top: 1px solid var(--gray-color, #eee);
+}
+
+/* Parte 1 — badge classe + IPE */
+.immobili-energy__badge {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.immobili-energy__chip {
+    flex: 0 0 auto;
+    width: 3.25rem;
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--button-border-radius, 5px);
+    font-size: 24px;
+    font-weight: 700;
+    background: var(--ie-bg);
+    color: var(--ie-fg);
+}
+
+.immobili-energy__ipe {
+    min-width: 0;
+}
+
+.immobili-energy__ipe-value {
+    font-weight: 700;
+}
+
+/* Parte 2 — linea delle classi */
+.immobili-energy__line {
+    display: flex;
+    gap: 3px;
+}
+
+.immobili-energy__cell {
+    flex: 1 1 0;
+    min-width: 0;
+    text-align: center;
+    padding: 5px 0;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 3px;
+    background: var(--ie-bg);
+    color: var(--ie-fg);
+    opacity: .5;
+}
+
+.immobili-energy__cell--current {
+    opacity: 1;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--primary-color, #000);
+}
+
+/* Parte 3 — scala completa verticale */
+.immobili-energy__scale {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.immobili-energy__band {
+    display: flex;
+    align-items: center;
+    width: var(--ie-w);
+    min-width: 2.5rem;
+    height: 1.5rem;
+    padding: 0 .5rem;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 0 var(--button-border-radius, 5px) var(--button-border-radius, 5px) 0;
+    background: var(--ie-bg);
+    color: var(--ie-fg);
+    opacity: .5;
+}
+
+.immobili-energy__band--current {
+    opacity: 1;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px var(--primary-color, #000);
+}
+
+.immobili-energy__caret {
+    margin-left: auto;
+}

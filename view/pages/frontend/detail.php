@@ -109,7 +109,15 @@ Immobili::layout('main');
                 </div>
 
                 <div class="mt-8">
-                    <?php Immobili::component('energy-class/energy-class', ['immobile' => $immobile]); ?>
+                    <div class="text-small tx-muted tx-upper"><?= e(__t('components.immobili.energy.title')) ?></div>
+                    <div class="w-100 p-2 b-1 tx-gray mt-4 b-r-5">
+                        <div class="w-100 tx-black">
+                            <?php Immobili::component('energy-class/badge', ['immobile' => $immobile]); ?>
+                        </div>
+                    </div>
+                    <div class="w-100 mt-4">
+                        <?php Immobili::component('energy-class/line', ['immobile' => $immobile]); ?>
+                    </div>
                 </div>
 
             </aside>

@@ -4,11 +4,11 @@
  * Classe energetica (APE) — orchestratore.
  *
  * Compone le tre tipologie della cartella (badge, line, scale), separate da un
- * divisore, e le nasconde tutte se la classe energetica è assente. Le tre parti
- * restano usabili anche singolarmente:
+ * divisore leggero, e le nasconde tutte se la classe energetica è assente. Le
+ * tre parti restano usabili anche singolarmente:
  *   Immobili::component('energy-class/badge', ['immobile' => $immobile]);
  *
- * Solo classi di wonder-image/lib: nessun CSS custom.
+ * Stile in resources/assets/css/immobili-energy.css (consuma i token di lib).
  *
  * @var array $args [
  *     'immobile' => object,     // obbligatorio
@@ -37,21 +37,20 @@ if ($parts === []) {
 
 $heading = (bool) ($args['heading'] ?? true);
 
+Immobili::styleOnce('css/immobili-energy.css');
+
 ?>
 
-<div class="w-100">
+<div class="immobili-energy">
 
     <?php if ($heading) { ?>
         <div class="text-small tx-muted tx-upper"><?= e(__t('components.immobili.energy.title')) ?></div>
     <?php } ?>
 
-    <?php foreach ($parts as $i => $part) { ?>
-        <?php if ($i > 0) { ?>
-            <div class="bb-1 w-100 mt-4 mb-4"></div>
-        <?php } elseif ($heading) { ?>
-            <div class="mt-3"></div>
-        <?php } ?>
-        <?php Immobili::component('energy-class/'.$part, ['scale' => $scale]); ?>
+    <?php foreach ($parts as $part) { ?>
+        <div class="w-100 immobili-energy__part">
+            <?php Immobili::component('energy-class/'.$part, ['scale' => $scale]); ?>
+        </div>
     <?php } ?>
 
 </div>
