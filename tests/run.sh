@@ -3,7 +3,7 @@
 # Uso:  bash tests/run.sh
 set -u
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || exit 1
 
 suites=(smoke energy-scale list-price residenze resource-form pdf)
 failed=0
