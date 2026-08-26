@@ -866,15 +866,7 @@ foreach (['it', 'en'] as $locale) {
 }
 ```
 
-`OPTION_KEYS` è `private`: renderlo leggibile aggiungendo `public` non è accettabile. Usare invece `ReflectionClass::getConstant()` su una costante privata funziona solo da PHP 8.0 con `setAccessible` non necessario per le costanti — verificare con un `php -r`; se non funziona, sostituire l'asserzione con il controllo indiretto:
-
-```php
-$assert(
-    (\Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::options('construction_type', false)['255'] ?? '')
-        !== (\Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::options('construction_type', false)['2'] ?? 'x'),
-    "il codice 255 non collide più con il codice 2 (Civile)"
-);
-```
+`OPTION_KEYS` è `private`, ma `ReflectionClass::getConstant()` la legge senza bisogno di cambiarne la visibilità (verificato su PHP 8.2).
 
 - [ ] **Step 2: Eseguire e verificare che fallisca**
 
