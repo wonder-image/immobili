@@ -6,7 +6,7 @@ use Wonder\Elements\Components\Container;
 use Wonder\Elements\Media\Iframe;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 
 $slug = trim((string) ($GLOBALS['ROUTE_PARAMETERS']['slug'] ?? ''));
 $row = Immobile::safeFind(['slug' => $slug, 'visible' => 'true', 'deleted' => 'false'], 1);

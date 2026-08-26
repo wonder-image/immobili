@@ -1,7 +1,7 @@
 <?php
 
-use Wonder\Plugin\Immobili\Services\ImmobileSeeder;
-use Wonder\Plugin\Immobili\Services\SyncApiUser;
+use Wonder\Plugin\Immobili\Seeding\ImmobileSeeder;
+use Wonder\Plugin\Immobili\Sync\SyncApiUser;
 
 /**
  * Seed di immobili di esempio per la verifica locale.

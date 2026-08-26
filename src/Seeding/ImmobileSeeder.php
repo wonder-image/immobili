@@ -1,6 +1,6 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Seeding;
 
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;

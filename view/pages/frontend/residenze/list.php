@@ -6,7 +6,7 @@
 
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
 $PAGE_KEY = 'residenze.list';
 

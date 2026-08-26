@@ -6,7 +6,7 @@
 
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobileQuery;
+use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 
 $PAGE_KEY = 'immobili.list';
 

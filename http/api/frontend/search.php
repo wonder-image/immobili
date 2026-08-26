@@ -2,7 +2,7 @@
 
 use Wonder\Api\Endpoint;
 use Wonder\Api\Handler;
-use Wonder\Plugin\Immobili\Services\ImmobileQuery;
+use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 
 /**
  * Ricerca immobili in JSON (per consumo AJAX/API esterni).

@@ -7,7 +7,7 @@ namespace Wonder\Plugin\Immobili\Pdf;
 use Wonder\Plugin\Immobili\Pdf\Document\CartelloImmobile;
 use Wonder\Plugin\Immobili\Pdf\Document\CartelloVetrina;
 use Wonder\Plugin\Immobili\Pdf\Document\SchedaImmobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 
 /**
  * Façade dei documenti PDF: unico punto di ingresso per gli handler. Costruisce

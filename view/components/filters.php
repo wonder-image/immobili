@@ -20,7 +20,7 @@
 
 use Wonder\App\Dependencies;
 use Wonder\App\ResourceSchema\FormField;
-use Wonder\Plugin\Immobili\Services\ImmobileQuery;
+use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 
 Dependencies::autonumeric();
 

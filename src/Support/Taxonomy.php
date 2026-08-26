@@ -3,9 +3,9 @@
 namespace Wonder\Plugin\Immobili\Support;
 
 use Throwable;
-use Wonder\Plugin\Immobili\Models\Categoria;
-use Wonder\Plugin\Immobili\Models\Comune;
-use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Categoria;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 
 /**
  * Risoluzione (con cache di richiesta) delle tassonomie CANONICHE.
@@ -149,7 +149,7 @@ final class Taxonomy
                 break;
             }
 
-            $prov = self::byId(\Wonder\Plugin\Immobili\Models\Provincia::class, (int) ($row['provincia_id'] ?? 0));
+            $prov = self::byId(\Wonder\Plugin\Immobili\Models\Taxonomy\Provincia::class, (int) ($row['provincia_id'] ?? 0));
 
             if (is_array($prov) && strtoupper(trim((string) ($prov['sigla'] ?? ''))) === $sigla) {
                 $match = $row;

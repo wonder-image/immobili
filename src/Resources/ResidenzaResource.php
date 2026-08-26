@@ -18,8 +18,8 @@ use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
-use Wonder\Plugin\Immobili\Support\ResidenzaForm;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
+use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
 
 /**
  * Gestione backend delle residenze (cantieri). Record sempre manuali. Gli

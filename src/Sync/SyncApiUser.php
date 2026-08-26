@@ -1,6 +1,6 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Sync;
 
 /**
  * Utente API dedicato alla sincronizzazione dei feed.

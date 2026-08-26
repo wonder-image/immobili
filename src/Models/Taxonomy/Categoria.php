@@ -1,19 +1,22 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Models;
+namespace Wonder\Plugin\Immobili\Models\Taxonomy;
 
 use Wonder\App\Model;
 use Wonder\Data\UploadSchema as Field;
 use Wonder\Sql\TableSchema as Column;
 
 /**
- * Macrotipologia (sotto-categoria) immobile. Tassonomia CANONICA condivisa da
- * tutti i gestionali: `chiave` = nostro identificatore stabile, `categoria_id`
- * = FK intera alla categoria canonica, `getrix_id`/`gestim_id` = codici nativi.
+ * Categoria immobile (Residenziale, Commerciale, Attività, Terreno, Vacanze, …).
+ *
+ * Tassonomia CANONICA e provider-agnostica: una sola riga per categoria reale,
+ * condivisa da tutti i gestionali. La `chiave` è il nostro identificatore
+ * stabile (es. `residenziale`); i codici nativi dei gestionali sono conservati
+ * nelle colonne mappa `getrix_id` / `gestim_id` (estendibili con nuovi provider).
  */
-final class Macrotipologia extends Model
+final class Categoria extends Model
 {
-    public static string $table = 'immobili_macrotipologie';
+    public static string $table = 'immobili_categorie';
     public static string $icon  = 'bi bi-tags';
 
     public static function tableSchema(): array
@@ -21,7 +24,6 @@ final class Macrotipologia extends Model
         return [
             Column::key('chiave')->varchar()->length(64),
             Column::key('nome')->varchar()->length(191),
-            Column::key('categoria_id')->int()->foreign('immobili_categorie')->foreignOnDelete('SET NULL'),
             Column::key('getrix_id')->varchar()->length(64)->null(),
             Column::key('gestim_id')->varchar()->length(64)->null(),
         ];
@@ -31,7 +33,6 @@ final class Macrotipologia extends Model
     {
         return [
             'ind_chiave'    => ['index' => 'chiave'],
-            'ind_categoria' => ['index' => 'categoria_id'],
             'ind_getrix_id' => ['index' => 'getrix_id'],
             'ind_gestim_id' => ['index' => 'gestim_id'],
         ];
@@ -42,7 +43,6 @@ final class Macrotipologia extends Model
         return [
             Field::key('chiave')->text(),
             Field::key('nome')->text()->sanitizeFirst(),
-            Field::key('categoria_id')->number()->decimals(0),
             Field::key('getrix_id')->text(),
             Field::key('gestim_id')->text(),
         ];

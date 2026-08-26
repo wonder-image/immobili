@@ -1,17 +1,17 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Sync;
 
 use Wonder\Plugin\Immobili\Feed\FeedSourceConfig;
 use Wonder\Plugin\Immobili\Feed\NormalizedListing;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;
 use Wonder\Plugin\Immobili\Feed\Contracts\ArchivesFeedArtifact;
-use Wonder\Plugin\Immobili\Models\FeedSource;
+use Wonder\Plugin\Immobili\Models\System\FeedSource;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
-use Wonder\Plugin\Immobili\Models\SyncLog;
-use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Models\System\SyncLog;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Support\Slug;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 

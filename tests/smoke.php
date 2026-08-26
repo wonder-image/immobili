@@ -54,7 +54,7 @@ $slugRow = [
     'comune_nome'    => 'Milano',
 ];
 $slugBase = \Wonder\Plugin\Immobili\Support\Slug::base([
-    \Wonder\Plugin\Immobili\Services\ImmobilePresenter::titolo($slugRow),
+    \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::titolo($slugRow),
 ]);
 $assert($slugBase === 'trilocale-via-roma-10-milano', "slug deriva da tipologia+strada+indirizzo+comune");
 
@@ -64,8 +64,8 @@ $assert(immobiliFormatPrice(0) === '', "0 => vuoto");
 $assert(immobiliFormatPrice('1500') === '€ 1.500', "stringa numerica");
 
 echo "ImmobilePresenter::formatSurface\n";
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(120) === '120 mq', "superficie formattata");
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(0) === '', "0 => vuoto");
+$assert(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::formatSurface(120) === '120 mq', "superficie formattata");
+$assert(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::formatSurface(0) === '', "0 => vuoto");
 
 echo "immobiliResolveLocalizedValue\n";
 $resolved = immobiliResolveLocalizedValue(['titolo' => ['it' => 'Casa', 'en' => 'House']], 'en');
@@ -159,7 +159,7 @@ $removeTestTree = static function (string $directory) use (&$removeTestTree): vo
 $removeTestTree($testRoot);
 
 echo "ImmobileQuery::order\n";
-$Q = new \Wonder\Plugin\Immobili\Services\ImmobileQuery();
+$Q = new \Wonder\Plugin\Immobili\Catalog\ImmobileQuery();
 $assert($Q->order('recenti') === ['evidence DESC, id', 'DESC'], "recenti => id DESC");
 $assert($Q->order('prezzo_asc') === ['evidence DESC, prezzo', 'ASC'], "prezzo_asc");
 $assert($Q->order('prezzo_desc') === ['evidence DESC, prezzo', 'DESC'], "prezzo_desc");
@@ -207,7 +207,7 @@ $assert(str_contains($Q->where(['bagni' => 2], false), "`n_bagni` >= 2"), "bagni
 $assert(str_contains($Q->where(['comune' => "O'Brien"], false), "LIKE '%o\\'brien%'"), "apice escaped");
 
 echo "ImmobilePresenter::searchFields\n";
-$P = new \Wonder\Plugin\Immobili\Services\ImmobilePresenter();
+$P = new \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter();
 $row = [
     'provider'      => 'gestim',
     'tipologia_id'  => '',

@@ -26,14 +26,14 @@ use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
 use Wonder\Http\Route;
 use Wonder\Plugin\Immobili\Immobili;
-use Wonder\Plugin\Immobili\Models\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
-use Wonder\Plugin\Immobili\Models\Quartiere;
-use Wonder\Plugin\Immobili\Models\QuartiereZona;
-use Wonder\Plugin\Immobili\Models\Tipologia;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
-use Wonder\Plugin\Immobili\Support\ImmobileForm;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Quartiere;
+use Wonder\Plugin\Immobili\Models\Taxonomy\QuartiereZona;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
 use Wonder\Plugin\Immobili\Support\Slug;
 
 /**

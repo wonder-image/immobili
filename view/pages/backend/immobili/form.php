@@ -17,7 +17,7 @@ if (is_object($NAME ?? null)) {
 <?php if ($isFeedRecord): ?>
     <div class="alert alert-info" role="status">
         <?=htmlspecialchars(
-            \Wonder\Plugin\Immobili\Support\ImmobileForm::text('messages.feed_read_only'),
+            \Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::text('messages.feed_read_only'),
             ENT_QUOTES,
             'UTF-8'
         )?>
@@ -44,11 +44,11 @@ if (is_object($NAME ?? null)) {
 
         const feedRecord = <?=json_encode($isFeedRecord, JSON_THROW_ON_ERROR)?>;
         const imagePreviewAlt = <?=json_encode(
-            \Wonder\Plugin\Immobili\Support\ImmobileForm::text('fields.image_preview'),
+            \Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::text('fields.image_preview'),
             JSON_THROW_ON_ERROR
         )?>;
         const floorPlanPreviewAlt = <?=json_encode(
-            \Wonder\Plugin\Immobili\Support\ImmobileForm::text('fields.floor_plan_preview'),
+            \Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::text('fields.floor_plan_preview'),
             JSON_THROW_ON_ERROR
         )?>;
         const input = (name) => form.querySelector(`[name="${name}"]`);

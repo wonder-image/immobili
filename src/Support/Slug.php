@@ -3,7 +3,7 @@
 namespace Wonder\Plugin\Immobili\Support;
 
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Support\Text\Slug as TextSlug;
 
 /**

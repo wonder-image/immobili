@@ -5,7 +5,7 @@
  * Args: ['features' => array<int,string> id]
  */
 
-use Wonder\Plugin\Immobili\Support\ResidenzaForm;
+use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
 
 $ids = is_array($args['features'] ?? null) ? $args['features'] : [];
 

@@ -5,7 +5,7 @@ namespace Wonder\Plugin\Immobili\Feed;
 use Wonder\App\ResourceSchema\FormField;
 use Wonder\Plugin\Gestim\Import;
 use Wonder\Plugin\Immobili\Feed\Contracts\FeedProvider;
-use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**

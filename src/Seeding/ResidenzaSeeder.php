@@ -1,10 +1,10 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Seeding;
 
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Support\ResidenzaForm;
+use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
 
 /**
  * Seed di residenze di esempio per la verifica locale (frontend + backend).

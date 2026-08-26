@@ -1,6 +1,6 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Catalog;
 
 use Wonder\App\Support\MediaFileManager;
 

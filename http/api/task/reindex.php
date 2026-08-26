@@ -1,8 +1,8 @@
 <?php
 
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
-use Wonder\Plugin\Immobili\Services\SyncApiUser;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Sync\SyncApiUser;
 use Wonder\Plugin\Immobili\Support\Slug;
 
 /**

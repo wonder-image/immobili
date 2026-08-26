@@ -7,8 +7,8 @@ use Wonder\App\ResourceSchema\{ApiSchema, FormField, NavigationSchema, Permissio
 use Wonder\Http\Route;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;
 use Wonder\Plugin\Immobili\Immobili;
-use Wonder\Plugin\Immobili\Models\FeedSource;
-use Wonder\Plugin\Immobili\Services\SyncApiUser;
+use Wonder\Plugin\Immobili\Models\System\FeedSource;
+use Wonder\Plugin\Immobili\Sync\SyncApiUser;
 
 use Wonder\Elements\Components\{ SectionTitle, Card, Container, HelpText };
 use Wonder\Elements\Form\Form;

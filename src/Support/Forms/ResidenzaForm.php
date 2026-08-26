@@ -1,9 +1,9 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Support;
+namespace Wonder\Plugin\Immobili\Support\Forms;
 
 use Throwable;
-use Wonder\Plugin\Immobili\Models\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
 

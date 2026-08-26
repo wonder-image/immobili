@@ -1,10 +1,10 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Services;
+namespace Wonder\Plugin\Immobili\Media;
 
 use Wonder\Plugin\Custom\Image\ResponsiveImage;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
-use Wonder\Plugin\Immobili\Models\SyncLog;
+use Wonder\Plugin\Immobili\Models\System\SyncLog;
 
 /**
  * Secondo piano della pipeline immagini.

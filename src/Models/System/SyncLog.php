@@ -1,6 +1,6 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Models;
+namespace Wonder\Plugin\Immobili\Models\System;
 
 use Wonder\App\Model;
 use Wonder\Data\UploadSchema as Field;

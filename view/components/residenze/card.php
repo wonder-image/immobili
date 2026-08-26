@@ -5,7 +5,7 @@
  * Args: ['residenza' => array riga decorata, 'presenter' => ResidenzaPresenter]
  */
 
-use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
 $row = is_array($args['residenza'] ?? null) ? $args['residenza'] : null;
 

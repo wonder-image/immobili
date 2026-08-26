@@ -1,14 +1,14 @@
 <?php
 
-namespace Wonder\Plugin\Immobili\Support;
+namespace Wonder\Plugin\Immobili\Support\Forms;
 
 use Throwable;
-use Wonder\Plugin\Immobili\Models\Categoria;
-use Wonder\Plugin\Immobili\Models\Comune;
-use Wonder\Plugin\Immobili\Models\Macrotipologia;
-use Wonder\Plugin\Immobili\Models\Quartiere;
-use Wonder\Plugin\Immobili\Models\QuartiereZona;
-use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Categoria;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Macrotipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Quartiere;
+use Wonder\Plugin\Immobili\Models\Taxonomy\QuartiereZona;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**

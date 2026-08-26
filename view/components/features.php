@@ -11,7 +11,7 @@
  * @var array $args ['immobile' => object]
  */
 
-use Wonder\Plugin\Immobili\Models\Settings;
+use Wonder\Plugin\Immobili\Models\System\Settings;
 use Wonder\Plugin\Immobili\Support\AttributeCatalog;
 
 $immobile = $args['immobile'] ?? null;

@@ -114,9 +114,9 @@ $assert(
     'il campo images accetta png/jpg/jpeg, max 3MB, fino a 12 file'
 );
 $assert(
-    \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile('["a.jpg"]') === 'a.jpg'
-        && \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile(['b.jpg']) === 'b.jpg'
-        && \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile('') === '',
+    \Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter::firstFile('["a.jpg"]') === 'a.jpg'
+        && \Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter::firstFile(['b.jpg']) === 'b.jpg'
+        && \Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter::firstFile('') === '',
     'firstFile legge il primo filename da JSON, da array già decodificato o vuoto'
 );
 
@@ -133,7 +133,7 @@ $assert(
 );
 
 echo "ResidenzaForm::features\n";
-$features = \Wonder\Plugin\Immobili\Support\ResidenzaForm::features();
+$features = \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::features();
 $expectedFeatureIds = [
     'ascensore', 'giardino', 'box_auto', 'domotica', 'fotovoltaico',
     'climatizzazione', 'area_verde', 'videosorveglianza', 'cantina', 'terrazzo',
@@ -148,20 +148,20 @@ $assert(
     'le label delle features passano dalle traduzioni forms.residenze.features.*'
 );
 $assert(
-    \Wonder\Plugin\Immobili\Support\ResidenzaForm::featureIcon('fotovoltaico') !== ''
-        && \Wonder\Plugin\Immobili\Support\ResidenzaForm::featureIcon('inesistente') === '',
+    \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::featureIcon('fotovoltaico') !== ''
+        && \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::featureIcon('inesistente') === '',
     'ogni feature nota ha un\'icona; le ignote restituiscono stringa vuota'
 );
 
 echo "ResidenzaForm::energyClasses (delega)\n";
-$energy = \Wonder\Plugin\Immobili\Support\ResidenzaForm::energyClasses();
+$energy = \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::energyClasses();
 $assert(
     isset($energy['A4']) && isset($energy['G']) && ($energy[''] ?? null) === '--',
     'le classi energetiche riusano il catalogo immobili (A4…G)'
 );
 
 echo "ResidenzaPresenter::timelineLabel\n";
-use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 $assert(ResidenzaPresenter::timelineLabel(2025, null) === '2025', 'anno senza mese → "2025"');
 $assert(ResidenzaPresenter::timelineLabel(2025, 3) === '03/2025', 'anno+mese → "03/2025"');
 $assert(ResidenzaPresenter::timelineLabel(2025, 0) === '2025', 'mese 0 → solo anno');

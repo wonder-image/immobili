@@ -9,8 +9,8 @@ use Wonder\App\Dependencies;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Services\ImmobileQuery;
-use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
 $slug = trim((string) ($GLOBALS['ROUTE_PARAMETERS']['slug'] ?? ''));
 $row = Residenza::safeFind(['slug' => $slug, 'visible' => 'true', 'deleted' => 'false'], 1);

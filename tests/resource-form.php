@@ -8,18 +8,18 @@ use Wonder\Backend\Support\ResourceFormLayoutRenderer;
 use Wonder\Elements\Form\Field as ElementField;
 use Wonder\Elements\Form\Form;
 use Wonder\Elements\Form\Components\Submit;
-use Wonder\Plugin\Immobili\Models\Categoria;
-use Wonder\Plugin\Immobili\Models\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Categoria;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
-use Wonder\Plugin\Immobili\Models\Macrotipologia;
-use Wonder\Plugin\Immobili\Models\Quartiere;
-use Wonder\Plugin\Immobili\Models\QuartiereZona;
-use Wonder\Plugin\Immobili\Models\Tipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Macrotipologia;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Quartiere;
+use Wonder\Plugin\Immobili\Models\Taxonomy\QuartiereZona;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Resources\ImmobileResource;
-use Wonder\Plugin\Immobili\Services\IdealistaExporter;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
-use Wonder\Plugin\Immobili\Support\ImmobileForm;
+use Wonder\Plugin\Immobili\Export\IdealistaExporter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
 use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
