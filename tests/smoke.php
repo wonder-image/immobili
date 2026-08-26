@@ -46,6 +46,24 @@ $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['Villa a Città Alta']) === 
 $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['  Trilocale, Via Roma 10  ']) === 'trilocale-via-roma-10', "trim + separatori");
 $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['']) === 'immobile', "vuoto => fallback 'immobile'");
 
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base([''], 'residenza') === 'residenza', "vuoto + fallback esplicito => 'residenza'");
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base(['Corte Verde'], 'residenza') === 'corte-verde', "il fallback non interferisce quando c'è testo");
+
+echo "Slug parametrico sul modello\n";
+$slugReflection = new ReflectionMethod(\Wonder\Plugin\Immobili\Support\Slug::class, 'unique');
+$slugParams = $slugReflection->getParameters();
+$assert(count($slugParams) === 4, "Slug::unique accetta base, modelClass, excludeId, fallback");
+$assert(($slugParams[1]->getName() ?? '') === 'modelClass', "il secondo parametro è il modello");
+$assert(
+    $slugParams[1]->isDefaultValueAvailable()
+    && $slugParams[1]->getDefaultValue() === \Wonder\Plugin\Immobili\Models\Immobile::class,
+    "Immobile resta il default"
+);
+$assert(
+    !method_exists(\Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::class, 'uniqueSlug'),
+    "ResidenzaForm::uniqueSlug è stata rimossa a favore di Slug"
+);
+
 echo "Slug dai campi del titolo\n";
 $slugRow = [
     'tipologia_nome' => 'Trilocale',

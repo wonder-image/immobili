@@ -5,6 +5,7 @@ namespace Wonder\Plugin\Immobili\Seeding;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
+use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
  * Seed di residenze di esempio per la verifica locale (frontend + backend).
@@ -112,7 +113,7 @@ final class ResidenzaSeeder
             $data = [
                 'code'              => self::CODE_PREFIX.$num,
                 'nome'              => (string) $demo['nome'],
-                'slug'              => ResidenzaForm::uniqueSlug((string) $demo['nome']),
+                'slug'              => Slug::fromParts([(string) $demo['nome']], Residenza::class, null, 'residenza'),
                 'logo'              => $this->logo($dir, $num, (string) $demo['nome'], $color),
                 'images'            => $this->gallery($dir, $num, (string) $demo['nome'], $color),
                 'sito_url'          => $demo['sito'] ? 'https://www.example.com/' : '',

@@ -5,7 +5,6 @@ namespace Wonder\Plugin\Immobili\Support\Forms;
 use Throwable;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Models\Residenza;
 
 /**
  * Testi, catalogo features e opzioni del form backend delle residenze.
@@ -135,37 +134,4 @@ final class ResidenzaForm
         return $options;
     }
 
-    /**
-     * Slug leggibile e univoco nella tabella immobili_residenze. Riusa la base
-     * slug generica; l'unicità è verificata contro le residenze (suffisso -2, -3…).
-     */
-    public static function uniqueSlug(string $nome, int|string|null $excludeId = null): string
-    {
-        $base = Slug::base([$nome]);
-        $base = $base !== '' ? $base : 'residenza';
-        $slug = $base;
-        $n = 1;
-
-        while (self::slugTaken($slug, $excludeId)) {
-            $n++;
-            $slug = $base.'-'.$n;
-        }
-
-        return $slug;
-    }
-
-    private static function slugTaken(string $slug, int|string|null $excludeId): bool
-    {
-        try {
-            $row = Residenza::find(['slug' => $slug], 1);
-        } catch (Throwable) {
-            return false;
-        }
-
-        if (!is_array($row) || !isset($row['id'])) {
-            return false;
-        }
-
-        return $excludeId === null || (int) $row['id'] !== (int) $excludeId;
-    }
 }

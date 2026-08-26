@@ -73,7 +73,7 @@ foreach ($rows as $row) {
             $row['indirizzo'] ?? '',
             $fields['comune_nome'] ?? '',
         ]);
-        $fields['slug'] = Slug::unique($base, $id);
+        $fields['slug'] = Slug::unique($base, Immobile::class, $id);
     }
 
     Immobile::update($fields, $id);

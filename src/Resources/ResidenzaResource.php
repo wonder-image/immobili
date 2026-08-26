@@ -20,6 +20,7 @@ use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
+use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
  * Gestione backend delle residenze (cantieri). Record sempre manuali. Gli
@@ -406,7 +407,12 @@ final class ResidenzaResource extends Resource
         // Slug stabile: generato solo se non esiste già sul record.
         if (empty($oldValues['slug'])) {
             $excludeId = isset($oldValues['id']) ? (int) $oldValues['id'] : null;
-            $values['slug'] = ResidenzaForm::uniqueSlug((string) ($values['nome'] ?? ''), $excludeId);
+            $values['slug'] = Slug::fromParts(
+                [(string) ($values['nome'] ?? '')],
+                Residenza::class,
+                $excludeId,
+                'residenza'
+            );
         }
 
         return $values;
