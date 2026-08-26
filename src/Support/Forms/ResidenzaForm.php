@@ -10,7 +10,7 @@ use Wonder\Plugin\Immobili\Models\Immobile;
  * Testi, catalogo features e opzioni del form backend delle residenze.
  * Riusa le tassonomie/energia di ImmobileForm e la slugificazione di Slug.
  */
-final class ResidenzaForm
+final class ResidenzaForm extends FormText
 {
     /** @var array<string, string> id feature → chiave lang (suffisso). */
     public const FEATURE_KEYS = [
@@ -42,18 +42,7 @@ final class ResidenzaForm
 
     public static function text(string $key, ?string $fallback = null): string
     {
-        $translationKey = 'forms.residenze.'.$key;
-
-        if (function_exists('__t')) {
-            try {
-                return (string) __t($translationKey);
-            } catch (Throwable) {
-                // pageSchema()/labelSchema() sono letti anche prima che le
-                // traduzioni del modulo siano disponibili.
-            }
-        }
-
-        return $fallback ?? $translationKey;
+        return self::resolve('residenze', $key, $fallback);
     }
 
     /** @return array<string, string> id → label tradotta */
@@ -76,10 +65,15 @@ final class ResidenzaForm
     /** @return array<string, string|array<string, mixed>> */
     public static function energyClasses(): array
     {
-        return ImmobileForm::energyClasses();
+        return FormText::energyClasses();
     }
 
-    /** @return array<string, string|array<string, mixed>> */
+    /**
+     * I comuni sono la tassonomia canonica degli immobili: la residenza la
+     * riusa invece di mantenerne una propria.
+     *
+     * @return array<string, string|array<string, mixed>>
+     */
     public static function municipalities(): array
     {
         return ImmobileForm::municipalities();

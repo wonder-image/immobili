@@ -14,7 +14,7 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
 /**
  * Testi, dizionari e tassonomie usati dal form backend degli immobili.
  */
-final class ImmobileForm
+final class ImmobileForm extends FormText
 {
     /** @var array<string, array<string, string>> */
     private const OPTION_KEYS = [
@@ -156,18 +156,7 @@ final class ImmobileForm
 
     public static function text(string $key, ?string $fallback = null): string
     {
-        $translationKey = 'forms.immobili.'.$key;
-
-        if (function_exists('__t')) {
-            try {
-                return (string) __t($translationKey);
-            } catch (Throwable) {
-                // pageSchema() viene letto anche durante il pre-routing, prima
-                // che le traduzioni dei moduli siano sempre disponibili.
-            }
-        }
-
-        return $fallback ?? $translationKey;
+        return self::resolve('immobili', $key, $fallback);
     }
 
     /** @return array<string, string> */
@@ -221,21 +210,7 @@ final class ImmobileForm
     /** @return array<string, string|array<string, mixed>> */
     public static function energyClasses(): array
     {
-        $options = ['' => '--'];
-
-        foreach (['A+', 'A'] as $class) {
-            $options[$class] = self::filteredOption($class, 'legge', ['0']);
-        }
-
-        foreach (['A4', 'A3', 'A2', 'A1'] as $class) {
-            $options[$class] = self::filteredOption($class, 'legge', ['1']);
-        }
-
-        foreach (['B', 'C', 'D', 'E', 'F', 'G'] as $class) {
-            $options[$class] = self::filteredOption($class, 'legge', ['0', '1']);
-        }
-
-        return $options;
+        return FormText::energyClasses();
     }
 
     /**
@@ -426,16 +401,5 @@ final class ImmobileForm
         }
 
         return in_array($parentValue, array_map('strval', $allowed), true);
-    }
-
-    /** @param array<int, string> $values */
-    private static function filteredOption(string $label, string $filter, array $values): array
-    {
-        return [
-            'name' => $label,
-            'filter' => [
-                $filter => (string) json_encode(array_values($values), JSON_UNESCAPED_UNICODE),
-            ],
-        ];
     }
 }

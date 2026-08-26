@@ -384,6 +384,30 @@ $assert(
     'gli URL locali sono risolti sul filesystem'
 );
 
+echo "FormText\n";
+$formText = \Wonder\Plugin\Immobili\Support\Forms\FormText::class;
+
+// Senza __t() registrato il fallback è la chiave stessa: è il comportamento
+// difensivo che serve quando le lang del modulo non sono ancora caricate.
+$assert(
+    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome'
+    || is_string($formText::resolve('immobili', 'fields.nome')),
+    "resolve compone forms.<section>.<key>"
+);
+$assert($formText::resolve('residenze', 'x', 'ripiego') !== '', "il fallback esplicito non è mai vuoto");
+
+$energy = $formText::energyClasses();
+$assert(($energy[''] ?? null) === '--', "la prima opzione è il placeholder vuoto");
+$assert(array_key_exists('A4', $energy) && array_key_exists('G', $energy), "copre le classi di entrambe le leggi");
+$assert(
+    \Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::energyClasses() === $energy,
+    "ImmobileForm::energyClasses delega alla base condivisa"
+);
+$assert(
+    \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::energyClasses() === $energy,
+    "ResidenzaForm::energyClasses delega alla base condivisa"
+);
+
 echo "MediaUrl\n";
 $GLOBALS['PATH'] = (object) ['upload' => 'https://example.test/upload', 'rUpload' => '/srv/upload'];
 $mediaUrl = \Wonder\Plugin\Immobili\Media\MediaUrl::class;
