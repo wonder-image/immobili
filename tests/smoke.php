@@ -390,11 +390,10 @@ $formText = \Wonder\Plugin\Immobili\Support\Forms\FormText::class;
 // Senza __t() registrato il fallback è la chiave stessa: è il comportamento
 // difensivo che serve quando le lang del modulo non sono ancora caricate.
 $assert(
-    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome'
-    || is_string($formText::resolve('immobili', 'fields.nome')),
+    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome',
     "resolve compone forms.<section>.<key>"
 );
-$assert($formText::resolve('residenze', 'x', 'ripiego') !== '', "il fallback esplicito non è mai vuoto");
+$assert($formText::resolve('residenze', 'x', 'ripiego') === 'ripiego', "il fallback esplicito viene restituito tale e quale");
 
 $energy = $formText::energyClasses();
 $assert(($energy[''] ?? null) === '--', "la prima opzione è il placeholder vuoto");
