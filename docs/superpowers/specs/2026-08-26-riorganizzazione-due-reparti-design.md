@@ -31,6 +31,10 @@ intenzionale ed è la correzione della monolingua del dettaglio immobile
    (dizionari del presenter → traduzioni).
 4. **Nessuna cartella `shared/`** → la radice di `view/components/` *è* già il
    livello condiviso. Criterio: **radice = trasversale, sottocartella = reparto**.
+5. **Componenti unificati dove il contenuto è lo stesso**: `cards-grid` +
+   `cards-swiper` → un solo `cards`; le due `card` → una sola, alimentata da un
+   view-model comune. Le due `features` **non** si unificano: sono due contenuti
+   diversi (vedi § Unificazione dei componenti).
 
 ## Stato attuale (il problema, in una tabella)
 
@@ -51,13 +55,14 @@ intenzionale ed è la correzione della monolingua del dettaglio immobile
 view/
 ├── layout/frontend/immobili.main.php          invariato
 ├── components/
-│   ├── map.php                                trasversale → resta in radice
-│   ├── energy-class/                          trasversale → resta in radice
-│   │   └── energy-class · badge · line · scale
-│   ├── immobili/
-│   │   └── card · cards-grid · cards-swiper · filters · features
-│   └── residenze/
-│       └── card · features · timeline
+│   ├── cards.php          unificato: layout grid | swiper
+│   ├── card.php           unificato: view-model comune
+│   ├── specs.php          ex features.php — attributo → valore
+│   ├── amenities.php      ex residenze/features.php — icona + label
+│   ├── map.php
+│   ├── energy-class/      energy-class · badge · line · scale
+│   ├── immobili/          filters
+│   └── residenze/         timeline
 └── pages/
     ├── frontend/
     │   ├── immobili/  list · detail · sold
@@ -72,8 +77,10 @@ la mappa da `immobili/list`, `immobili/detail`, `immobili/sold` e
 accetta indifferentemente un immobile o una scala. Effetto collaterale
 desiderabile: gli override dei siti su questi due path **non si rompono**.
 
-`cards-grid` resta in `immobili/` anche se invocato da `residenze/detail`: mostra
-card di immobili, non è trasversale per natura.
+Dopo l'unificazione le due sottocartelle di reparto contengono **un file
+ciascuna**. Restano comunque, perché il criterio deve essere uno solo in tutto
+`view/` (dove `pages/` le usa in pieno) e perché è lì che va ogni componente di
+reparto che nascerà.
 
 Come parte del lavoro, `residenze/detail` smette di stampare a mano il badge
 della classe energetica e passa al componente `energy-class/badge`.
@@ -90,6 +97,7 @@ src/
 │   └── System/    FeedSource · SyncLog · Settings
 ├── Resources/     invariata
 ├── Catalog/       ImmobilePresenter · ImmobileQuery · ResidenzaPresenter
+│                  CardViewModel (nuovo — forma comune delle card)
 ├── Media/         ImageProcessor · MediaUrl (nuovo)
 ├── Sync/          FeedSyncService · SyncApiUser · ReindexService (nuovo)
 ├── Seeding/       ImmobileSeeder · ResidenzaSeeder
@@ -111,6 +119,96 @@ nessun sito referenzia direttamente.
 `RecursiveDirectoryIterator` e ricavano il FQCN dal `namespace` dichiarato nel
 file. Le sottocartelle di `Models/` sono quindi sicure, a patto che il namespace
 PSR-4 segua il path.
+
+## Unificazione dei componenti
+
+### `cards-grid` + `cards-swiper` → `cards.php`
+
+I due componenti sono già la stessa cosa: entrambi accettano `immobili`
+(`object[]`), filtrano `is_object`, escono su lista vuota, risolvono la **stessa**
+`card`, accumulano le classi extra passate. Divergono solo nel wrapper finale —
+`<div class="d-grid col-3 …">` contro `__swiper()`.
+
+Esiste inoltre una **terza copia non dichiarata**: `residenze/list.php` scrive a
+mano `<div class="d-grid col-3 col-p-1 gap-5 mt-4">` + `foreach`, perché
+`cards-grid` filtra `is_object` mentre le residenze passano array grezzi.
+
+→ un solo `components/cards.php` con `layout: 'grid' | 'swiper'` (default `grid`),
+che assorbe anche gli argomenti oggi esclusivi dello swiper (`id`, `slide_class`,
+`aria_label`), ignorati in modalità griglia. `residenze/list.php` lo usa al posto
+della griglia scritta a mano.
+
+### Le due `card` → `card.php`
+
+I gusci HTML sono già identici carattere per carattere:
+
+```html
+<a class="d-block b-r-15 o-hidden bg-white tx-black b-shadow" href="…">
+  <div class="f-3-2 p-r bg-cover o-hidden" style="background-image:url(…)">
+    <span class="p-a badge …" style="top:.6rem;left:.6rem">…</span>
+  <div class="p-4 d-grid gap-2">
+```
+
+Divergono solo per il **tipo di input** (immobili: object già decorato da
+`ImmobilePresenter::card()`; residenze: array grezzo + presenter passato come
+argomento della view) e per quali righe compongono il corpo.
+
+Unificare il file senza unificare il contratto dati produrrebbe un componente con
+`if (residenza) … else …` dentro: i due file di oggi in un file solo, meno
+leggibili. Il lavoro è quindi **a monte**, nei presenter, che devono produrre la
+stessa forma:
+
+```php
+object {
+    url:       string,
+    cover:     string,
+    badge:     ?object { label: string, variant: string },
+    eyebrow:   string,   // "Trilocale · Vendita"  |  ""
+    title:     string,   // prettyName             |  nome
+    subtitle:  string,   // prettyAddress          |  comune_nome
+    highlight: string,   // prettyPrezzo           |  ""
+    excerpt:   string,   // ""                     |  descrizione_breve
+    meta:      array<int, object { icon: string, text: string }>,
+}
+```
+
+`highlight` ed `excerpt` sono i due slot che oggi divergono (il prezzo ce l'ha
+solo l'immobile, la descrizione breve solo la residenza) e sono entrambi
+opzionali.
+
+**Criterio di accettazione del refactor**: dentro `card.php` non deve comparire
+nessun `if` sul reparto — solo `if` sulla presenza del dato. Se serve un ramo per
+tipo, il view-model è sbagliato e va corretto lì.
+
+Conseguenza: `ResidenzaPresenter` smette di essere passato dentro la view come
+argomento (`['residenza' => $row, 'presenter' => $presenter]`); la pagina passa
+il view-model già pronto, come fa già la lista immobili.
+
+### Le due `features` → restano due, rinominate
+
+Non sono lo stesso contenuto reso diversamente:
+
+|        | `features.php` (immobili)                          | `residenze/features.php`            |
+|--------|----------------------------------------------------|-------------------------------------|
+| dato   | coppie **attributo → valore** ("Superficie: 120 mq") | **presenze booleane** ("Giardino")  |
+| fonte  | `AttributeCatalog` + Settings, configurabile da backend | catalogo fisso in codice (`FEATURE_ICONS`) |
+| resa   | 4 colonne, label sopra / valore sotto, bordo         | 2 colonne, icona + label            |
+
+Un componente unico dovrebbe accettare sia `{label, value}` sia `{icon, label}` e
+scegliere il layout in base a quale dei due riceve: conterrebbe entrambi i
+componenti attuali **più** la logica per distinguerli.
+
+→ restano due, ma rinominati per dire cosa sono, ed entrambi in radice perché
+entrambi trasversali per natura:
+
+- `features.php` → **`specs.php`** (attributo → valore)
+- `residenze/features.php` → **`amenities.php`** (icona + label)
+
+Nota per il futuro (**fuori scope**): l'immobile ha già le sue dotazioni booleane
+(piscina, camino, allarme, videocitofono, porta blindata…) che oggi finiscono in
+`specs` come stringhe "Sì". Quelle sono lo stesso contenuto delle features
+residenze e potranno passare ad `amenities` senza scrivere un componente nuovo.
+Non si fa in questa passata: cambierebbe l'aspetto della scheda immobile.
 
 ## Le sei deduplicazioni
 
@@ -209,6 +307,10 @@ Aggiunte previste:
 - `tests/smoke.php` — `Slug::unique()` con `$modelClass` esplicito.
 - `tests/smoke.php` — `MediaUrl::preview()` / `firstFile()` su valori JSON,
   array già decodificato, stringa legacy, URL assoluto.
+- `tests/smoke.php` — il view-model card prodotto da `ImmobilePresenter` e da
+  `ResidenzaPresenter` espone **le stesse chiavi**, con i campi non pertinenti a
+  stringa vuota anziché assenti. È il test che protegge il criterio "nessun `if`
+  sul reparto dentro `card.php`".
 - `tests/residenze.php` — la struttura dei componenti residenze punta ai nuovi path.
 
 Più: `php -l` su ogni file toccato, `composer dump-autoload` dopo lo spostamento
