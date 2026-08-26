@@ -111,6 +111,11 @@ final class Slug
      * alla convenzione difensiva dominante del modulo (vedi Forms, Taxonomy,
      * FeedSyncService): un fallimento di connessione durante setup non blocca.
      *
+     * Nota: per gli immobili è un cambiamento deliberato. Prima il catch
+     * esisteva solo nella versione residenze (`ResidenzaForm::slugTaken()`),
+     * mentre qui l'eccezione si propagava; unificando le due implementazioni si
+     * è tenuto il comportamento più difensivo dei due.
+     *
      * @param class-string $modelClass
      */
     private static function taken(string $slug, string $modelClass, int|string|null $excludeId): bool
