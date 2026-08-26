@@ -406,6 +406,9 @@ $assert($mediaUrl::firstFile('["uno.jpg","due.jpg"]') === 'uno.jpg', "firstFile 
 $assert($mediaUrl::firstFile(['uno.jpg', 'due.jpg']) === 'uno.jpg', "firstFile da array già decodificato");
 $assert($mediaUrl::firstFile('uno.jpg') === 'uno.jpg', "firstFile da stringa legacy");
 $assert($mediaUrl::firstFile('') === '', "firstFile su vuoto => ''");
+$assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non finisce mai in un URL)");
+$assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
+$assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
 echo "Route cartello vetrina venduto\n";
 $pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);

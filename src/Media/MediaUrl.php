@@ -59,12 +59,19 @@ final class MediaUrl
 
     /**
      * Primo filename di una colonna file/immagine: array JSON, array già
-     * decodificato o formato legacy a stringa singola. '' se assente.
+     * decodificato, stringa JSON-encoded (es. `'"uno.jpg"'`) o formato
+     * legacy a stringa singola nuda (es. `'uno.jpg'`). '' se assente.
      *
      * `MediaFileManager::decodeStoredFiles()` sa leggere solo JSON (array o
      * stringa JSON-encoded): un filename legacy salvato come stringa
      * semplice (non JSON) non decodifica a nulla, quindi va gestito qui come
      * fallback — stessa logica di `ImmobileImmagine::firstUploadedFile()`.
+     *
+     * Il fallback a stringa nuda scatta solo se il valore non sembra un
+     * tentativo di JSON (non inizia con `[`, `{` o `"` dopo il trim): un
+     * valore DB corrotto o troncato che sembra JSON ma non decodifica
+     * fallisce in sicurezza restituendo '', invece di essere trattato come
+     * filename e finire renderizzato in un URL rotto.
      */
     public static function firstFile(mixed $stored): string
     {
@@ -90,7 +97,13 @@ final class MediaUrl
             return trim($decoded);
         }
 
-        return json_last_error() === JSON_ERROR_NONE ? '' : $stored;
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return '';
+        }
+
+        // JSON non decodificabile: filename legacy solo se non sembra un
+        // tentativo di JSON, altrimenti fallisce in sicurezza con ''.
+        return in_array($stored[0], ['[', '{', '"'], true) ? '' : $stored;
     }
 
     private static function isAbsolute(string $file): bool
