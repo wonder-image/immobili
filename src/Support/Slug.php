@@ -94,7 +94,7 @@ final class Slug
         return $slug;
     }
 
-    private static function limit(string $slug, int $length, string $fallback = 'immobile'): string
+    private static function limit(string $slug, int $length, string $fallback): string
     {
         if (strlen($slug) <= $length) {
             return $slug;
@@ -107,7 +107,9 @@ final class Slug
 
     /**
      * `$modelClass` deve essere un Model del modulo con colonna `slug`. Le
-     * eccezioni (DB non ancora migrato) valgono "slug libero", come prima.
+     * eccezioni (DB non ancora migrato) valgono "slug libero" per allinearsi
+     * alla convenzione difensiva dominante del modulo (vedi Forms, Taxonomy,
+     * FeedSyncService): un fallimento di connessione durante setup non blocca.
      *
      * @param class-string $modelClass
      */
