@@ -12,7 +12,7 @@ use Wonder\App\Support\MediaFileManager;
  */
 final class ResidenzaPresenter
 {
-    private const FOLDER = 'immobili/residenze';
+    private const FOLDER = 'residenze';
 
     /** Etichetta timeline: "" se anno assente, "2025" o "03/2025". */
     public static function timelineLabel(?int $anno, ?int $mese): string
@@ -76,6 +76,11 @@ final class ResidenzaPresenter
             return '';
         }
 
+        // Valore già URL assoluto (es. immagini di seed): usalo così com'è.
+        if (filter_var($file, FILTER_VALIDATE_URL) !== false) {
+            return $file;
+        }
+
         $base = rtrim((string) (($GLOBALS['PATH']->upload ?? '')), '/');
 
         return $base.'/'.self::FOLDER.'/'.$file;
@@ -99,6 +104,11 @@ final class ResidenzaPresenter
 
         if ($file === '') {
             return '';
+        }
+
+        // Gli URL assoluti (seed) non hanno varianti responsive: usali diretti.
+        if (filter_var($file, FILTER_VALIDATE_URL) !== false) {
+            return $file;
         }
 
         $dot = strrpos($file, '.');

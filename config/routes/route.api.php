@@ -27,6 +27,10 @@ Route::area('api')
                 Route::get('/seed/', Immobili::httpPath('api/task/seed.php'))
                     ->name('seed');
 
+                // Seed di residenze di esempio (solo ambiente locale) per verifica.
+                Route::get('/residenze-seed/', Immobili::httpPath('api/task/residenze-seed.php'))
+                    ->name('residenze_seed');
+
                 // Backfill idempotente dei campi derivati di ricerca
                 // (comune_nome/tipologia_nome/ricerca) sugli immobili esistenti.
                 Route::get('/reindex/', Immobili::httpPath('api/task/reindex.php'))

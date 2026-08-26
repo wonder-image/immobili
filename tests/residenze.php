@@ -193,26 +193,35 @@ $assert(
 echo "ResidenzaPresenter::imageUrl / previewUrl / cover / images\n";
 $GLOBALS['PATH'] = (object) ['upload' => 'https://cdn.example.test/uploads'];
 $assert(
-    ResidenzaPresenter::imageUrl('a.jpg') === 'https://cdn.example.test/uploads/immobili/residenze/a.jpg',
+    ResidenzaPresenter::imageUrl('a.jpg') === 'https://cdn.example.test/uploads/residenze/a.jpg',
     'imageUrl compone l\'URL upload della cartella residenze'
 );
 $assert(
-    ResidenzaPresenter::previewUrl('a.jpg') === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
+    ResidenzaPresenter::previewUrl('a.jpg') === 'https://cdn.example.test/uploads/residenze/a-620.webp',
     'previewUrl costruisce la variante webp -620 del filename'
 );
 $assert(
     ResidenzaPresenter::previewUrl('') === '',
     'previewUrl vuota se filename vuoto'
 );
+$assert(
+    ResidenzaPresenter::imageUrl('https://cdn.ext/x.jpg') === 'https://cdn.ext/x.jpg'
+        && ResidenzaPresenter::previewUrl('https://cdn.ext/x.jpg') === 'https://cdn.ext/x.jpg',
+    'imageUrl/previewUrl lasciano invariati gli URL assoluti (immagini di seed)'
+);
+$assert(
+    (new ResidenzaPresenter())->cover(['images' => '["https://cdn.ext/1.jpg"]']) === 'https://cdn.ext/1.jpg',
+    'cover usa direttamente un URL assoluto presente in gallery (seed)'
+);
 $galleryRow = ['nome' => 'Residenza Demo', 'images' => '["a.jpg","b.png"]'];
 $assert(
-    (new ResidenzaPresenter())->cover($galleryRow) === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
+    (new ResidenzaPresenter())->cover($galleryRow) === 'https://cdn.example.test/uploads/residenze/a-620.webp',
     'cover = anteprima -620 della prima immagine della colonna JSON'
 );
 $assert(
     (new ResidenzaPresenter())->images($galleryRow) === [
-        ['src' => 'https://cdn.example.test/uploads/immobili/residenze/a.jpg', 'alt' => 'Residenza Demo'],
-        ['src' => 'https://cdn.example.test/uploads/immobili/residenze/b.png', 'alt' => 'Residenza Demo'],
+        ['src' => 'https://cdn.example.test/uploads/residenze/a.jpg', 'alt' => 'Residenza Demo'],
+        ['src' => 'https://cdn.example.test/uploads/residenze/b.png', 'alt' => 'Residenza Demo'],
     ],
     'images() mappa la colonna JSON in {src, alt}, usando il nome come alt'
 );

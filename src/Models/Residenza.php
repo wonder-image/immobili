@@ -14,7 +14,7 @@ use Wonder\Data\UploadSchema as Field;
 final class Residenza extends Model
 {
     public static string $table  = 'immobili_residenze';
-    public static string $folder = 'immobili/residenze';
+    public static string $folder = 'residenze';
     public static string $icon   = 'bi bi-buildings';
 
     /** @var array<int, string> Colonne testuali libere → TEXT. */
