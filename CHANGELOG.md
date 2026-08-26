@@ -6,12 +6,13 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 ## [Unreleased]
 
 ### Aggiunto
-- Reparto **Residenze** (cantieri/costruzioni): Model `Residenza` + gallery
-  `ResidenzaImmagine`, `ResidenzaResource` (CRUD backend), frontend
-  `/residenze/` e `/residenze/{slug}/` con timeline, features, capitolato PDF,
-  classe energetica, unità abitative, mappa e immobili collegati (FK
-  `immobili.residenza_id`). Traduzioni it/en. Cover = prima immagine della
-  gallery.
+- Reparto **Residenze** (cantieri/costruzioni): Model `Residenza`,
+  `ResidenzaResource` (CRUD backend), frontend `/residenze/` e
+  `/residenze/{slug}/` con timeline, features, capitolato PDF, classe
+  energetica, unità abitative, mappa e immobili collegati (FK
+  `immobili.residenza_id`). Traduzioni it/en. La gallery è un upload
+  multiplo salvato come array JSON di filename nella colonna `images`
+  della residenza (fino a 12 immagini); cover = prima immagine.
 
 ## [1.0.0] - non ancora rilasciato
 

@@ -9,7 +9,6 @@ use Wonder\App\Dependencies;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Models\ResidenzaImmagine;
 use Wonder\Plugin\Immobili\Services\ImmobileQuery;
 use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
 
@@ -40,10 +39,10 @@ $statoLabel = (string) __t('pages.residenze.stato.'.$stato);
 $inizio = ResidenzaPresenter::timelineLabel((int) ($row['inizio_anno'] ?? 0), (int) ($row['inizio_mese'] ?? 0));
 $fine = ResidenzaPresenter::timelineLabel((int) ($row['fine_anno'] ?? 0), (int) ($row['fine_mese'] ?? 0));
 
-$logoFile = ResidenzaImmagine::firstUploadedFile($row['logo'] ?? '');
+$logoFile = ResidenzaPresenter::firstFile($row['logo'] ?? '');
 $logoUrl = $logoFile !== '' ? ResidenzaPresenter::imageUrl($logoFile) : '';
 
-$capitolatoFile = ResidenzaImmagine::firstUploadedFile($row['capitolato'] ?? '');
+$capitolatoFile = ResidenzaPresenter::firstFile($row['capitolato'] ?? '');
 $capitolatoUrl = $capitolatoFile !== '' ? ResidenzaPresenter::imageUrl($capitolatoFile) : '';
 
 // Immobili collegati (visibili) via FK.

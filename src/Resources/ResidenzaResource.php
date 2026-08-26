@@ -6,12 +6,9 @@ use Wonder\App\Resource;
 use Wonder\App\ResourceSchema\ApiSchema;
 use Wonder\App\ResourceSchema\FormField;
 use Wonder\App\ResourceSchema\Inputs\InputNumber;
-use Wonder\App\ResourceSchema\Inputs\InputRepeater;
 use Wonder\App\ResourceSchema\NavigationSchema;
 use Wonder\App\ResourceSchema\PageSchema;
 use Wonder\App\ResourceSchema\PermissionSchema;
-use Wonder\App\ResourceSchema\RepeaterColumn;
-use Wonder\App\ResourceSchema\RepeaterRelation;
 use Wonder\App\ResourceSchema\TableColumn;
 use Wonder\App\ResourceSchema\TableLayoutSchema;
 use Wonder\Elements\Components\Card;
@@ -21,7 +18,6 @@ use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Models\ResidenzaImmagine;
 use Wonder\Plugin\Immobili\Services\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Support\ResidenzaForm;
 
@@ -64,7 +60,7 @@ final class ResidenzaResource extends Resource
             'descrizione_breve', 'descrizione_lunga', 'indirizzo', 'civico', 'cap',
             'comune_id', 'latitudine', 'longitudine', 'zoom', 'logo', 'images',
             'immobili_collegati', 'features', 'classe_energetica', 'unita_abitative',
-            'capitolato', 'stato', 'sold', 'evidence', 'visible', 'position', 'image',
+            'capitolato', 'stato', 'sold', 'evidence', 'visible', 'position',
         ] as $key) {
             $labels[$key] = ResidenzaForm::text('fields.'.$key);
         }
@@ -94,8 +90,14 @@ final class ResidenzaResource extends Resource
             FormField::key('longitudine')->text(),
             FormField::key('zoom')->text(),
 
-            FormField::key('logo')->fileDragDrop('image')->maxSize(3)->extensions(['png', 'jpg', 'jpeg', 'svg', 'webp']),
-            self::imageRepeater(),
+            FormField::key('logo')->fileDragDrop()->maxSize(3)->extensions(['png']),
+            FormField::key('images')
+                    ->fileDragDrop()
+                    ->maxSize(3)
+                    ->maxFile(12)
+                    ->extensions(['png', 'jpg', 'jpeg'])
+                    ->label(ResidenzaForm::text('fields.images')),
+
             FormField::key('immobili_collegati')->selectSearch(ResidenzaForm::immobili(), true),
             FormField::key('features')->selectSearch(ResidenzaForm::features(), true),
 
@@ -116,6 +118,7 @@ final class ResidenzaResource extends Resource
         return (new Form())->components([
             (new Container())->components([
                 self::card([
+
                     static::getInput('nome')->columnSpan(['default' => 12, 'md' => 8]),
                     static::getInput('sito_url')->columnSpan(['default' => 12, 'md' => 4]),
                     static::getInput('descrizione_breve')->columnSpan(12),
@@ -246,7 +249,7 @@ final class ResidenzaResource extends Resource
 
     private static function section(string $key): SectionTitle
     {
-        return SectionTitle::make(ResidenzaForm::text('sections.'.$key))->level(5)->columnSpan(12);
+        return SectionTitle::make(ResidenzaForm::text('sections.'.$key))->columnSpan(12);
     }
 
     private static function numberField(string $key): InputNumber
@@ -274,32 +277,6 @@ final class ResidenzaResource extends Resource
             'completato'  => ResidenzaForm::text('options.stato.completato', 'Completato'),
         ];
     }
-
-    private static function imageRepeater(): InputRepeater
-    {
-        return FormField::key('images')
-            ->repeater([
-                RepeaterColumn::key('id')->hidden(),
-                RepeaterColumn::key('preview_url')->hidden(),
-                RepeaterColumn::key('upload')
-                    ->fileDragDrop('image')
-                    ->maxSize(3)
-                    ->extensions(['png', 'jpg', 'jpeg'])
-                    ->label(ResidenzaForm::text('fields.image'))
-                    ->columnSpan(12),
-            ])
-            ->nested()
-            ->repeaterSortable()
-            ->repeaterAddLabel(ResidenzaForm::text('buttons.add_image'))
-            ->relation(
-                RepeaterRelation::make('immobili_residenze_immagini', 'residenza_id')
-                    ->positionKey('position')
-                    ->softDelete(false)
-                    ->model(ResidenzaImmagine::class)
-            );
-    }
-
-    // --- Table cell formatters -------------------------------------------
 
     /** @param array<string, mixed> $row */
     private static function coverCell(array $row): string
@@ -442,24 +419,6 @@ final class ResidenzaResource extends Resource
             $values['features'] = self::normalizeFeatures($values['features']);
         }
 
-        // Righe gallery: prepara upload JSON + anteprima per FilePond.
-        if (is_array($values['images'] ?? null)) {
-            $presenter = new ResidenzaPresenter();
-            $values['images'] = array_values(array_map(
-                static function (mixed $row) use ($presenter): array {
-                    $row = is_array($row) ? $row : [];
-                    $file = ResidenzaImmagine::firstUploadedFile($row['upload'] ?? '');
-                    $row['upload'] = $file !== ''
-                        ? json_encode([$file], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)
-                        : '';
-                    $row['preview_url'] = $presenter->imagePreview($row);
-
-                    return $row;
-                },
-                $values['images']
-            ));
-        }
-
         return $values;
     }
 
@@ -474,21 +433,6 @@ final class ResidenzaResource extends Resource
         unset($values['immobili_collegati']);
 
         return $values;
-    }
-
-    public static function prepareRepeaterRelationRow(
-        string $inputName,
-        array $payload,
-        array $row,
-        ?array $existingRow = null,
-        string $action = 'store',
-        string $context = 'backend'
-    ): array {
-        if ($inputName === 'images') {
-            unset($payload['preview_url']);
-        }
-
-        return $payload;
     }
 
     public static function hydrateRepeaterFormValues(

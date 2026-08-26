@@ -23,7 +23,7 @@ final class Residenza extends Model
     ];
 
     /** @var array<int, string> Colonne file/immagine (filename JSON) → TEXT. */
-    private const SQL_FILE_COLUMNS = ['logo', 'capitolato'];
+    private const SQL_FILE_COLUMNS = ['logo', 'images', 'capitolato'];
 
     /** @var array<string, int> */
     private const SQL_VARCHAR_LENGTHS = [
@@ -112,7 +112,8 @@ final class Residenza extends Model
             Field::key('nome')->text()->sanitizeFirst(),
             Field::key('slug')->text()->slug(),
 
-            Field::key('logo')->image()->maxSize(3)->extensions(['png', 'jpg', 'jpeg', 'svg', 'webp']),
+            Field::key('logo')->image()->maxSize(3)->extensions(['png'])->responsive(),
+            Field::key('images')->image()->maxSize(3)->maxFile(12)->extensions(['png', 'jpg', 'jpeg'])->responsive(),
             Field::key('sito_url')->text()->sanitize(false),
 
             // Timeline: anno obbligatorio in UI, mese opzionale.

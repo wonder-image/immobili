@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Models\ResidenzaImmagine;
 
 /**
  * Smoke test strutturale del reparto Residenze.
@@ -46,7 +45,7 @@ $columns = Residenza::getColumns();
 $columnNames = array_keys($columns);
 
 $expectedColumns = [
-    'code', 'nome', 'slug', 'logo', 'sito_url',
+    'code', 'nome', 'slug', 'logo', 'images', 'sito_url',
     'inizio_anno', 'inizio_mese', 'fine_anno', 'fine_mese',
     'descrizione_breve', 'descrizione_lunga',
     'indirizzo', 'civico', 'cap', 'comune_id', 'comune_nome',
@@ -101,23 +100,24 @@ $assert(
     'comune_id è INT (FK verso immobili_comuni)'
 );
 
-echo "Schema ResidenzaImmagine\n";
-$imgColumns = array_keys(ResidenzaImmagine::getColumns());
+echo "Colonna images (gallery JSON)\n";
 $assert(
-    array_values(array_intersect(['residenza_id', 'upload', 'titolo', 'position'], $imgColumns)) === ['residenza_id', 'upload', 'titolo', 'position'],
-    'ResidenzaImmagine dichiara residenza_id, upload, titolo, position'
+    strtoupper((string) ($columns['images']['type'] ?? '')) === 'TEXT',
+    'images è una colonna TEXT (array JSON di filename)'
 );
-$imgUpload = ResidenzaImmagine::dataFields()['upload'] ?? null;
+$imagesField = Residenza::dataFields()['images'] ?? null;
 $assert(
-    is_object($imgUpload)
-        && $imgUpload->getSchema('max_size') === 3
-        && $imgUpload->getSchema('extensions') === ['png', 'jpg', 'jpeg'],
-    'i limiti upload immagini residenza sono png/jpg/jpeg max 3MB'
+    is_object($imagesField)
+        && $imagesField->getSchema('max_size') === 3
+        && $imagesField->getSchema('max_file') === 12
+        && $imagesField->getSchema('extensions') === ['png', 'jpg', 'jpeg'],
+    'il campo images accetta png/jpg/jpeg, max 3MB, fino a 12 file'
 );
 $assert(
-    ResidenzaImmagine::firstUploadedFile('["a.jpg"]') === 'a.jpg'
-        && ResidenzaImmagine::firstUploadedFile('legacy.jpg') === 'legacy.jpg',
-    'firstUploadedFile legge JSON e formato legacy'
+    \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile('["a.jpg"]') === 'a.jpg'
+        && \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile(['b.jpg']) === 'b.jpg'
+        && \Wonder\Plugin\Immobili\Services\ResidenzaPresenter::firstFile('') === '',
+    'firstFile legge il primo filename da JSON, da array già decodificato o vuoto'
 );
 
 echo "Immobile.residenza_id\n";
@@ -190,19 +190,36 @@ $assert(
     'oggi dopo la fine → completato'
 );
 
-echo "ResidenzaPresenter::imageUrl / imagePreview\n";
+echo "ResidenzaPresenter::imageUrl / previewUrl / cover / images\n";
 $GLOBALS['PATH'] = (object) ['upload' => 'https://cdn.example.test/uploads'];
 $assert(
     ResidenzaPresenter::imageUrl('a.jpg') === 'https://cdn.example.test/uploads/immobili/residenze/a.jpg',
     'imageUrl compone l\'URL upload della cartella residenze'
 );
 $assert(
-    (new ResidenzaPresenter())->imagePreview(['upload' => '["a.jpg"]']) === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
-    'imagePreview costruisce la variante webp -620 dell\'upload manuale'
+    ResidenzaPresenter::previewUrl('a.jpg') === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
+    'previewUrl costruisce la variante webp -620 del filename'
 );
 $assert(
-    (new ResidenzaPresenter())->imagePreview(['upload' => '']) === '',
-    'imagePreview vuota se non c\'è upload'
+    ResidenzaPresenter::previewUrl('') === '',
+    'previewUrl vuota se filename vuoto'
+);
+$galleryRow = ['nome' => 'Residenza Demo', 'images' => '["a.jpg","b.png"]'];
+$assert(
+    (new ResidenzaPresenter())->cover($galleryRow) === 'https://cdn.example.test/uploads/immobili/residenze/a-620.webp',
+    'cover = anteprima -620 della prima immagine della colonna JSON'
+);
+$assert(
+    (new ResidenzaPresenter())->images($galleryRow) === [
+        ['src' => 'https://cdn.example.test/uploads/immobili/residenze/a.jpg', 'alt' => 'Residenza Demo'],
+        ['src' => 'https://cdn.example.test/uploads/immobili/residenze/b.png', 'alt' => 'Residenza Demo'],
+    ],
+    'images() mappa la colonna JSON in {src, alt}, usando il nome come alt'
+);
+$assert(
+    (new ResidenzaPresenter())->cover(['images' => '']) === ''
+        && (new ResidenzaPresenter())->images(['images' => '']) === [],
+    'cover/images vuoti se la colonna images è vuota'
 );
 unset($GLOBALS['PATH']);
 
@@ -240,13 +257,13 @@ $assert(
     'senza destinazione: '.implode(', ', $nonPersistable)
 );
 $assert(
-    $residenzaRelations === ['images'],
-    'images è l\'unica relazione fisica della residenza',
+    $residenzaRelations === [],
+    'la residenza non ha più relazioni fisiche: images è una colonna JSON',
     'relazioni: '.implode(', ', $residenzaRelations)
 );
 $assert(
-    ResidenzaResource::stripRelationInputValues(['nome' => 'X', 'images' => [['id' => '1']], 'immobili_collegati' => ['3']]) === ['nome' => 'X'],
-    'stripRelationInputValues rimuove images e il campo virtuale immobili_collegati'
+    ResidenzaResource::stripRelationInputValues(['nome' => 'X', 'images' => '["a.jpg"]', 'immobili_collegati' => ['3']]) === ['nome' => 'X', 'images' => '["a.jpg"]'],
+    'stripRelationInputValues rimuove solo il campo virtuale immobili_collegati, non images (colonna reale)'
 );
 
 echo "ResidenzaResource::deriveStato / normalizeFeatures / sanitizeUrl\n";

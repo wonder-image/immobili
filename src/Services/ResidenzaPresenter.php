@@ -2,12 +2,13 @@
 
 namespace Wonder\Plugin\Immobili\Services;
 
-use Wonder\Plugin\Immobili\Models\ResidenzaImmagine;
+use Wonder\App\Support\MediaFileManager;
 
 /**
  * View-model della residenza: cover (prima immagine), URL/anteprime immagini,
- * etichetta timeline e stato derivato. Le classi utility del frontend restano
- * nelle view; qui vivono solo i dati.
+ * etichetta timeline e stato derivato. Le immagini vivono nella colonna JSON
+ * `images` della residenza (array di filename), non più in una tabella figlia.
+ * Le classi utility del frontend restano nelle view; qui vivono solo i dati.
  */
 final class ResidenzaPresenter
 {
@@ -66,7 +67,7 @@ final class ResidenzaPresenter
         return 'in_corso';
     }
 
-    /** URL upload assoluto di un filename gallery. */
+    /** URL upload assoluto di un filename della cartella residenze. */
     public static function imageUrl(string $file): string
     {
         $file = trim($file);
@@ -81,13 +82,20 @@ final class ResidenzaPresenter
     }
 
     /**
-     * Anteprima webp (-620) dell'upload manuale; '' se assente.
-     *
-     * @param array<string, mixed> $row
+     * Primo filename di una colonna file/immagine (JSON array, array già
+     * decodificato o formato legacy stringa). '' se assente.
      */
-    public function imagePreview(array $row): string
+    public static function firstFile(mixed $stored): string
     {
-        $file = ResidenzaImmagine::firstUploadedFile($row['upload'] ?? '');
+        $files = MediaFileManager::decodeStoredFiles($stored);
+
+        return $files[0] ?? '';
+    }
+
+    /** URL della variante webp responsive -620 di un filename; '' se vuoto. */
+    public static function previewUrl(string $file): string
+    {
+        $file = trim($file);
 
         if ($file === '') {
             return '';
@@ -100,14 +108,14 @@ final class ResidenzaPresenter
     }
 
     /**
-     * Cover = prima immagine (per position). '' se la gallery è vuota.
+     * Cover = anteprima della prima immagine della gallery. '' se vuota.
      *
      * @param array<string, mixed> $row
      */
     public function cover(array $row): string
     {
-        foreach ($this->galleryRows($row) as $image) {
-            $url = $this->imagePreview($image);
+        foreach ($this->files($row) as $file) {
+            $url = self::previewUrl($file);
 
             if ($url !== '') {
                 return $url;
@@ -118,52 +126,38 @@ final class ResidenzaPresenter
     }
 
     /**
-     * Immagini della gallery (src assoluto + alt).
+     * Immagini della gallery (src assoluto + alt), lette dalla colonna JSON.
      *
      * @param array<string, mixed> $row
      * @return array<int, array{src: string, alt: string}>
      */
     public function images(array $row): array
     {
+        $alt = (string) ($row['nome'] ?? '');
         $images = [];
 
-        foreach ($this->galleryRows($row) as $image) {
-            $file = ResidenzaImmagine::firstUploadedFile($image['upload'] ?? '');
+        foreach ($this->files($row) as $file) {
+            $src = self::imageUrl($file);
 
-            if ($file === '') {
+            if ($src === '') {
                 continue;
             }
 
-            $images[] = [
-                'src' => self::imageUrl($file),
-                'alt' => (string) ($image['titolo'] ?? ''),
-            ];
+            $images[] = ['src' => $src, 'alt' => $alt];
         }
 
         return $images;
     }
 
     /**
-     * Righe gallery ordinate per position. Richiede il DB.
+     * Filename della gallery decodificati dalla colonna JSON `images`.
      *
      * @param array<string, mixed> $row
-     * @return array<int, array<string, mixed>>
+     * @return array<int, string>
      */
-    private function galleryRows(array $row): array
+    private function files(array $row): array
     {
-        $id = (int) ($row['id'] ?? 0);
-
-        if ($id <= 0) {
-            return [];
-        }
-
-        $rows = ResidenzaImmagine::find(['residenza_id' => $id], null, 'position', 'ASC');
-
-        if (is_array($rows) && isset($rows['id'])) {
-            return [$rows];
-        }
-
-        return is_array($rows) ? $rows : [];
+        return MediaFileManager::decodeStoredFiles($row['images'] ?? []);
     }
 
     private static function yearMonth(mixed $anno, mixed $mese, int $defaultMonth): ?int
