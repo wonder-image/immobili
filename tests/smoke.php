@@ -384,6 +384,29 @@ $assert(
     'gli URL locali sono risolti sul filesystem'
 );
 
+echo "MediaUrl\n";
+$GLOBALS['PATH'] = (object) ['upload' => 'https://example.test/upload', 'rUpload' => '/srv/upload'];
+$mediaUrl = \Wonder\Plugin\Immobili\Media\MediaUrl::class;
+
+$assert($mediaUrl::url('', 'residenze') === '', "file vuoto => ''");
+$assert($mediaUrl::url('a.jpg', 'residenze') === 'https://example.test/upload/residenze/a.jpg', "URL composto su cartella");
+$assert(
+    $mediaUrl::url('https://cdn.test/x.jpg', 'residenze') === 'https://cdn.test/x.jpg',
+    "URL assoluto passa invariato"
+);
+$assert($mediaUrl::preview('a.jpg', 'residenze') === 'https://example.test/upload/residenze/a-620.webp', "anteprima => variante -620.webp");
+$assert($mediaUrl::preview('a.b.jpg', 'residenze') === 'https://example.test/upload/residenze/a.b-620.webp', "estensione tagliata sull'ultimo punto");
+$assert(
+    $mediaUrl::preview('https://cdn.test/x.jpg', 'residenze') === 'https://cdn.test/x.jpg',
+    "gli URL assoluti non hanno varianti responsive"
+);
+$assert($mediaUrl::variant('a.jpg', 'immobili', 1200) === 'https://example.test/upload/immobili/a-1200.webp', "variante a larghezza esplicita");
+
+$assert($mediaUrl::firstFile('["uno.jpg","due.jpg"]') === 'uno.jpg', "firstFile da JSON");
+$assert($mediaUrl::firstFile(['uno.jpg', 'due.jpg']) === 'uno.jpg', "firstFile da array già decodificato");
+$assert($mediaUrl::firstFile('uno.jpg') === 'uno.jpg', "firstFile da stringa legacy");
+$assert($mediaUrl::firstFile('') === '', "firstFile su vuoto => ''");
+
 echo "Route cartello vetrina venduto\n";
 $pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
 $soldRoute = current(array_filter(

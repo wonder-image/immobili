@@ -2,6 +2,8 @@
 
 namespace Wonder\Plugin\Immobili\Catalog;
 
+use Wonder\Plugin\Immobili\Media\MediaUrl;
+use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
@@ -698,6 +700,12 @@ final class ImmobilePresenter
     /**
      * Costruisce url/thumb/srcset dalle varianti responsive webp per un dato base.
      *
+     * `$base` arriva già come path assoluto completo (upload base + cartella +
+     * stem senza estensione, vedi `imageEntry()`): non è un filename nudo, quindi
+     * qui si usa `MediaUrl::url()` (passthrough su valori assoluti) e non
+     * `MediaUrl::variant()`, che si aspetta un filename con estensione da cui
+     * derivare lo stem.
+     *
      * @return array{url:string, thumb:string, srcset:string, titolo:string, planimetria:bool}
      */
     private function variants(string $base, string $titolo, bool $planimetria): array
@@ -705,12 +713,12 @@ final class ImmobilePresenter
         $sizes = defined('RESPONSIVE_IMAGE_SIZES') ? RESPONSIVE_IMAGE_SIZES : [480, 960, 1440];
         $srcset = [];
         foreach ($sizes as $size) {
-            $srcset[] = $base.'-'.$size.'.webp '.((int) $size).'w';
+            $srcset[] = MediaUrl::url($base.'-'.$size.'.webp', Immobile::$folder).' '.((int) $size).'w';
         }
 
         return [
-            'url'         => $base.'-1200.webp',
-            'thumb'       => $base.'-620.webp',
+            'url'         => MediaUrl::url($base.'-1200.webp', Immobile::$folder),
+            'thumb'       => MediaUrl::url($base.'-620.webp', Immobile::$folder),
             'srcset'      => implode(', ', $srcset),
             'titolo'      => $titolo,
             'planimetria' => $planimetria,

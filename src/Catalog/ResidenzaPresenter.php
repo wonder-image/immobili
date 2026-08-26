@@ -3,6 +3,8 @@
 namespace Wonder\Plugin\Immobili\Catalog;
 
 use Wonder\App\Support\MediaFileManager;
+use Wonder\Plugin\Immobili\Media\MediaUrl;
+use Wonder\Plugin\Immobili\Models\Residenza;
 
 /**
  * View-model della residenza: cover (prima immagine), URL/anteprime immagini,
@@ -12,8 +14,6 @@ use Wonder\App\Support\MediaFileManager;
  */
 final class ResidenzaPresenter
 {
-    private const FOLDER = 'residenze';
-
     /** Etichetta timeline: "" se anno assente, "2025" o "03/2025". */
     public static function timelineLabel(?int $anno, ?int $mese): string
     {
@@ -70,20 +70,13 @@ final class ResidenzaPresenter
     /** URL upload assoluto di un filename della cartella residenze. */
     public static function imageUrl(string $file): string
     {
-        $file = trim($file);
+        return MediaUrl::url($file, Residenza::$folder);
+    }
 
-        if ($file === '') {
-            return '';
-        }
-
-        // Valore già URL assoluto (es. immagini di seed): usalo così com'è.
-        if (filter_var($file, FILTER_VALIDATE_URL) !== false) {
-            return $file;
-        }
-
-        $base = rtrim((string) (($GLOBALS['PATH']->upload ?? '')), '/');
-
-        return $base.'/'.self::FOLDER.'/'.$file;
+    /** URL della variante webp responsive -620 di un filename; '' se vuoto. */
+    public static function previewUrl(string $file): string
+    {
+        return MediaUrl::preview($file, Residenza::$folder);
     }
 
     /**
@@ -92,29 +85,7 @@ final class ResidenzaPresenter
      */
     public static function firstFile(mixed $stored): string
     {
-        $files = MediaFileManager::decodeStoredFiles($stored);
-
-        return $files[0] ?? '';
-    }
-
-    /** URL della variante webp responsive -620 di un filename; '' se vuoto. */
-    public static function previewUrl(string $file): string
-    {
-        $file = trim($file);
-
-        if ($file === '') {
-            return '';
-        }
-
-        // Gli URL assoluti (seed) non hanno varianti responsive: usali diretti.
-        if (filter_var($file, FILTER_VALIDATE_URL) !== false) {
-            return $file;
-        }
-
-        $dot = strrpos($file, '.');
-        $stem = $dot === false ? $file : substr($file, 0, $dot);
-
-        return self::imageUrl($stem.'-620.webp');
+        return MediaUrl::firstFile($stored);
     }
 
     /**
