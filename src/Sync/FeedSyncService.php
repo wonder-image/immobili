@@ -2,6 +2,7 @@
 
 namespace Wonder\Plugin\Immobili\Sync;
 
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Feed\FeedSourceConfig;
 use Wonder\Plugin\Immobili\Feed\NormalizedListing;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;

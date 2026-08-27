@@ -2,6 +2,7 @@
 
 namespace Wonder\Plugin\Immobili\Seeding;
 
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;

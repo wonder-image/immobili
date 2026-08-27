@@ -674,6 +674,85 @@ $assert(
     'la lista residenze non ha più la griglia scritta a mano'
 );
 
+echo "Ogni classe del modulo è raggiungibile dal punto in cui viene usata\n";
+// Questo test esiste per una classe di bug che la riorganizzazione dei
+// namespace introduce in silenzio: due classi prima co-locate finiscono in
+// namespace diversi, e il riferimento NON qualificato che prima funzionava
+// (`new ImmobilePresenter()`) continua a compilare ma esplode a runtime, perché
+// PHP lo cerca nel namespace corrente. Nessuna analisi di sintassi lo vede: si
+// manifesta solo eseguendo il codice — nel nostro caso durante un sync reale.
+$moduleRoot = dirname(__DIR__).'/src';
+$classHome = [];
+
+$phpFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($moduleRoot));
+
+foreach ($phpFiles as $file) {
+    if ($file->isDir() || !str_ends_with($file->getPathname(), '.php')) {
+        continue;
+    }
+
+    $source = (string) file_get_contents($file->getPathname());
+
+    if (preg_match('/^namespace\s+([^;]+);/m', $source, $ns)
+        && preg_match('/^(?:final\s+|abstract\s+)?class\s+(\w+)/m', $source, $cls)) {
+        $classHome[$cls[1]] = ltrim(str_replace('Wonder\\Plugin\\Immobili', '', trim($ns[1])), '\\');
+    }
+}
+
+$unreachable = [];
+
+foreach ($phpFiles as $file) {
+    if ($file->isDir() || !str_ends_with($file->getPathname(), '.php')) {
+        continue;
+    }
+
+    $source = (string) file_get_contents($file->getPathname());
+    preg_match('/^namespace\s+([^;]+);/m', $source, $ns);
+    $here = ltrim(str_replace('Wonder\\Plugin\\Immobili', '', trim($ns[1] ?? '')), '\\');
+    preg_match_all('/^use\s+[\w\\\\]*\\\\(\w+);/m', $source, $u);
+    $imported = $u[1] ?? [];
+
+    // Solo identificatori di codice: commenti e stringhe nominano le classi
+    // senza usarle davvero. Si scartano anche i nomi preceduti da `->` o `::`,
+    // che sono metodi e proprietà: `$import->Immobili()` non è la classe.
+    $used = [];
+    $tokens = array_values(token_get_all($source));
+
+    foreach ($tokens as $i => $token) {
+        if (!is_array($token) || $token[0] !== T_STRING) {
+            continue;
+        }
+
+        $prev = null;
+        for ($j = $i - 1; $j >= 0; $j--) {
+            if (is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+                continue;
+            }
+            $prev = $tokens[$j];
+            break;
+        }
+
+        if (is_array($prev) && in_array($prev[0], [T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_FUNCTION], true)) {
+            continue;
+        }
+
+        $used[] = $token[1];
+    }
+
+    foreach ($classHome as $class => $home) {
+        if ($home === $here || in_array($class, $imported, true) || !in_array($class, $used, true)) {
+            continue;
+        }
+
+        $unreachable[] = basename($file->getPathname()).": {$class} (vive in ".($home ?: 'root').")";
+    }
+}
+
+$assert(
+    $unreachable === [],
+    'nessun uso non qualificato di una classe che vive in un altro namespace: '.implode('; ', $unreachable)
+);
+
 echo "GetrixProvider: guardia e adozione delle tassonomie\n";
 $getrix = \Wonder\Plugin\Immobili\Feed\GetrixProvider::class;
 $getrixRef = new ReflectionClass($getrix);
