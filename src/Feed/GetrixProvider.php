@@ -619,7 +619,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                     'chiave'    => $regioneChiave,
                     'nome'      => $regioneNome,
                     'getrix_id' => (string) ($comune['IDRegione'] ?? ''),
-                ]);
+                ], ['nome' => $regioneNome]);
             }
 
             $provinciaSigla = strtoupper((string) ($comune['SiglaProvincia'] ?? ''));

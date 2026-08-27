@@ -793,6 +793,32 @@ $assert(
     'esiste il controllo dedicato sulle righe mappate'
 );
 
+// Ogni upsert che match-a su `chiave` DEVE passare un criterio di adozione:
+// `chiave` è proprio il campo che le tabelle popolate da versioni precedenti
+// non hanno, quindi senza adozione il match fallisce sempre e ogni passata
+// aggiunge un duplicato. Le tassonomie geografiche che match-ano su `sigla` o
+// `cod_catastale` non ne hanno bisogno: quei campi erano già valorizzati.
+$getrixSource = (string) file_get_contents($getrixRef->getFileName());
+preg_match_all(
+    '/upsert\(\s*(\w+)::class,\s*\[\s*.chiave.\s*=>.*?\]\s*\)?;/s',
+    $getrixSource,
+    $chiaveUpserts,
+    PREG_SET_ORDER
+);
+$senzaAdozione = [];
+
+foreach ($chiaveUpserts as $match) {
+    if (!str_contains($match[0], "], ['nome'")) {
+        $senzaAdozione[] = $match[1];
+    }
+}
+
+$assert(
+    $senzaAdozione === [],
+    'ogni upsert su `chiave` adotta le righe legacy: '.implode(', ', $senzaAdozione)
+);
+$assert(count($chiaveUpserts) === 4, 'sono quattro gli upsert che match-ano su chiave');
+
 echo "searchFields non cancella i nomi denormalizzati\n";
 $sfPresenter = new \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter();
 
