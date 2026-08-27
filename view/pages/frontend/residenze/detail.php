@@ -9,6 +9,7 @@ use Wonder\App\Dependencies;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
+use Wonder\Plugin\Immobili\Catalog\CardViewModel;
 use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
@@ -48,7 +49,7 @@ $capitolatoUrl = $capitolatoFile !== '' ? ResidenzaPresenter::imageUrl($capitola
 // Immobili collegati (visibili) via FK.
 $linkedRows = Immobile::safeFind(['residenza_id' => (int) $row['id'], 'visible' => 'true', 'deleted' => 'false'], null, 'creation', 'DESC');
 $linkedRows = is_array($linkedRows) ? $linkedRows : [];
-$linkedItems = (new ImmobileQuery())->cards($linkedRows);
+$linkedItems = CardViewModel::fromImmobili((new ImmobileQuery())->cards($linkedRows));
 
 // Mappa (se coordinate presenti).
 $lat = trim((string) ($row['latitudine'] ?? ''));
@@ -172,7 +173,7 @@ Immobili::layout('main');
 <section class="pt-0">
     <div class="content">
         <h2 class="subtitle"><?= e(__t('pages.residenze.detail.linked')) ?></h2>
-        <?php Immobili::component('cards-grid', ['immobili' => $linkedItems, 'class' => 'mt-4']); ?>
+        <?php Immobili::component('cards', ['items' => $linkedItems, 'class' => 'mt-4']); ?>
     </div>
 </section>
 <?php } ?>

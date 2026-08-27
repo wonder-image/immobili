@@ -496,6 +496,108 @@ $assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non fini
 $assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
 $assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
+echo "CardViewModel — forma comune ai due reparti\n";
+$vmClass = \Wonder\Plugin\Immobili\Catalog\CardViewModel::class;
+
+$immobileVm = $vmClass::fromImmobile((object) [
+    'url'              => '/immobili/trilocale-milano/',
+    'cover'            => 'https://example.test/upload/immobili/a-620.webp',
+    'sold'             => false,
+    'evidence'         => true,
+    'tipologia'        => 'Trilocale',
+    'contratto'        => 'Vendita',
+    'prettyName'       => 'Trilocale, Via Roma 10',
+    'prettyAddress'    => 'Via Roma 10 — Milano',
+    'prezzo'           => 250000,
+    'prettyPrezzo'     => '€ 250.000',
+    'prettySuperficie' => '120 mq',
+    'locali'           => 3,
+    'camere'           => 2,
+    'bagni'            => 1,
+]);
+
+$residenzaVm = $vmClass::fromResidenza([
+    'url'               => '/residenze/corte-verde/',
+    'nome'              => 'Corte Verde',
+    'comune_nome'       => 'Bergamo',
+    'descrizione_breve' => 'Otto unità in classe A.',
+    'images'            => '[]',
+    'sold'              => 'false',
+    'stato'             => 'in_corso',
+    'inizio_anno'       => 2025,
+    'inizio_mese'       => 3,
+    'fine_anno'         => 2026,
+    'fine_mese'         => 0,
+]);
+
+$vmKeys = static fn (object $vm): array => array_keys(get_object_vars($vm));
+$assert($vmKeys($immobileVm) === $vmKeys($residenzaVm), 'i due reparti espongono esattamente le stesse chiavi');
+
+foreach (['url', 'cover', 'eyebrow', 'title', 'subtitle', 'highlight', 'excerpt'] as $stringField) {
+    $assert(is_string($immobileVm->$stringField), "immobile.{$stringField} è sempre string");
+    $assert(is_string($residenzaVm->$stringField), "residenza.{$stringField} è sempre string");
+}
+
+$assert($immobileVm->title === 'Trilocale, Via Roma 10', 'immobile: title = prettyName');
+$assert($immobileVm->highlight === '€ 250.000', 'immobile: highlight = prezzo formattato');
+$assert($immobileVm->excerpt === '', 'immobile: excerpt vuoto, non assente');
+$assert($immobileVm->eyebrow === 'Trilocale · Vendita', 'immobile: eyebrow = tipologia · contratto');
+
+$assert($residenzaVm->title === 'Corte Verde', 'residenza: title = nome');
+$assert($residenzaVm->subtitle === 'Bergamo', 'residenza: subtitle = comune');
+$assert($residenzaVm->highlight === '', 'residenza: highlight vuoto, non assente');
+$assert($residenzaVm->excerpt === 'Otto unità in classe A.', 'residenza: excerpt = descrizione breve');
+
+$assert(is_object($immobileVm->badge) && $immobileVm->badge->label !== '', 'immobile in evidenza ha un badge');
+$assert(is_object($residenzaVm->badge), 'la residenza ha sempre il badge di stato');
+
+$assert(is_array($immobileVm->meta) && count($immobileVm->meta) === 4, 'immobile: 4 voci meta (mq, locali, camere, bagni)');
+$assert(
+    ($immobileVm->meta[0]->text ?? '') === '120 mq',
+    'immobile: la superficie è formattata, non il valore grezzo'
+);
+$assert(is_array($residenzaVm->meta), 'residenza: meta è sempre array');
+$assert(
+    ($residenzaVm->meta[0]->text ?? '') === '03/2025 → 2026',
+    'residenza: la timeline compare tra i meta'
+);
+
+// Il criterio è che card.php non RAMIFICHI per reparto: il docblock può
+// nominarli per spiegare il concetto, il codice eseguibile no. Si guarda
+// quindi il sorgente privato di commenti e stringhe.
+$cardCode = implode(' ', array_map(
+    static fn (array $token): string => is_array($token) ? (string) $token[1] : '',
+    array_values(array_filter(
+        token_get_all((string) file_get_contents(dirname(__DIR__).'/view/components/card.php')),
+        static fn ($token): bool => is_array($token)
+            && !in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)
+    ))
+));
+// Il namespace del modulo contiene "Immobili" per forza: si neutralizza,
+// così restano solo eventuali riferimenti veri a un reparto.
+$cardCode = str_ireplace('Wonder\\Plugin\\Immobili', '', $cardCode);
+$assert(
+    stripos($cardCode, 'residenz') === false && stripos($cardCode, 'immobil') === false,
+    'card.php non conosce i reparti: nessun ramo per tipo nel codice eseguibile'
+);
+
+echo "Componente cards unificato\n";
+$viewDir = dirname(__DIR__).'/view/components';
+$assert(is_file($viewDir.'/cards.php'), 'cards.php esiste');
+$assert(!is_file($viewDir.'/cards-grid.php'), 'cards-grid.php è stato assorbito');
+$assert(!is_file($viewDir.'/cards-swiper.php'), 'cards-swiper.php è stato assorbito');
+$assert(!is_file($viewDir.'/residenze/card.php'), 'la card delle residenze è stata unificata');
+
+$cardsSource = (string) file_get_contents($viewDir.'/cards.php');
+$assert(str_contains($cardsSource, "'swiper'"), 'cards.php gestisce il layout swiper');
+$assert(str_contains($cardsSource, 'd-grid'), 'cards.php gestisce il layout griglia');
+
+$residenzeList = (string) file_get_contents(dirname(__DIR__).'/view/pages/frontend/residenze/list.php');
+$assert(
+    !str_contains($residenzeList, 'd-grid col-3'),
+    'la lista residenze non ha più la griglia scritta a mano'
+);
+
 echo "ReindexService\n";
 $reindex = \Wonder\Plugin\Immobili\Sync\ReindexService::class;
 $assert(class_exists($reindex), 'ReindexService esiste');

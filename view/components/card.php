@@ -1,53 +1,48 @@
 <?php
 
 /**
- * Card di un immobile in lista. Stile con sole classi utility wonder-image/lib.
+ * Card di lista, comune ai due reparti. Riceve un CardViewModel già pronto:
+ * qui non si sa (né si deve sapere) se si sta rendendo un immobile o una
+ * residenza. Solo classi utility wonder-image/lib.
  *
- * @var array $args  ['immobile' => object]
+ * @var array $args ['item' => \Wonder\Plugin\Immobili\Catalog\CardViewModel]
  */
 
-$immobile = $args['immobile'] ?? null;
+use Wonder\Plugin\Immobili\Catalog\CardViewModel;
 
-if (!is_object($immobile)) {
+$item = $args['item'] ?? null;
+
+if (!$item instanceof CardViewModel) {
     return;
 }
 
-$cover = (string) ($immobile->cover ?? '');
-$url = (string) ($immobile->url ?? '#');
-
 ?>
-<a class="d-block b-r-15 o-hidden bg-white tx-black b-shadow" href="<?= e($url) ?>">
-    <div class="f-3-2 p-r bg-cover o-hidden" style="background-image:url('<?= e($cover) ?>')">
-        <?php if (!empty($immobile->sold)) { ?>
-            <span class="p-a badge text-bg-danger" style="top:.6rem;left:.6rem"><?= e(__t('components.immobili.card.sold')) ?></span>
-        <?php } elseif (!empty($immobile->evidence)) { ?>
-            <span class="p-a badge text-bg-dark" style="top:.6rem;left:.6rem"><?= e(__t('components.immobili.card.featured')) ?></span>
+<a class="d-block b-r-15 o-hidden bg-white tx-black b-shadow" href="<?= e($item->url) ?>">
+    <div class="f-3-2 p-r bg-cover o-hidden" style="background-image:url('<?= e($item->cover) ?>')">
+        <?php if ($item->badge !== null) { ?>
+            <span class="p-a badge <?= e($item->badge->variant) ?>" style="top:.6rem;left:.6rem"><?= e($item->badge->label) ?></span>
         <?php } ?>
     </div>
     <div class="p-4 d-grid gap-2">
-        <?php if (($immobile->tipologia ?? '') !== '') { ?>
-            <div class="text-small tx-upper tx-muted"><?= e($immobile->tipologia) ?> · <?= e($immobile->contratto) ?></div>
+        <?php if ($item->eyebrow !== '') { ?>
+            <div class="text-small tx-upper tx-muted"><?= e($item->eyebrow) ?></div>
         <?php } ?>
-        <div class="text fw-600"><?= e($immobile->prettyName) ?></div>
-        <?php if (($immobile->prettyAddress ?? '') !== '') { ?>
-            <div class="text-small tx-muted"><i class="bi bi-geo-alt"></i> <?= e($immobile->prettyAddress) ?></div>
+        <div class="text fw-600"><?= e($item->title) ?></div>
+        <?php if ($item->subtitle !== '') { ?>
+            <div class="text-small tx-muted"><i class="bi bi-geo-alt"></i> <?= e($item->subtitle) ?></div>
         <?php } ?>
-        <?php if (($immobile->prezzo ?? '') !== '') { ?>
-            <div class="text fw-700 tx-primary"><?= e($immobile->prettyPrezzo) ?></div>
+        <?php if ($item->highlight !== '') { ?>
+            <div class="text fw-700 tx-primary"><?= e($item->highlight) ?></div>
         <?php } ?>
-        <div class="d-flex gap-4 text-small tx-muted mt-1">
-            <?php if (($immobile->superficie ?? '') !== '') { ?>
-                <span><i class="bi bi-rulers"></i> <?= e($immobile->superficie) ?></span>
-            <?php } ?>
-            <?php if (($immobile->locali ?? 0) > 0) { ?>
-                <span><i class="bi bi-door-open"></i> <?= (int) $immobile->locali ?> <?= e(__t('components.immobili.card.rooms')) ?></span>
-            <?php } ?>
-            <?php if (($immobile->camere ?? 0) > 0) { ?>
-                <span><i class="bi bi-house"></i> <?= (int) $immobile->camere ?></span>
-            <?php } ?>
-            <?php if (($immobile->bagni ?? 0) > 0) { ?>
-                <span><i class="bi bi-droplet"></i> <?= (int) $immobile->bagni ?></span>
-            <?php } ?>
-        </div>
+        <?php if ($item->excerpt !== '') { ?>
+            <div class="text-small mt-1"><?= e($item->excerpt) ?></div>
+        <?php } ?>
+        <?php if ($item->meta !== []) { ?>
+            <div class="d-flex gap-4 text-small tx-muted mt-1">
+                <?php foreach ($item->meta as $meta) { ?>
+                    <span><i class="<?= e($meta->icon) ?>"></i> <?= e($meta->text) ?></span>
+                <?php } ?>
+            </div>
+        <?php } ?>
     </div>
 </a>
