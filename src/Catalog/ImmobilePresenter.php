@@ -343,21 +343,35 @@ final class ImmobilePresenter
      * nome comune e tipologia risolti (con fallback JSON Gestim). Unica fonte
      * del calcolo, condivisa da sync e backfill.
      *
+     * La risoluzione ha tre gradini, in ordine: la tassonomia canonica via FK,
+     * gli `attributi` nativi del feed, e infine il valore già persistito sulla
+     * riga. L'ultimo gradino è una difesa: se le FK puntano a righe che non
+     * esistono più — succede quando le tabelle tassonomia vengono droppate e
+     * riseminate, perché l'AUTO_INCREMENT riparte e gli id cambiano — senza di
+     * esso un backfill sovrascriverebbe con stringhe vuote i nomi buoni salvati
+     * all'import, mandando in bianco titoli e indirizzi in lista. Un valore
+     * denormalizzato vecchio è sempre preferibile a nessun valore.
+     *
      * @param array<string, mixed> $row  riga immobile (o campi normalizzati) con
      *   almeno: provider, tipologia_id, comune_id, attributi
      * @return array{comune_nome: string, tipologia_nome: string}
      */
     public function searchFields(array $row): array
     {
-        $provider = (string) ($row['provider'] ?? '');
         $attributi = immobiliDecodeJsonArray($row['attributi'] ?? []);
 
         $tipologia = Taxonomy::tipologiaNomeById((int) ($row['tipologia_id'] ?? 0));
         if ($tipologia === '') {
             $tipologia = (string) ($attributi['tipologia'] ?? '');
         }
+        if ($tipologia === '') {
+            $tipologia = trim((string) ($row['tipologia_nome'] ?? ''));
+        }
 
         $comune = $this->comuneName($row, $attributi);
+        if ($comune === '') {
+            $comune = trim((string) ($row['comune_nome'] ?? ''));
+        }
 
         return [
             'comune_nome'    => $comune,

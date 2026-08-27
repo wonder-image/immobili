@@ -598,6 +598,39 @@ $assert(
     'la lista residenze non ha più la griglia scritta a mano'
 );
 
+echo "searchFields non cancella i nomi denormalizzati\n";
+$sfPresenter = new \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter();
+
+// FK orfane (le tabelle tassonomia sono state riseminate e gli id sono cambiati)
+// e nessun attributo nativo di fallback: il valore già salvato deve sopravvivere,
+// altrimenti un backfill manda in bianco titoli e indirizzi della lista.
+$orfano = $sfPresenter->searchFields([
+    'provider'       => 'getrix',
+    'tipologia_id'   => 999999,
+    'comune_id'      => 999999,
+    'attributi'      => '{"LeggeClasseEnergetica":"1"}',
+    'tipologia_nome' => 'Box',
+    'comune_nome'    => 'Milano',
+]);
+$assert($orfano['tipologia_nome'] === 'Box', 'FK orfana: la tipologia già salvata sopravvive');
+$assert($orfano['comune_nome'] === 'Milano', 'FK orfana: il comune già salvato sopravvive');
+
+// Senza FK, senza attributi e senza valore pregresso resta vuoto: non si inventa nulla.
+$vuoto = $sfPresenter->searchFields(['provider' => 'manual', 'tipologia_id' => 0, 'comune_id' => 0]);
+$assert($vuoto['tipologia_nome'] === '', 'nessuna fonte disponibile => stringa vuota');
+$assert($vuoto['comune_nome'] === '', 'nessuna fonte disponibile => comune vuoto');
+
+// Gli attributi nativi del feed hanno la precedenza sul valore pregresso.
+$daFeed = $sfPresenter->searchFields([
+    'provider'       => 'gestim',
+    'tipologia_id'   => 999999,
+    'attributi'      => '{"tipologia":"Attico","comune":"Bergamo"}',
+    'tipologia_nome' => 'Box',
+    'comune_nome'    => 'Milano',
+]);
+$assert($daFeed['tipologia_nome'] === 'Attico', 'gli attributi del feed battono il valore pregresso');
+$assert($daFeed['comune_nome'] === 'Bergamo', 'idem per il comune');
+
 echo "ReindexService\n";
 $reindex = \Wonder\Plugin\Immobili\Sync\ReindexService::class;
 $assert(class_exists($reindex), 'ReindexService esiste');
