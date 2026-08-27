@@ -3,7 +3,59 @@
 Tutte le modifiche rilevanti a `wonder-image/immobili` sono documentate qui.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
-## [Unreleased]
+## [2.0.0] - non ancora rilasciato
+
+### ⚠️ Breaking — path delle view e namespace
+
+Il modulo è stato riorganizzato su **due reparti speculari** (immobili e
+residenze). I path delle view e alcuni namespace sono cambiati.
+
+**Se il sito sovrascrive delle view** in `custom/modules/immobili/view/…`,
+rinominare i file secondo questa tabella. Attenzione: un override su un path
+non più esistente **non produce errore**, torna semplicemente la view del
+modulo — va cercato a mano.
+
+| prima | dopo |
+|---|---|
+| `components/card.php` | `components/card.php` (invariato di path, ma ora riceve `['item' => CardViewModel]`) |
+| `components/cards-grid.php` | `components/cards.php` con `'layout' => 'grid'` (default) |
+| `components/cards-swiper.php` | `components/cards.php` con `'layout' => 'swiper'` |
+| `components/residenze/card.php` | `components/card.php` (unificata) |
+| `components/features.php` | `components/specs.php` |
+| `components/residenze/features.php` | `components/amenities.php` |
+| `components/filters.php` | `components/immobili/filters.php` |
+| `pages/frontend/list.php` | `pages/frontend/immobili/list.php` |
+| `pages/frontend/detail.php` | `pages/frontend/immobili/detail.php` |
+| `pages/frontend/sold.php` | `pages/frontend/immobili/sold.php` |
+
+Invariati: `components/map.php`, `components/energy-class/*`,
+`components/residenze/timeline.php`, `pages/frontend/residenze/*`,
+`pages/backend/immobili/*`, `layout/frontend/immobili.main.php`.
+
+Criterio della nuova collocazione: **radice = trasversale, sottocartella =
+reparto**, sia in `view/` sia in `src/`.
+
+**Namespace spostati** (rilevanti solo per codice del sito che li referenzia):
+
+| prima | dopo |
+|---|---|
+| `…\Services\ImmobilePresenter` · `ImmobileQuery` · `ResidenzaPresenter` | `…\Catalog\` |
+| `…\Services\ImageProcessor` | `…\Media\` |
+| `…\Services\FeedSyncService` · `SyncApiUser` | `…\Sync\` |
+| `…\Services\ImmobileSeeder` · `ResidenzaSeeder` | `…\Seeding\` |
+| `…\Services\IdealistaExporter` | `…\Export\` |
+| `…\Models\{Categoria,Macrotipologia,Tipologia,Regione,Provincia,Comune,Quartiere,QuartiereZona}` | `…\Models\Taxonomy\` |
+| `…\Models\{FeedSource,SyncLog,Settings}` | `…\Models\System\` |
+| `…\Support\{ImmobileForm,ResidenzaForm}` | `…\Support\Forms\` |
+
+Invariati: `…\Models\Immobile`, `…\Models\Residenza`, `…\Resources\*`,
+`…\Support\{Slug,Taxonomy,EnergyScale,AttributeCatalog}`, `…\Feed\*`, `…\Pdf\*`.
+
+**API rimossa**: `ResidenzaForm::uniqueSlug()` → usare
+`Slug::fromParts([$nome], Residenza::class, $excludeId, 'residenza')`.
+
+**Non cambiano**: nessuna URL, nessun nome di route, nessuna chiave di
+traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
 
 ### Aggiunto
 - Reparto **Residenze** (cantieri/costruzioni): Model `Residenza`,
@@ -13,6 +65,40 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
   `immobili.residenza_id`). Traduzioni it/en. La gallery è un upload
   multiplo salvato come array JSON di filename nella colonna `images`
   della residenza (fino a 12 immagini); cover = prima immagine.
+- `Catalog\CardViewModel`: forma comune delle card dei due reparti. I campi non
+  pertinenti a un reparto sono stringa vuota, mai assenti, così
+  `components/card.php` non ramifica per tipo.
+- `Media\MediaUrl`: fonte unica per URL di upload e varianti responsive.
+- `Sync\ReindexService`: il backfill esce dall'handler HTTP.
+- `Support\Forms\FormText`: base condivisa dei form di reparto.
+- `http/api/task/_guard.php`: gate di autenticazione unico dei task
+  amministrativi, prima ripetuto verbatim in tre handler.
+- Slug localizzati per le route residenze (`it/residenze`, `en/developments`).
+- `tests/run.sh`: esegue tutte le suite del modulo in un comando.
+
+### Corretto
+- Le etichette del dettaglio immobile (cucina, box auto, arredamento, infissi,
+  impianto TV, tipo costruzione, stato manutenzione) erano **hardcoded in
+  italiano** nel presenter: ora passano dalle traduzioni e si vedono anche in
+  inglese. In italiano l'output resta identico.
+- `construction_type` codice `255` puntava a `standard` ("Civile") invece che a
+  `other` ("Altro"), duplicando il codice `2`.
+- La card di lista mostrava la superficie grezza (`120`) invece di quella
+  formattata (`120 mq`).
+- `MediaUrl::firstFile()` (ex `ResidenzaPresenter::firstFile()`) supporta
+  davvero il filename legacy a stringa nuda, che il docblock prometteva ma il
+  codice ignorava; un valore corrotto fallisce in sicurezza a `''` invece di
+  finire dentro un URL.
+- La scheda residenza usa il componente `energy-class` condiviso invece di un
+  badge scritto a mano.
+
+### Rimosso
+- `src/Services/`, sciolta per responsabilità in `Catalog/`, `Media/`, `Sync/`,
+  `Seeding/`, `Export/`.
+- `components/cards-grid.php`, `components/cards-swiper.php`,
+  `components/residenze/card.php`, assorbiti da `card`/`cards`.
+- La griglia scritta a mano nella lista residenze (terza copia della stessa
+  griglia).
 
 ## [1.0.0] - non ancora rilasciato
 

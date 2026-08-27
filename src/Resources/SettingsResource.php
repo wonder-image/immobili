@@ -4,7 +4,7 @@ namespace Wonder\Plugin\Immobili\Resources;
 
 use Wonder\App\ResourceSchema\{ FormField, NavigationSchema, PermissionSchema, RepeaterColumn };
 use Wonder\App\Resources\Support\SingletonResource;
-use Wonder\Plugin\Immobili\Models\Settings;
+use Wonder\Plugin\Immobili\Models\System\Settings;
 use Wonder\Plugin\Immobili\Support\AttributeCatalog;
 use Wonder\App\Support\FpdfFonts;
 use Wonder\Elements\Form\{ Form };

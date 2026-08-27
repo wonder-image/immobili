@@ -11,7 +11,7 @@ use Wonder\App\ResourceSchema\TableColumn;
 use Wonder\App\ResourceSchema\TableLayoutSchema;
 use Wonder\Http\Route;
 use Wonder\Plugin\Immobili\Immobili;
-use Wonder\Plugin\Immobili\Models\SyncLog;
+use Wonder\Plugin\Immobili\Models\System\SyncLog;
 
 /**
  * Storico delle sincronizzazioni (sola lettura).

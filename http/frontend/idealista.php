@@ -1,6 +1,6 @@
 <?php
 
-use Wonder\Plugin\Immobili\Services\IdealistaExporter;
+use Wonder\Plugin\Immobili\Export\IdealistaExporter;
 
 /**
  * Feed XML Idealista (formato di pubblicazione ads/ad).

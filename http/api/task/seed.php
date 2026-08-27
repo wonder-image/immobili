@@ -1,7 +1,6 @@
 <?php
 
-use Wonder\Plugin\Immobili\Services\ImmobileSeeder;
-use Wonder\Plugin\Immobili\Services\SyncApiUser;
+use Wonder\Plugin\Immobili\Seeding\ImmobileSeeder;
 
 /**
  * Seed di immobili di esempio per la verifica locale.
@@ -16,32 +15,9 @@ use Wonder\Plugin\Immobili\Services\SyncApiUser;
  * di seed (provider='seed') non vengono toccati dai feed reali.
  */
 
-header('Content-Type: application/json; charset=utf-8');
+require __DIR__.'/_guard.php';
 
-$host = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
-$isLocal = getenv('APP_ENV') === 'local'
-    || (bool) preg_match('/(^localhost|127\.0\.0\.1|\.test$|\.local$|\.localhost$|\.ddev\.site$)/', $host);
-
-// Token presentato: header Bearer oppure ?token= (fallback).
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-if (!$authHeader && function_exists('getallheaders')) {
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
-}
-
-$presented = (is_string($authHeader) && preg_match('/Bearer\s(\S+)/', $authHeader, $m))
-    ? $m[1]
-    : trim((string) ($_GET['token'] ?? ''));
-
-if (!$isLocal && !SyncApiUser::authorize($presented)) {
-    http_response_code(403);
-    echo json_encode([
-        'success'  => false,
-        'status'   => 403,
-        'response' => ['message' => 'Seed disponibile solo in ambiente locale o con token API valido.'],
-    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
+immobiliTaskGuard('Seed');
 
 $count = (int) ($_GET['count'] ?? 12);
 $created = (new ImmobileSeeder())->seed($count);

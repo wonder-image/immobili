@@ -1,7 +1,7 @@
 <?php
 
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 
 use Wonder\Backend\Support\ResourceFormLayoutRenderer;
 use Wonder\Elements\Components\{ Container, Card, InfoCard, SectionTitle, RichText, Accordion };

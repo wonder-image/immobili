@@ -1,6 +1,6 @@
 <?php
 
-use Wonder\Plugin\Immobili\Models\SyncLog;
+use Wonder\Plugin\Immobili\Models\System\SyncLog;
 
 /**
  * Download del report di un run di sincronizzazione.

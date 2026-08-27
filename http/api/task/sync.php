@@ -2,7 +2,7 @@
 
 use Wonder\Api\Endpoint;
 use Wonder\Api\Handler;
-use Wonder\Plugin\Immobili\Services\FeedSyncService;
+use Wonder\Plugin\Immobili\Sync\FeedSyncService;
 
 /**
  * Endpoint di sincronizzazione feed.

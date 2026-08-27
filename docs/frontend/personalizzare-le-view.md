@@ -9,55 +9,81 @@ Crea lo stesso file sotto `custom/modules/immobili/view/` nel sito. Ha priorità
 Esempi:
 
 ```
-custom/modules/immobili/view/components/card.php          → sostituisce la card
-custom/modules/immobili/view/pages/frontend/list.php      → sostituisce la lista
-custom/modules/immobili/view/layout/frontend/immobili.main.php → sostituisce il layout
+custom/modules/immobili/view/components/card.php                    → sostituisce la card
+custom/modules/immobili/view/pages/frontend/immobili/list.php      → sostituisce la lista immobili
+custom/modules/immobili/view/pages/frontend/residenze/list.php     → sostituisce la lista residenze
+custom/modules/immobili/view/layout/frontend/immobili.main.php     → sostituisce il layout
 ```
 
 Il meccanismo è gestito da `Immobili::viewPath()`, che controlla prima l'override del sito.
 
 ## Componenti disponibili
 
-| Componente | Argomenti                    |
-| ---------- | ---------------------------- |
-| `card`     | `['immobile' => $card]`      |
-| `cards-grid` | `['immobili' => $cards, 'class' => 'mt-4']` |
-| `cards-swiper` | `['immobili' => $cards, 'id' => 'in-evidenza', 'class' => 'mt-6', 'slide_class' => '', 'aria_label' => '…']` |
-| `filters`  | `['filters' => [...], 'action' => $url]` |
-| `map`      | `['features' => $geojson, 'zoom' => 15, 'mapId' => 'id-opzionale']` |
-| `gallery`  | `['images' => [...]]`        |
-| `features` | `['immobile' => $immobile]`  |
+La regola di collocazione è **radice = trasversale, sottocartella = reparto**: un componente
+che serve entrambi i reparti sta in `components/`, uno specifico sta in `components/immobili/`
+o `components/residenze/`.
 
-Richiamali con `Immobili::component('card', ['immobile' => $card])`.
+| Componente | Argomenti |
+| ---------- | --------- |
+| `card` | `['item' => CardViewModel]` |
+| `cards` | `['items' => CardViewModel[], 'layout' => 'grid'\|'swiper', 'class' => 'mt-4', 'id' => '…', 'slide_class' => '…', 'aria_label' => '…']` |
+| `specs` | `['immobile' => $immobile]` — coppie attributo → valore |
+| `amenities` | `['features' => ['ascensore', 'giardino', …]]` — icona + etichetta |
+| `map` | `['features' => $geojson, 'zoom' => 15, 'mapId' => 'id-opzionale']` |
+| `energy-class/badge` · `line` · `scale` | `['immobile' => $immobile]` oppure `['scale' => EnergyScale]` |
+| `immobili/filters` | `['filters' => [...], 'action' => $url]` |
+| `residenze/timeline` | `['inizio' => '03/2025', 'fine' => '2026', 'stato' => '…']` |
 
-I componenti di collezione hanno nomi paralleli e ricevono entrambi oggetti già preparati da
-`ImmobileQuery::cards()`:
+Richiamali con `Immobili::component('card', ['item' => $item])`.
+
+### Card e collezioni
+
+`card` è **una sola** per i due reparti: riceve un `CardViewModel`, che appiattisce le
+differenze fra immobile e residenza in slot opzionali (`highlight` per il prezzo,
+`excerpt` per la descrizione breve, `meta` per la riga di icone). Dentro il componente non
+c'è nessun ramo per tipo.
+
+Il view-model si costruisce dal presenter del reparto:
 
 ```php
-<?php Immobili::component('cards-grid', [
-    'immobili' => $cards,
+use Wonder\Plugin\Immobili\Catalog\CardViewModel;
+
+// Immobili: da ImmobileQuery::cards()
+$items = CardViewModel::fromImmobili($query->cards($rows));
+
+// Residenze: dalle righe DB + ResidenzaPresenter
+$items = CardViewModel::fromResidenze($rows, $presenter);
+```
+
+`cards` rende la collezione nei due layout:
+
+```php
+<?php Immobili::component('cards', [
+    'items' => $items,
     'class' => 'mt-4',
 ]); ?>
 
-<?php Immobili::component('cards-swiper', [
-    'immobili' => $cards,
+<?php Immobili::component('cards', [
+    'items' => $items,
+    'layout' => 'swiper',
     'id' => 'immobili-in-evidenza',
     'class' => 'mt-6',
     'aria_label' => __t('pages.home.content.properties.carousel_label'),
 ]); ?>
 ```
 
-`cards-grid` riusa la griglia responsive del modulo. `cards-swiper` riusa lo stesso componente
-`card`, abilita la dipendenza Swiper e applica i breakpoint standard mobile-first: 1,05 card,
-2 card da 769 px e 3 card da 993 px. Entrambi non producono markup quando `immobili` è vuoto;
-titoli, messaggi vuoti e paginazione restano responsabilità della pagina.
+Il layout `grid` riusa la griglia responsive del modulo; `swiper` abilita la dipendenza Swiper e
+applica i breakpoint mobile-first standard: 1,05 card, 2 card da 769 px, 3 card da 993 px.
+`id`, `slide_class` e `aria_label` valgono solo per lo swiper e sono ignorati dalla griglia.
+In entrambi i casi non viene prodotto markup quando `items` è vuoto: titoli, messaggi di lista
+vuota e paginazione restano responsabilità della pagina.
 
 Il prefisso `immobili-` non è necessario nei nomi: il namespace è già espresso dalla chiamata
 `Immobili::component(...)`.
 
 ## Galleria della scheda immobile
 
-La pagina di dettaglio (`view/pages/frontend/detail.php`) usa le funzioni del framework
+La pagina di dettaglio (`view/pages/frontend/immobili/detail.php`) usa le funzioni del framework
 **`__swiper()`** (carosello con thumbnails + lightbox) per le foto e **`__gallery()`** (griglia +
 lightbox Fancybox) per le planimetrie. La pagina abilita i relativi bundle con
 `Dependencies::swiper()` e `Dependencies::fancyapps()`.

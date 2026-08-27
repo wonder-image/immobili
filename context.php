@@ -13,7 +13,7 @@
  * deve mai generare fatal error.
  */
 
-use Wonder\Plugin\Immobili\Models\FeedSource;
+use Wonder\Plugin\Immobili\Models\System\FeedSource;
 
 $locale = __l();
 

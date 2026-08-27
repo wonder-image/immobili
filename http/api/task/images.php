@@ -2,7 +2,7 @@
 
 use Wonder\Api\Endpoint;
 use Wonder\Api\Handler;
-use Wonder\Plugin\Immobili\Services\ImageProcessor;
+use Wonder\Plugin\Immobili\Media\ImageProcessor;
 
 /**
  * Secondo piano della pipeline immagini.

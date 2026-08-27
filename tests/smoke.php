@@ -28,6 +28,57 @@ $assert = static function (bool $condition, string $message) use (&$failures, &$
     echo "  ✗ {$message}\n";
 };
 
+echo "FormText::resolve senza __t() (fallback difensivo)\n";
+$formText = \Wonder\Plugin\Immobili\Support\Forms\FormText::class;
+
+// Senza __t() registrato il fallback è la chiave stessa: è il comportamento
+// difensivo che serve quando le lang del modulo non sono ancora caricate.
+// Va verificato qui, PRIMA di registrare lo stub __t() sotto: una volta
+// dichiarata, una funzione globale non può essere "ritirata" nello stesso
+// processo PHP, quindi da qui in poi __t() risulta sempre definita.
+$assert(
+    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome',
+    "resolve compone forms.<section>.<key>"
+);
+$assert($formText::resolve('residenze', 'x', 'ripiego') === 'ripiego', "il fallback esplicito viene restituito tale e quale");
+
+// Da qui in avanti i dizionari del presenter (ImmobileForm::options(), via
+// FormText::resolve) passano da __t(): senza bootstrap del framework la
+// funzione non esiste, quindi la stubbiamo leggendo le traduzioni reali da
+// lang/it/*.json. Come il framework reale (vedi PdfFacts::label), lancia se
+// la chiave manca: i chiamanti difensivi la intercettano e ricadono sul
+// fallback interno; qui invece verifichiamo l'italiano tradotto per davvero.
+if (!function_exists('__t')) {
+    function __t(string $key, array $replacements = []): string
+    {
+        static $cache = [];
+
+        $segments = explode('.', $key);
+        $namespace = array_shift($segments);
+
+        if (!array_key_exists($namespace, $cache)) {
+            $path = dirname(__DIR__)."/lang/it/{$namespace}.json";
+            $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+            $cache[$namespace] = is_array($decoded) ? $decoded : [];
+        }
+
+        $value = $cache[$namespace];
+
+        foreach ($segments as $segment) {
+            if (!is_array($value) || !array_key_exists($segment, $value)) {
+                throw new RuntimeException("Traduzione mancante: {$key}");
+            }
+            $value = $value[$segment];
+        }
+
+        if (!is_string($value)) {
+            throw new RuntimeException("Traduzione mancante: {$key}");
+        }
+
+        return $value;
+    }
+}
+
 echo "immobiliIsTrue\n";
 $assert(immobiliIsTrue('true'), "'true' => true");
 $assert(immobiliIsTrue('1'), "'1' => true");
@@ -46,6 +97,24 @@ $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['Villa a Città Alta']) === 
 $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['  Trilocale, Via Roma 10  ']) === 'trilocale-via-roma-10', "trim + separatori");
 $assert(\Wonder\Plugin\Immobili\Support\Slug::base(['']) === 'immobile', "vuoto => fallback 'immobile'");
 
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base([''], 'residenza') === 'residenza', "vuoto + fallback esplicito => 'residenza'");
+$assert(\Wonder\Plugin\Immobili\Support\Slug::base(['Corte Verde'], 'residenza') === 'corte-verde', "il fallback non interferisce quando c'è testo");
+
+echo "Slug parametrico sul modello\n";
+$slugReflection = new ReflectionMethod(\Wonder\Plugin\Immobili\Support\Slug::class, 'unique');
+$slugParams = $slugReflection->getParameters();
+$assert(count($slugParams) === 4, "Slug::unique accetta base, modelClass, excludeId, fallback");
+$assert(($slugParams[1]->getName() ?? '') === 'modelClass', "il secondo parametro è il modello");
+$assert(
+    $slugParams[1]->isDefaultValueAvailable()
+    && $slugParams[1]->getDefaultValue() === \Wonder\Plugin\Immobili\Models\Immobile::class,
+    "Immobile resta il default"
+);
+$assert(
+    !method_exists(\Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::class, 'uniqueSlug'),
+    "ResidenzaForm::uniqueSlug è stata rimossa a favore di Slug"
+);
+
 echo "Slug dai campi del titolo\n";
 $slugRow = [
     'tipologia_nome' => 'Trilocale',
@@ -54,7 +123,7 @@ $slugRow = [
     'comune_nome'    => 'Milano',
 ];
 $slugBase = \Wonder\Plugin\Immobili\Support\Slug::base([
-    \Wonder\Plugin\Immobili\Services\ImmobilePresenter::titolo($slugRow),
+    \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::titolo($slugRow),
 ]);
 $assert($slugBase === 'trilocale-via-roma-10-milano', "slug deriva da tipologia+strada+indirizzo+comune");
 
@@ -64,8 +133,8 @@ $assert(immobiliFormatPrice(0) === '', "0 => vuoto");
 $assert(immobiliFormatPrice('1500') === '€ 1.500', "stringa numerica");
 
 echo "ImmobilePresenter::formatSurface\n";
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(120) === '120 mq', "superficie formattata");
-$assert(\Wonder\Plugin\Immobili\Services\ImmobilePresenter::formatSurface(0) === '', "0 => vuoto");
+$assert(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::formatSurface(120) === '120 mq', "superficie formattata");
+$assert(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::formatSurface(0) === '', "0 => vuoto");
 
 echo "immobiliResolveLocalizedValue\n";
 $resolved = immobiliResolveLocalizedValue(['titolo' => ['it' => 'Casa', 'en' => 'House']], 'en');
@@ -159,7 +228,7 @@ $removeTestTree = static function (string $directory) use (&$removeTestTree): vo
 $removeTestTree($testRoot);
 
 echo "ImmobileQuery::order\n";
-$Q = new \Wonder\Plugin\Immobili\Services\ImmobileQuery();
+$Q = new \Wonder\Plugin\Immobili\Catalog\ImmobileQuery();
 $assert($Q->order('recenti') === ['evidence DESC, id', 'DESC'], "recenti => id DESC");
 $assert($Q->order('prezzo_asc') === ['evidence DESC, prezzo', 'ASC'], "prezzo_asc");
 $assert($Q->order('prezzo_desc') === ['evidence DESC, prezzo', 'DESC'], "prezzo_desc");
@@ -207,7 +276,7 @@ $assert(str_contains($Q->where(['bagni' => 2], false), "`n_bagni` >= 2"), "bagni
 $assert(str_contains($Q->where(['comune' => "O'Brien"], false), "LIKE '%o\\'brien%'"), "apice escaped");
 
 echo "ImmobilePresenter::searchFields\n";
-$P = new \Wonder\Plugin\Immobili\Services\ImmobilePresenter();
+$P = new \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter();
 $row = [
     'provider'      => 'gestim',
     'tipologia_id'  => '',
@@ -365,6 +434,285 @@ $assert(
     realpath($resolvedPdfFile) === realpath(dirname(__DIR__).'/composer.json'),
     'gli URL locali sono risolti sul filesystem'
 );
+
+echo "FormText: classi energetiche condivise\n";
+// `resolve()` è già stato verificato in cima al file, prima che lo stub __t()
+// venisse registrato: lì si controlla il fallback difensivo, qui il catalogo.
+$energy = $formText::energyClasses();
+$assert(($energy[''] ?? null) === '--', "la prima opzione è il placeholder vuoto");
+$assert(array_key_exists('A4', $energy) && array_key_exists('G', $energy), "copre le classi di entrambe le leggi");
+$assert(
+    \Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::energyClasses() === $energy,
+    "ImmobileForm::energyClasses delega alla base condivisa"
+);
+$assert(
+    \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::energyClasses() === $energy,
+    "ResidenzaForm::energyClasses delega alla base condivisa"
+);
+
+echo "Dizionari del presenter allineati alle traduzioni\n";
+$presenterReflection = new ReflectionClass(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::class);
+$hardcoded = array_intersect(
+    array_keys($presenterReflection->getConstants()),
+    ['KITCHEN', 'GARAGE', 'FURNISHING', 'WINDOW_FRAMES', 'TV_SYSTEM', 'CONSTRUCTION_TYPE', 'MAINTENANCE_STATE']
+);
+$assert($hardcoded === [], 'nessun dizionario di dominio resta hardcoded nel presenter: '.implode(', ', $hardcoded));
+
+$constructionKeys = (new ReflectionClass(\Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::class))
+    ->getConstant('OPTION_KEYS')['construction_type'] ?? [];
+$assert(($constructionKeys['255'] ?? '') === 'other', "il codice 255 di construction_type è 'other', non 'standard'");
+
+foreach (['it', 'en'] as $locale) {
+    $forms = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/forms.json"), true);
+    $assert(
+        isset($forms['immobili']['options']['construction_type']['other']),
+        "lang/{$locale}: construction_type.other è tradotta"
+    );
+}
+
+echo "MediaUrl\n";
+$GLOBALS['PATH'] = (object) ['upload' => 'https://example.test/upload', 'rUpload' => '/srv/upload'];
+$mediaUrl = \Wonder\Plugin\Immobili\Media\MediaUrl::class;
+
+$assert($mediaUrl::url('', 'residenze') === '', "file vuoto => ''");
+$assert($mediaUrl::url('a.jpg', 'residenze') === 'https://example.test/upload/residenze/a.jpg', "URL composto su cartella");
+$assert(
+    $mediaUrl::url('https://cdn.test/x.jpg', 'residenze') === 'https://cdn.test/x.jpg',
+    "URL assoluto passa invariato"
+);
+$assert($mediaUrl::preview('a.jpg', 'residenze') === 'https://example.test/upload/residenze/a-620.webp', "anteprima => variante -620.webp");
+$assert($mediaUrl::preview('a.b.jpg', 'residenze') === 'https://example.test/upload/residenze/a.b-620.webp', "estensione tagliata sull'ultimo punto");
+$assert(
+    $mediaUrl::preview('https://cdn.test/x.jpg', 'residenze') === 'https://cdn.test/x.jpg',
+    "gli URL assoluti non hanno varianti responsive"
+);
+$assert($mediaUrl::variant('a.jpg', 'immobili', 1200) === 'https://example.test/upload/immobili/a-1200.webp', "variante a larghezza esplicita");
+
+$assert($mediaUrl::firstFile('["uno.jpg","due.jpg"]') === 'uno.jpg', "firstFile da JSON");
+$assert($mediaUrl::firstFile(['uno.jpg', 'due.jpg']) === 'uno.jpg', "firstFile da array già decodificato");
+$assert($mediaUrl::firstFile('uno.jpg') === 'uno.jpg', "firstFile da stringa legacy");
+$assert($mediaUrl::firstFile('') === '', "firstFile su vuoto => ''");
+$assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non finisce mai in un URL)");
+$assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
+$assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
+
+echo "CardViewModel — forma comune ai due reparti\n";
+$vmClass = \Wonder\Plugin\Immobili\Catalog\CardViewModel::class;
+
+$immobileVm = $vmClass::fromImmobile((object) [
+    'url'              => '/immobili/trilocale-milano/',
+    'cover'            => 'https://example.test/upload/immobili/a-620.webp',
+    'sold'             => false,
+    'evidence'         => true,
+    'tipologia'        => 'Trilocale',
+    'contratto'        => 'Vendita',
+    'prettyName'       => 'Trilocale, Via Roma 10',
+    'prettyAddress'    => 'Via Roma 10 — Milano',
+    'prezzo'           => 250000,
+    'prettyPrezzo'     => '€ 250.000',
+    'prettySuperficie' => '120 mq',
+    'locali'           => 3,
+    'camere'           => 2,
+    'bagni'            => 1,
+]);
+
+$residenzaVm = $vmClass::fromResidenza([
+    'url'               => '/residenze/corte-verde/',
+    'nome'              => 'Corte Verde',
+    'comune_nome'       => 'Bergamo',
+    'descrizione_breve' => 'Otto unità in classe A.',
+    'images'            => '[]',
+    'sold'              => 'false',
+    'stato'             => 'in_corso',
+    'inizio_anno'       => 2025,
+    'inizio_mese'       => 3,
+    'fine_anno'         => 2026,
+    'fine_mese'         => 0,
+]);
+
+$vmKeys = static fn (object $vm): array => array_keys(get_object_vars($vm));
+$assert($vmKeys($immobileVm) === $vmKeys($residenzaVm), 'i due reparti espongono esattamente le stesse chiavi');
+
+foreach (['url', 'cover', 'eyebrow', 'title', 'subtitle', 'highlight', 'excerpt'] as $stringField) {
+    $assert(is_string($immobileVm->$stringField), "immobile.{$stringField} è sempre string");
+    $assert(is_string($residenzaVm->$stringField), "residenza.{$stringField} è sempre string");
+}
+
+$assert($immobileVm->title === 'Trilocale, Via Roma 10', 'immobile: title = prettyName');
+$assert($immobileVm->highlight === '€ 250.000', 'immobile: highlight = prezzo formattato');
+$assert($immobileVm->excerpt === '', 'immobile: excerpt vuoto, non assente');
+$assert($immobileVm->eyebrow === 'Trilocale · Vendita', 'immobile: eyebrow = tipologia · contratto');
+
+$assert($residenzaVm->title === 'Corte Verde', 'residenza: title = nome');
+$assert($residenzaVm->subtitle === 'Bergamo', 'residenza: subtitle = comune');
+$assert($residenzaVm->highlight === '', 'residenza: highlight vuoto, non assente');
+$assert($residenzaVm->excerpt === 'Otto unità in classe A.', 'residenza: excerpt = descrizione breve');
+
+$assert(is_object($immobileVm->badge) && $immobileVm->badge->label !== '', 'immobile in evidenza ha un badge');
+$assert(is_object($residenzaVm->badge), 'la residenza ha sempre il badge di stato');
+
+$assert(is_array($immobileVm->meta) && count($immobileVm->meta) === 4, 'immobile: 4 voci meta (mq, locali, camere, bagni)');
+$assert(
+    ($immobileVm->meta[0]->text ?? '') === '120 mq',
+    'immobile: la superficie è formattata, non il valore grezzo'
+);
+$assert(is_array($residenzaVm->meta), 'residenza: meta è sempre array');
+$assert(
+    ($residenzaVm->meta[0]->text ?? '') === '03/2025 → 2026',
+    'residenza: la timeline compare tra i meta'
+);
+
+// Il criterio è che card.php non RAMIFICHI per reparto: il docblock può
+// nominarli per spiegare il concetto, il codice eseguibile no. Si guarda
+// quindi il sorgente privato di commenti e stringhe.
+$cardCode = implode(' ', array_map(
+    static fn (array $token): string => is_array($token) ? (string) $token[1] : '',
+    array_values(array_filter(
+        token_get_all((string) file_get_contents(dirname(__DIR__).'/view/components/card.php')),
+        static fn ($token): bool => is_array($token)
+            && !in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)
+    ))
+));
+// Il namespace del modulo contiene "Immobili" per forza: si neutralizza,
+// così restano solo eventuali riferimenti veri a un reparto.
+$cardCode = str_ireplace('Wonder\\Plugin\\Immobili', '', $cardCode);
+$assert(
+    stripos($cardCode, 'residenz') === false && stripos($cardCode, 'immobil') === false,
+    'card.php non conosce i reparti: nessun ramo per tipo nel codice eseguibile'
+);
+
+echo "Componente cards unificato\n";
+$viewDir = dirname(__DIR__).'/view/components';
+$assert(is_file($viewDir.'/cards.php'), 'cards.php esiste');
+$assert(!is_file($viewDir.'/cards-grid.php'), 'cards-grid.php è stato assorbito');
+$assert(!is_file($viewDir.'/cards-swiper.php'), 'cards-swiper.php è stato assorbito');
+$assert(!is_file($viewDir.'/residenze/card.php'), 'la card delle residenze è stata unificata');
+
+$cardsSource = (string) file_get_contents($viewDir.'/cards.php');
+$assert(str_contains($cardsSource, "'swiper'"), 'cards.php gestisce il layout swiper');
+$assert(str_contains($cardsSource, 'd-grid'), 'cards.php gestisce il layout griglia');
+
+$residenzeList = (string) file_get_contents(dirname(__DIR__).'/view/pages/frontend/residenze/list.php');
+$assert(
+    !str_contains($residenzeList, 'd-grid col-3'),
+    'la lista residenze non ha più la griglia scritta a mano'
+);
+
+echo "ReindexService\n";
+$reindex = \Wonder\Plugin\Immobili\Sync\ReindexService::class;
+$assert(class_exists($reindex), 'ReindexService esiste');
+$assert(method_exists($reindex, 'run'), 'espone run()');
+$assert(
+    (new ReflectionMethod($reindex, 'run'))->getNumberOfRequiredParameters() === 0,
+    'run() non richiede parametri'
+);
+
+$reindexHandler = (string) file_get_contents(dirname(__DIR__).'/http/api/task/reindex.php');
+$assert(
+    !str_contains($reindexHandler, 'Immobile::update')
+    && !str_contains($reindexHandler, 'Slug::unique'),
+    "l'handler non contiene più logica di dominio"
+);
+$assert(str_contains($reindexHandler, 'ReindexService'), "l'handler delega al service");
+
+echo "Slug localizzati dei due reparti\n";
+foreach (['it', 'en'] as $locale) {
+    $urls = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/urls.json"), true);
+    $assert(is_array($urls), "lang/{$locale}/urls.json è JSON valido");
+
+    foreach (['immobili', 'immobili/list', 'immobili/sold', 'residenze', 'residenze/list'] as $key) {
+        $assert(isset($urls[$key]) && $urls[$key] !== '', "lang/{$locale}: '{$key}' ha uno slug");
+    }
+
+    $assert(
+        str_starts_with((string) ($urls['residenze'] ?? ''), $locale.'/'),
+        "lang/{$locale}: lo slug residenze è prefissato dal locale"
+    );
+}
+
+echo "Simmetria delle cartelle view\n";
+$viewRoot = dirname(__DIR__).'/view';
+
+foreach ([
+    'components/card.php', 'components/cards.php', 'components/specs.php',
+    'components/amenities.php', 'components/map.php',
+    'components/energy-class/energy-class.php',
+    'components/immobili/filters.php', 'components/residenze/timeline.php',
+    'pages/frontend/immobili/list.php', 'pages/frontend/immobili/detail.php',
+    'pages/frontend/immobili/sold.php',
+    'pages/frontend/residenze/list.php', 'pages/frontend/residenze/detail.php',
+] as $expected) {
+    $assert(is_file($viewRoot.'/'.$expected), "esiste view/{$expected}");
+}
+
+foreach ([
+    'components/features.php', 'components/filters.php',
+    'components/residenze/features.php', 'components/residenze/card.php',
+    'pages/frontend/list.php', 'pages/frontend/detail.php', 'pages/frontend/sold.php',
+] as $gone) {
+    $assert(!is_file($viewRoot.'/'.$gone), "view/{$gone} è stato spostato");
+}
+
+// Ogni handler dichiarato nelle route frontend deve esistere davvero: è il
+// controllo che intercetta uno spostamento di view non riflesso nelle route.
+$frontendRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
+$missingHandlers = [];
+
+foreach ($frontendRoutes as $route) {
+    $handler = (string) ($route['handler'] ?? '');
+    if ($handler !== '' && !is_file($handler)) {
+        $missingHandlers[] = ($route['name'] ?? '?').' → '.$handler;
+    }
+}
+
+$assert($missingHandlers === [], 'tutte le route frontend puntano a file esistenti: '.implode('; ', $missingHandlers));
+
+// La residenza usa il componente condiviso della classe energetica invece di
+// stampare un badge a mano.
+$residenzeDetail = (string) file_get_contents($viewRoot.'/pages/frontend/residenze/detail.php');
+$assert(
+    str_contains($residenzeDetail, "component('energy-class/badge'"),
+    'la scheda residenza usa il componente energy-class condiviso'
+);
+$assert(
+    !str_contains($residenzeDetail, 'text-bg-success'),
+    'il badge energetico scritto a mano è sparito dalla scheda residenza'
+);
+
+echo "Gate unico dei task API\n";
+$taskDir = dirname(__DIR__).'/http/api/task';
+$assert(is_file($taskDir.'/_guard.php'), '_guard.php esiste');
+
+// Il blocco auth era ripetuto verbatim nei tre handler: nessuno di loro deve
+// più contenerne un pezzo, altrimenti la deduplicazione è solo apparente.
+foreach (['seed', 'residenze-seed', 'reindex'] as $handler) {
+    $source = (string) file_get_contents($taskDir.'/'.$handler.'.php');
+    $assert(str_contains($source, "_guard.php"), "{$handler}.php richiede il guard");
+    $assert(str_contains($source, 'immobiliTaskGuard('), "{$handler}.php invoca il guard");
+    $assert(
+        !str_contains($source, 'getallheaders')
+        && !str_contains($source, 'REDIRECT_HTTP_AUTHORIZATION')
+        && !str_contains($source, 'isLocal'),
+        "{$handler}.php non ha più una copia del blocco auth"
+    );
+}
+
+require_once $taskDir.'/_guard.php';
+
+$hostWas = $_SERVER['HTTP_HOST'] ?? null;
+foreach (['immobili.test', 'localhost', '127.0.0.1', 'sito.local', 'x.ddev.site'] as $localHost) {
+    $_SERVER['HTTP_HOST'] = $localHost;
+    $assert(immobiliTaskIsLocal(), "'{$localHost}' è riconosciuto come ambiente locale");
+}
+$_SERVER['HTTP_HOST'] = 'www.esempio.it';
+$assert(!immobiliTaskIsLocal(), "un dominio pubblico non è ambiente locale");
+
+$_GET['token'] = 'dal-query-string';
+$assert(immobiliTaskPresentedToken() === 'dal-query-string', "il token arriva anche da ?token= (push Gestim)");
+unset($_GET['token']);
+$assert(immobiliTaskPresentedToken() === '', "senza header né query il token è vuoto");
+
+if ($hostWas === null) { unset($_SERVER['HTTP_HOST']); } else { $_SERVER['HTTP_HOST'] = $hostWas; }
 
 echo "Route cartello vetrina venduto\n";
 $pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);

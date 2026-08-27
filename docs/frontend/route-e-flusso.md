@@ -15,7 +15,7 @@ Gli slug localizzati sono definiti in `lang/{it,en}/urls.json` e risolti con `__
 
 1. `context.php` legge i filtri dalla query string (`comune`, `contratto`, `prezzo_min`, …).
 2. `ImmobileQuery::search()` filtra gli immobili **visibili e non venduti**, ordina e pagina.
-3. La pagina renderizza: componente `filters`, componente `map`, componente `cards-grid`
+3. La pagina renderizza: componente `immobili/filters`, componente `map`, componente `cards`
    (che riusa `card`) e paginazione.
 
 I filtri sono un semplice form **GET**: funzionano senza JavaScript. L'endpoint

@@ -35,7 +35,7 @@ Namespace PSR-4: `Wonder\Plugin\Immobili\` → `src/`.
 
 ## Struttura del codice
 
-- Logica di dominio nei **provider** (`Feed/`) e nei **servizi** (`Services/`); le view restano
+- Logica di dominio nei **provider** (`Feed/`) e nei servizi di reparto (`Catalog/`, `Sync/`, `Media/`, `Seeding/`, `Export/`); le view restano
   sottili e usano `ImmobilePresenter` / `ImmobileQuery`.
 - I **Model** definiscono lo schema (SQL + dati); le **Resource** il backend CRUD.
 - Aggiungere un gestionale = un nuovo `FeedProvider` (vedi

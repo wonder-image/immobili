@@ -1,6 +1,6 @@
 <?php
 
-use Wonder\Plugin\Immobili\Services\FeedSyncService;
+use Wonder\Plugin\Immobili\Sync\FeedSyncService;
 
 /**
  * Trigger backend "Sincronizza ora".

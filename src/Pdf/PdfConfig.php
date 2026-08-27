@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Wonder\Plugin\Immobili\Pdf;
 
 use Wonder\Plugin\Immobili\Immobili;
-use Wonder\Plugin\Immobili\Models\Settings;
+use Wonder\Plugin\Immobili\Models\System\Settings;
 use Wonder\Plugin\Immobili\Support\AttributeCatalog;
 
 /**

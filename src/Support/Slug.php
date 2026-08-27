@@ -3,7 +3,7 @@
 namespace Wonder\Plugin\Immobili\Support;
 
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Services\ImmobilePresenter;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Support\Text\Slug as TextSlug;
 
 /**
@@ -21,10 +21,12 @@ final class Slug
 
     /**
      * Base leggibile dello slug a partire dai pezzi (tipologia, via, comune, …).
+     * `$fallback` è il valore usato quando i pezzi sono tutti vuoti: 'immobile'
+     * per gli immobili, 'residenza' per le residenze.
      *
      * @param array<int, mixed> $parts
      */
-    public static function base(array $parts): string
+    public static function base(array $parts, string $fallback = 'immobile'): string
     {
         $parts = array_map(static fn ($p): string => trim((string) $p), $parts);
         $text = trim(implode(' ', array_filter($parts)));
@@ -33,9 +35,24 @@ final class Slug
         // + minuscole) usando `_` come separatore, pensato per chiavi/id. Per lo
         // slug pubblico URL-friendly convertiamo `_` in `-`; nessuna copia locale
         // della logica di slugificazione.
-        $slug = str_replace('_', '-', TextSlug::make($text)) ?: 'immobile';
+        $slug = str_replace('_', '-', TextSlug::make($text)) ?: $fallback;
 
-        return self::limit($slug, self::BASE_LENGTH);
+        return self::limit($slug, self::BASE_LENGTH, $fallback);
+    }
+
+    /**
+     * Base + unicità in un solo passaggio, per i reparti che partono da campi
+     * grezzi invece che da una riga già formata.
+     *
+     * @param array<int, mixed> $parts
+     */
+    public static function fromParts(
+        array $parts,
+        string $modelClass = Immobile::class,
+        int|string|null $excludeId = null,
+        string $fallback = 'immobile'
+    ): string {
+        return self::unique(self::base($parts, $fallback), $modelClass, $excludeId, $fallback);
     }
 
     /**
@@ -50,30 +67,34 @@ final class Slug
     {
         $base = self::base([ImmobilePresenter::titolo($row)]);
 
-        return self::unique($base, $excludeId);
+        return self::unique($base, Immobile::class, $excludeId);
     }
 
     /**
-     * Rende lo slug univoco nella tabella `immobili`, escludendo l'eventuale
-     * riga corrente ($excludeId) così che un re-sync/update non lo faccia
-     * crescere. Aggiunge `-2`, `-3`, … finché trova un valore libero.
+     * Rende lo slug univoco nella tabella di `$modelClass`, escludendo
+     * l'eventuale riga corrente ($excludeId) così che un re-sync/update non lo
+     * faccia crescere. Aggiunge `-2`, `-3`, … finché trova un valore libero.
      */
-    public static function unique(string $base, int|string|null $excludeId = null): string
-    {
-        $base = self::limit($base !== '' ? $base : 'immobile', self::MAX_LENGTH);
+    public static function unique(
+        string $base,
+        string $modelClass = Immobile::class,
+        int|string|null $excludeId = null,
+        string $fallback = 'immobile'
+    ): string {
+        $base = self::limit($base !== '' ? $base : $fallback, self::MAX_LENGTH, $fallback);
         $slug = $base;
         $n = 1;
 
-        while (self::taken($slug, $excludeId)) {
+        while (self::taken($slug, $modelClass, $excludeId)) {
             $n++;
             $suffix = '-'.$n;
-            $slug = self::limit($base, self::MAX_LENGTH - strlen($suffix)).$suffix;
+            $slug = self::limit($base, self::MAX_LENGTH - strlen($suffix), $fallback).$suffix;
         }
 
         return $slug;
     }
 
-    private static function limit(string $slug, int $length): string
+    private static function limit(string $slug, int $length, string $fallback): string
     {
         if (strlen($slug) <= $length) {
             return $slug;
@@ -81,12 +102,29 @@ final class Slug
 
         $slug = rtrim(substr($slug, 0, $length), '-_');
 
-        return $slug !== '' ? $slug : 'immobile';
+        return $slug !== '' ? $slug : $fallback;
     }
 
-    private static function taken(string $slug, int|string|null $excludeId): bool
+    /**
+     * `$modelClass` deve essere un Model del modulo con colonna `slug`. Le
+     * eccezioni (DB non ancora migrato) valgono "slug libero" per allinearsi
+     * alla convenzione difensiva dominante del modulo (vedi Forms, Taxonomy,
+     * FeedSyncService): un fallimento di connessione durante setup non blocca.
+     *
+     * Nota: per gli immobili è un cambiamento deliberato. Prima il catch
+     * esisteva solo nella versione residenze (`ResidenzaForm::slugTaken()`),
+     * mentre qui l'eccezione si propagava; unificando le due implementazioni si
+     * è tenuto il comportamento più difensivo dei due.
+     *
+     * @param class-string $modelClass
+     */
+    private static function taken(string $slug, string $modelClass, int|string|null $excludeId): bool
     {
-        $row = Immobile::find(['slug' => $slug], 1);
+        try {
+            $row = $modelClass::find(['slug' => $slug], 1);
+        } catch (\Throwable) {
+            return false;
+        }
 
         if (!is_array($row) || !isset($row['id'])) {
             return false;
