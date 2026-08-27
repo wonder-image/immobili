@@ -136,7 +136,8 @@
                 "prestigious": "Signorile",
                 "period": "Epoca",
                 "railing": "Ringhiera",
-                "luxury": "Lusso"
+                "luxury": "Lusso",
+                "other": "Altro"
             },
             "construction_status": {
                 "new": "Nuovo",

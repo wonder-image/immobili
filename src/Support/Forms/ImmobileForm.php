@@ -49,7 +49,7 @@ final class ImmobileForm extends FormText
             '5' => 'period',
             '6' => 'railing',
             '7' => 'luxury',
-            '255' => 'standard',
+            '255' => 'other',
         ],
         'construction_status' => [
             '1' => 'new',

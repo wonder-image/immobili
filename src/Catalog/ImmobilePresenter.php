@@ -5,6 +5,7 @@ namespace Wonder\Plugin\Immobili\Catalog;
 use Wonder\Plugin\Immobili\Media\MediaUrl;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
+use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
 /**
@@ -14,78 +15,6 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
  */
 final class ImmobilePresenter
 {
-    /**
-     * Dizionari di dominio condivisi tra la lettura dei feed (chiavi native in
-     * `attributi`) e quella degli immobili manuali (colonne `*_id`): il codice
-     * numerico è lo stesso, cambia solo la sorgente.
-     *
-     * @var array<string, string>
-     */
-    private const KITCHEN = [
-        '1' => 'Abitabile',
-        '2' => 'Angolo cottura',
-        '3' => 'Cucinino',
-        '4' => 'Semi abitabile',
-        '5' => 'Tinello',
-        '6' => 'A vista',
-        '255' => 'Non presente',
-    ];
-
-    /** @var array<string, string> */
-    private const GARAGE = [
-        '1' => 'Singolo',
-        '2' => 'Doppio',
-        '3' => 'Triplo',
-        '255' => 'Assente',
-    ];
-
-    /** @var array<string, string> */
-    private const FURNISHING = [
-        '1' => 'Parziale',
-        '2' => 'Completo',
-        '255' => 'Assente',
-    ];
-
-    /** @var array<string, string> */
-    private const WINDOW_FRAMES = [
-        '1' => 'Vetro/plastica',
-        '2' => 'Vetro/legno',
-        '3' => 'Vetro/metallo',
-        '4' => 'Doppio vetro/plastica',
-        '5' => 'Doppio vetro/legno',
-        '6' => 'Doppio vetro/metallo',
-    ];
-
-    /** @var array<string, string> */
-    private const TV_SYSTEM = [
-        '1' => 'Centralizzato',
-        '2' => 'Singolo',
-        '255' => 'Assente',
-    ];
-
-    /** @var array<string, string> */
-    private const CONSTRUCTION_TYPE = [
-        '1' => 'Economica',
-        '2' => 'Civile',
-        '3' => 'Medio signorile',
-        '4' => 'Signorile',
-        '5' => 'Epoca',
-        '6' => 'Ringhiera',
-        '7' => 'Lusso',
-        '255' => 'Altro',
-    ];
-
-    /** @var array<string, string> */
-    private const MAINTENANCE_STATE = [
-        '1' => 'Nuovo',
-        '2' => 'Buono',
-        '3' => 'Ristrutturato',
-        '4' => 'Mediocre',
-        '5' => 'Da ristrutturare',
-        '6' => 'Ottimo',
-        '7' => 'Discreto',
-    ];
-
     /**
      * Presentazione completa (dettaglio): include immagini e descrizione.
      *
@@ -191,18 +120,18 @@ final class ImmobilePresenter
             return array_replace($details, [
                 'altre_camere'       => $altreCamere,
                 'totale_camere'      => $camere !== null && $altreCamere !== null ? $camere + $altreCamere : null,
-                'cucina'             => self::enumValue($attributi['Cucina'] ?? null, self::KITCHEN),
+                'cucina'             => self::enumValue($attributi['Cucina'] ?? null, ImmobileForm::options('kitchen', false)),
                 'giardino'           => self::gardenValue(
                     $attributi['GiardinoPrivato'] ?? null,
                     $attributi['GiardinoCondominiale'] ?? null
                 ),
-                'box_auto'           => self::enumValue($attributi['BoxAuto'] ?? null, self::GARAGE),
+                'box_auto'           => self::enumValue($attributi['BoxAuto'] ?? null, ImmobileForm::options('garage', false)),
                 'cantina'            => self::presenceValue($attributi['Cantina'] ?? null),
                 'mansarda'           => self::presenceValue($attributi['Mansarda'] ?? null),
                 'taverna'            => self::presenceValue($attributi['Taverna'] ?? null),
-                'arredamento'        => self::enumValue($attributi['Arredamento'] ?? null, self::FURNISHING),
-                'infissi_esterni'    => self::enumValue($attributi['InfissiEsterni'] ?? null, self::WINDOW_FRAMES),
-                'impianto_tv'        => self::enumValue($attributi['ImpiantoTV'] ?? null, self::TV_SYSTEM),
+                'arredamento'        => self::enumValue($attributi['Arredamento'] ?? null, ImmobileForm::options('furnishing', false)),
+                'infissi_esterni'    => self::enumValue($attributi['InfissiEsterni'] ?? null, ImmobileForm::options('window_frames', false)),
+                'impianto_tv'        => self::enumValue($attributi['ImpiantoTV'] ?? null, ImmobileForm::options('tv_system', false)),
                 'portineria'         => self::booleanValue($attributi['Portineria'] ?? null),
                 'porta_blindata'     => self::booleanValue($attributi['PortaBlindata'] ?? null),
                 'impianto_allarme'   => self::booleanValue($attributi['Allarme'] ?? null),
@@ -213,8 +142,8 @@ final class ImmobilePresenter
                 'idromassaggio'      => self::booleanValue($attributi['Idromassaggio'] ?? null),
                 'piscina'            => self::booleanValue($attributi['Piscina'] ?? null),
                 'campo_tennis'       => self::booleanValue($attributi['Tennis'] ?? null),
-                'classe_immobile'    => self::enumValue($attributi['TipoCostruzione'] ?? null, self::CONSTRUCTION_TYPE),
-                'stato_immobile'     => self::enumValue($attributi['StatoManutenzione'] ?? null, self::MAINTENANCE_STATE),
+                'classe_immobile'    => self::enumValue($attributi['TipoCostruzione'] ?? null, ImmobileForm::options('construction_type', false)),
+                'stato_immobile'     => self::enumValue($attributi['StatoManutenzione'] ?? null, ImmobileForm::options('construction_status', false)),
                 'ascensore'          => self::countFeature($attributi['NrAscensori'] ?? null),
             ]);
         }
@@ -240,20 +169,20 @@ final class ImmobilePresenter
         return array_replace($details, [
             'altre_camere'       => $altreCamere,
             'totale_camere'      => $camere !== null && $altreCamere !== null ? $camere + $altreCamere : null,
-            'cucina'             => self::enumValue($row['cucina_id'] ?? null, self::KITCHEN),
+            'cucina'             => self::enumValue($row['cucina_id'] ?? null, ImmobileForm::options('kitchen', false)),
             'giardino'           => self::gardenValue(
                 $row['giardino_privato_id'] ?? null,
                 $row['giardino_condominiale'] ?? null
             ),
-            'box_auto'           => self::enumValue($row['box_auto_id'] ?? null, self::GARAGE),
+            'box_auto'           => self::enumValue($row['box_auto_id'] ?? null, ImmobileForm::options('garage', false)),
             'balcone'            => self::booleanValue($row['n_balconi'] ?? null),
             'terrazzo'           => self::booleanValue($row['n_terrazzi'] ?? null),
             'cantina'            => self::presenceValue($row['cantina_id'] ?? null),
             'mansarda'           => self::presenceValue($row['mansarda_id'] ?? null),
             'taverna'            => self::presenceValue($row['taverna_id'] ?? null),
-            'arredamento'        => self::enumValue($row['arredamento_id'] ?? null, self::FURNISHING),
-            'infissi_esterni'    => self::enumValue($row['infissi_esterni_id'] ?? null, self::WINDOW_FRAMES),
-            'impianto_tv'        => self::enumValue($row['impianto_tv_id'] ?? null, self::TV_SYSTEM),
+            'arredamento'        => self::enumValue($row['arredamento_id'] ?? null, ImmobileForm::options('furnishing', false)),
+            'infissi_esterni'    => self::enumValue($row['infissi_esterni_id'] ?? null, ImmobileForm::options('window_frames', false)),
+            'impianto_tv'        => self::enumValue($row['impianto_tv_id'] ?? null, ImmobileForm::options('tv_system', false)),
             'porta_blindata'     => self::booleanValue($row['porta_blindata'] ?? null),
             'impianto_allarme'   => self::booleanValue($row['allarme'] ?? null),
             'cancello_elettrico' => self::booleanValue($row['cancello_elettrico'] ?? null),
@@ -263,8 +192,8 @@ final class ImmobilePresenter
             'idromassaggio'      => self::booleanValue($row['idromassaggio'] ?? null),
             'piscina'            => self::booleanValue($row['piscina'] ?? null),
             'campo_tennis'       => self::booleanValue($row['tennis'] ?? null),
-            'classe_immobile'    => self::enumValue($row['tipo_costruzione_id'] ?? null, self::CONSTRUCTION_TYPE),
-            'stato_immobile'     => self::enumValue($row['stato_costruzione_id'] ?? null, self::MAINTENANCE_STATE),
+            'classe_immobile'    => self::enumValue($row['tipo_costruzione_id'] ?? null, ImmobileForm::options('construction_type', false)),
+            'stato_immobile'     => self::enumValue($row['stato_costruzione_id'] ?? null, ImmobileForm::options('construction_status', false)),
             'ascensore'          => self::booleanValue($row['n_ascensori'] ?? null),
         ]);
     }

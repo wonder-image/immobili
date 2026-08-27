@@ -28,6 +28,57 @@ $assert = static function (bool $condition, string $message) use (&$failures, &$
     echo "  ✗ {$message}\n";
 };
 
+echo "FormText::resolve senza __t() (fallback difensivo)\n";
+$formText = \Wonder\Plugin\Immobili\Support\Forms\FormText::class;
+
+// Senza __t() registrato il fallback è la chiave stessa: è il comportamento
+// difensivo che serve quando le lang del modulo non sono ancora caricate.
+// Va verificato qui, PRIMA di registrare lo stub __t() sotto: una volta
+// dichiarata, una funzione globale non può essere "ritirata" nello stesso
+// processo PHP, quindi da qui in poi __t() risulta sempre definita.
+$assert(
+    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome',
+    "resolve compone forms.<section>.<key>"
+);
+$assert($formText::resolve('residenze', 'x', 'ripiego') === 'ripiego', "il fallback esplicito viene restituito tale e quale");
+
+// Da qui in avanti i dizionari del presenter (ImmobileForm::options(), via
+// FormText::resolve) passano da __t(): senza bootstrap del framework la
+// funzione non esiste, quindi la stubbiamo leggendo le traduzioni reali da
+// lang/it/*.json. Come il framework reale (vedi PdfFacts::label), lancia se
+// la chiave manca: i chiamanti difensivi la intercettano e ricadono sul
+// fallback interno; qui invece verifichiamo l'italiano tradotto per davvero.
+if (!function_exists('__t')) {
+    function __t(string $key, array $replacements = []): string
+    {
+        static $cache = [];
+
+        $segments = explode('.', $key);
+        $namespace = array_shift($segments);
+
+        if (!array_key_exists($namespace, $cache)) {
+            $path = dirname(__DIR__)."/lang/it/{$namespace}.json";
+            $decoded = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+            $cache[$namespace] = is_array($decoded) ? $decoded : [];
+        }
+
+        $value = $cache[$namespace];
+
+        foreach ($segments as $segment) {
+            if (!is_array($value) || !array_key_exists($segment, $value)) {
+                throw new RuntimeException("Traduzione mancante: {$key}");
+            }
+            $value = $value[$segment];
+        }
+
+        if (!is_string($value)) {
+            throw new RuntimeException("Traduzione mancante: {$key}");
+        }
+
+        return $value;
+    }
+}
+
 echo "immobiliIsTrue\n";
 $assert(immobiliIsTrue('true'), "'true' => true");
 $assert(immobiliIsTrue('1'), "'1' => true");
@@ -384,17 +435,9 @@ $assert(
     'gli URL locali sono risolti sul filesystem'
 );
 
-echo "FormText\n";
-$formText = \Wonder\Plugin\Immobili\Support\Forms\FormText::class;
-
-// Senza __t() registrato il fallback è la chiave stessa: è il comportamento
-// difensivo che serve quando le lang del modulo non sono ancora caricate.
-$assert(
-    $formText::resolve('immobili', 'fields.nome') === 'forms.immobili.fields.nome',
-    "resolve compone forms.<section>.<key>"
-);
-$assert($formText::resolve('residenze', 'x', 'ripiego') === 'ripiego', "il fallback esplicito viene restituito tale e quale");
-
+echo "FormText: classi energetiche condivise\n";
+// `resolve()` è già stato verificato in cima al file, prima che lo stub __t()
+// venisse registrato: lì si controlla il fallback difensivo, qui il catalogo.
 $energy = $formText::energyClasses();
 $assert(($energy[''] ?? null) === '--', "la prima opzione è il placeholder vuoto");
 $assert(array_key_exists('A4', $energy) && array_key_exists('G', $energy), "copre le classi di entrambe le leggi");
@@ -406,6 +449,26 @@ $assert(
     \Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm::energyClasses() === $energy,
     "ResidenzaForm::energyClasses delega alla base condivisa"
 );
+
+echo "Dizionari del presenter allineati alle traduzioni\n";
+$presenterReflection = new ReflectionClass(\Wonder\Plugin\Immobili\Catalog\ImmobilePresenter::class);
+$hardcoded = array_intersect(
+    array_keys($presenterReflection->getConstants()),
+    ['KITCHEN', 'GARAGE', 'FURNISHING', 'WINDOW_FRAMES', 'TV_SYSTEM', 'CONSTRUCTION_TYPE', 'MAINTENANCE_STATE']
+);
+$assert($hardcoded === [], 'nessun dizionario di dominio resta hardcoded nel presenter: '.implode(', ', $hardcoded));
+
+$constructionKeys = (new ReflectionClass(\Wonder\Plugin\Immobili\Support\Forms\ImmobileForm::class))
+    ->getConstant('OPTION_KEYS')['construction_type'] ?? [];
+$assert(($constructionKeys['255'] ?? '') === 'other', "il codice 255 di construction_type è 'other', non 'standard'");
+
+foreach (['it', 'en'] as $locale) {
+    $forms = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/forms.json"), true);
+    $assert(
+        isset($forms['immobili']['options']['construction_type']['other']),
+        "lang/{$locale}: construction_type.other è tradotta"
+    );
+}
 
 echo "MediaUrl\n";
 $GLOBALS['PATH'] = (object) ['upload' => 'https://example.test/upload', 'rUpload' => '/srv/upload'];

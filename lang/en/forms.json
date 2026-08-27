@@ -136,7 +136,8 @@
                 "prestigious": "Prestigious",
                 "period": "Period",
                 "railing": "Railing house",
-                "luxury": "Luxury"
+                "luxury": "Luxury",
+                "other": "Other"
             },
             "construction_status": {
                 "new": "New",
