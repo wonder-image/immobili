@@ -598,6 +598,46 @@ $assert(
     'la lista residenze non ha più la griglia scritta a mano'
 );
 
+echo "GetrixProvider: guardia e adozione delle tassonomie\n";
+$getrix = \Wonder\Plugin\Immobili\Feed\GetrixProvider::class;
+$getrixRef = new ReflectionClass($getrix);
+
+$assert(
+    \Wonder\Plugin\Immobili\Support\Taxonomy::providerColumn('getrix') === 'getrix_id',
+    'la colonna mappa del provider getrix è getrix_id'
+);
+
+// upsert() adotta le righe legacy invece di duplicarle: senza il quarto
+// parametro, ogni passata su una tabella popolata da una versione precedente
+// (nome presente, chiave naturale assente) creerebbe un duplicato.
+$upsertParams = $getrixRef->getMethod('upsert')->getParameters();
+$assert(count($upsertParams) === 4, 'upsert accetta anche il criterio di adozione');
+$assert(($upsertParams[3]->getName() ?? '') === 'adopt', 'il quarto parametro si chiama adopt');
+$assert(
+    $upsertParams[3]->isDefaultValueAvailable() && $upsertParams[3]->getDefaultValue() === [],
+    'adopt è opzionale: i chiamanti che non ne hanno bisogno restano invariati'
+);
+
+// La guardia deve misurare l'USABILITÀ del set, non la sua presenza: una
+// tabella popolata senza getrix_id supera un controllo di sola presenza e
+// blocca il seeding per sempre. Il test guarda il sorgente perché il metodo è
+// privato e interroga il database, che smoke.php non ha.
+$guardSource = (string) file_get_contents($getrixRef->getFileName());
+$guardBody = substr($guardSource, strpos($guardSource, 'function hasBaseTaxonomies'));
+$guardBody = substr($guardBody, 0, strpos($guardBody, 'private function hasMappedRows'));
+$assert(
+    str_contains($guardBody, 'providerColumn') && str_contains($guardBody, 'hasMappedRows'),
+    'hasBaseTaxonomies verifica la mappatura del provider, non la sola presenza di righe'
+);
+$assert(
+    !preg_match('/find\(\[\],\s*1\)/', $guardBody),
+    'hasBaseTaxonomies non si accontenta più di una riga qualsiasi'
+);
+$assert(
+    $getrixRef->hasMethod('hasMappedRows'),
+    'esiste il controllo dedicato sulle righe mappate'
+);
+
 echo "searchFields non cancella i nomi denormalizzati\n";
 $sfPresenter = new \Wonder\Plugin\Immobili\Catalog\ImmobilePresenter();
 

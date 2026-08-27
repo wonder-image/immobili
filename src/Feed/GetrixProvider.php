@@ -495,8 +495,8 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
 
         // Getrix semina le tabelle canoniche: upsert per chiave naturale
         // (cod_catastale, sigla, slug) riempiendo getrix_id, senza cancellare le
-        // mappe degli altri gestionali. Se il set base esiste già lo riusa; il
-        // refresh resta disponibile con ?refresh_taxonomies=1.
+        // mappe degli altri gestionali. Se il set base è già utilizzabile lo
+        // riusa; il refresh resta disponibile con ?refresh_taxonomies=1.
         if (!$force && $this->hasBaseTaxonomies()) {
             return;
         }
@@ -508,17 +508,51 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         $this->syncQuartieri($import);
     }
 
+    /**
+     * Il set base è già utilizzabile da questo provider?
+     *
+     * Non basta che le tabelle contengano righe: devono contenere righe
+     * MAPPATE, cioè con `getrix_id` valorizzato. Senza quella colonna
+     * `Taxonomy::idByProviderCode()` non risolve nulla e ogni immobile
+     * importato resta senza tassonomia.
+     *
+     * La distinzione conta davvero: una tabella popolata da una versione
+     * precedente del modulo — quando `chiave` e `getrix_id` non esistevano
+     * ancora — supera un controllo di sola presenza, e il seeding non
+     * riparte mai. La migrazione si autoblocca in silenzio e l'unica via
+     * d'uscita resta `?refresh_taxonomies=1`, che nessuno sa di dover usare.
+     */
     private function hasBaseTaxonomies(): bool
     {
-        foreach ([Categoria::class, Tipologia::class, Comune::class] as $model) {
-            $row = $model::find([], 1);
+        $column = Taxonomy::providerColumn(self::KEY);
 
-            if (!is_array($row) || !isset($row['id'])) {
+        foreach ([Categoria::class, Tipologia::class, Comune::class] as $model) {
+            if (!$this->hasMappedRows($model, $column)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    /**
+     * Almeno una riga della tassonomia porta il codice nativo del provider.
+     * Difensivo: se la tabella non è ancora migrata si comporta come "non
+     * utilizzabile", così il seeding parte e la crea.
+     *
+     * @param class-string $model
+     */
+    private function hasMappedRows(string $model, string $column): bool
+    {
+        if ($column === '') {
+            return false;
+        }
+
+        try {
+            return (int) sqlCount($model::$table, "`{$column}` IS NOT NULL AND `{$column}` <> ''") > 0;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     private function syncCategorie(Import $import): void
@@ -531,7 +565,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                 'chiave'    => $chiave,
                 'nome'      => $this->clean($categoria['NomeCategoria'] ?? ''),
                 'getrix_id' => $code,
-            ]);
+            ], ['nome' => $this->clean($categoria['NomeCategoria'] ?? '')]);
 
             $macro = $categoria['MacroTipologie']['MacroTipologia'] ?? [];
             if (isset($macro['IDTipologiaMacro'])) {
@@ -548,7 +582,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                     'nome'         => $macroNome,
                     'categoria_id' => $categoriaId,
                     'getrix_id'    => $macroCode,
-                ]);
+                ], ['nome' => $macroNome]);
 
                 $tipologie = $macrotipologia['Tipologie']['Tipologia'] ?? [];
                 if (isset($tipologie['IDTipologia'])) {
@@ -566,7 +600,7 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                         'categoria_id'      => $categoriaId,
                         'macrotipologia_id' => $macroId,
                         'getrix_id'         => $tipCode,
-                    ]);
+                    ], ['nome' => $tipNome]);
                 }
             }
         }
@@ -682,7 +716,22 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
      * @param array<string, mixed> $match
      * @param array<string, mixed> $data
      */
-    private function upsert(string $model, array $match, array $data): int
+    /**
+     * Upsert per chiave naturale, con adozione delle righe legacy.
+     *
+     * `$adopt` è un secondo criterio (tipicamente il nome) usato solo se il
+     * match primario fallisce. Serve alle tabelle popolate da versioni
+     * precedenti del modulo, che hanno il nome ma non la chiave naturale né il
+     * codice provider: senza adozione ogni passata ne creerebbe un duplicato,
+     * perché il match sulla chiave non troverebbe mai nulla. Adottandola, la
+     * riga esistente viene completata e gli id già referenziati dagli immobili
+     * restano validi.
+     *
+     * @param array<string, mixed> $match
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $adopt
+     */
+    private function upsert(string $model, array $match, array $data, array $adopt = []): int
     {
         $existing = $model::find($match, 1);
 
@@ -691,6 +740,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
             $model::update($data, $id);
 
             return $id;
+        }
+
+        if ($adopt !== []) {
+            $legacy = $model::find($adopt, 1);
+
+            if (is_array($legacy) && isset($legacy['id'])) {
+                $id = (int) $legacy['id'];
+                $model::update($data, $id);
+
+                return $id;
+            }
         }
 
         $result = $model::create($data);
