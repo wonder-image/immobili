@@ -496,6 +496,41 @@ $assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non fini
 $assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
 $assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
+echo "Gate unico dei task API\n";
+$taskDir = dirname(__DIR__).'/http/api/task';
+$assert(is_file($taskDir.'/_guard.php'), '_guard.php esiste');
+
+// Il blocco auth era ripetuto verbatim nei tre handler: nessuno di loro deve
+// più contenerne un pezzo, altrimenti la deduplicazione è solo apparente.
+foreach (['seed', 'residenze-seed', 'reindex'] as $handler) {
+    $source = (string) file_get_contents($taskDir.'/'.$handler.'.php');
+    $assert(str_contains($source, "_guard.php"), "{$handler}.php richiede il guard");
+    $assert(str_contains($source, 'immobiliTaskGuard('), "{$handler}.php invoca il guard");
+    $assert(
+        !str_contains($source, 'getallheaders')
+        && !str_contains($source, 'REDIRECT_HTTP_AUTHORIZATION')
+        && !str_contains($source, 'isLocal'),
+        "{$handler}.php non ha più una copia del blocco auth"
+    );
+}
+
+require_once $taskDir.'/_guard.php';
+
+$hostWas = $_SERVER['HTTP_HOST'] ?? null;
+foreach (['immobili.test', 'localhost', '127.0.0.1', 'sito.local', 'x.ddev.site'] as $localHost) {
+    $_SERVER['HTTP_HOST'] = $localHost;
+    $assert(immobiliTaskIsLocal(), "'{$localHost}' è riconosciuto come ambiente locale");
+}
+$_SERVER['HTTP_HOST'] = 'www.esempio.it';
+$assert(!immobiliTaskIsLocal(), "un dominio pubblico non è ambiente locale");
+
+$_GET['token'] = 'dal-query-string';
+$assert(immobiliTaskPresentedToken() === 'dal-query-string', "il token arriva anche da ?token= (push Gestim)");
+unset($_GET['token']);
+$assert(immobiliTaskPresentedToken() === '', "senza header né query il token è vuoto");
+
+if ($hostWas === null) { unset($_SERVER['HTTP_HOST']); } else { $_SERVER['HTTP_HOST'] = $hostWas; }
+
 echo "Route cartello vetrina venduto\n";
 $pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
 $soldRoute = current(array_filter(
