@@ -47,7 +47,7 @@ Immobili::layout('main');
         <h1 class="title-big"><?= e(__t('pages.immobili.list.title')) ?></h1>
 
         <div class="mt-4">
-            <?php Immobili::component('filters', [ 'filters' => $filters, 'action' => __r('immobili.list') ]); ?>
+            <?php Immobili::component('immobili/filters', [ 'filters' => $filters, 'action' => __r('immobili.list') ]); ?>
         </div>
 
     </div>

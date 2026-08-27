@@ -175,7 +175,7 @@ Immobili::layout('main');
 <section class="pt-0">
     <div class="content">
 
-        <?php Immobili::component('features', ['immobile' => $immobile]); ?>
+        <?php Immobili::component('specs', ['immobile' => $immobile]); ?>
 
     </div>
 </section>

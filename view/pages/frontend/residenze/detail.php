@@ -9,6 +9,7 @@ use Wonder\App\Dependencies;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
+use Wonder\Plugin\Immobili\Support\EnergyScale;
 use Wonder\Plugin\Immobili\Catalog\CardViewModel;
 use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
@@ -45,6 +46,10 @@ $logoUrl = $logoFile !== '' ? ResidenzaPresenter::imageUrl($logoFile) : '';
 
 $capitolatoFile = ResidenzaPresenter::firstFile($row['capitolato'] ?? '');
 $capitolatoUrl = $capitolatoFile !== '' ? ResidenzaPresenter::imageUrl($capitolatoFile) : '';
+
+// Classe energetica: la residenza dichiara solo la classe (niente IPE né legge),
+// la scala la deduce da quella. null se il campo è vuoto → il badge non esce.
+$energyScale = EnergyScale::make((string) ($row['classe_energetica'] ?? ''), '', '');
 
 // Immobili collegati (visibili) via FK.
 $linkedRows = Immobile::safeFind(['residenza_id' => (int) $row['id'], 'visible' => 'true', 'deleted' => 'false'], null, 'creation', 'DESC');
@@ -134,7 +139,7 @@ Immobili::layout('main');
 
                 <?php if ($features !== []) { ?>
                     <h2 class="subtitle mt-6"><?= e(__t('forms.residenze.sections.features')) ?></h2>
-                    <div class="mt-3"><?php Immobili::component('residenze/features', ['features' => $features]); ?></div>
+                    <div class="mt-3"><?php Immobili::component('amenities', ['features' => $features]); ?></div>
                 <?php } ?>
 
             </div>
@@ -148,10 +153,10 @@ Immobili::layout('main');
                     </div>
                 <?php } ?>
 
-                <?php if (($row['classe_energetica'] ?? '') !== '') { ?>
+                <?php if ($energyScale !== null) { ?>
                     <div class="p-4 b-r-15 bg-white b-shadow">
                         <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.energy')) ?></div>
-                        <div class="title"><span class="badge text-bg-success"><?= e((string) $row['classe_energetica']) ?></span></div>
+                        <div class="mt-2"><?php Immobili::component('energy-class/badge', ['scale' => $energyScale]); ?></div>
                     </div>
                 <?php } ?>
 

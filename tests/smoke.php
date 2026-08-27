@@ -615,6 +615,55 @@ $assert(
 );
 $assert(str_contains($reindexHandler, 'ReindexService'), "l'handler delega al service");
 
+echo "Simmetria delle cartelle view\n";
+$viewRoot = dirname(__DIR__).'/view';
+
+foreach ([
+    'components/card.php', 'components/cards.php', 'components/specs.php',
+    'components/amenities.php', 'components/map.php',
+    'components/energy-class/energy-class.php',
+    'components/immobili/filters.php', 'components/residenze/timeline.php',
+    'pages/frontend/immobili/list.php', 'pages/frontend/immobili/detail.php',
+    'pages/frontend/immobili/sold.php',
+    'pages/frontend/residenze/list.php', 'pages/frontend/residenze/detail.php',
+] as $expected) {
+    $assert(is_file($viewRoot.'/'.$expected), "esiste view/{$expected}");
+}
+
+foreach ([
+    'components/features.php', 'components/filters.php',
+    'components/residenze/features.php', 'components/residenze/card.php',
+    'pages/frontend/list.php', 'pages/frontend/detail.php', 'pages/frontend/sold.php',
+] as $gone) {
+    $assert(!is_file($viewRoot.'/'.$gone), "view/{$gone} è stato spostato");
+}
+
+// Ogni handler dichiarato nelle route frontend deve esistere davvero: è il
+// controllo che intercetta uno spostamento di view non riflesso nelle route.
+$frontendRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
+$missingHandlers = [];
+
+foreach ($frontendRoutes as $route) {
+    $handler = (string) ($route['handler'] ?? '');
+    if ($handler !== '' && !is_file($handler)) {
+        $missingHandlers[] = ($route['name'] ?? '?').' → '.$handler;
+    }
+}
+
+$assert($missingHandlers === [], 'tutte le route frontend puntano a file esistenti: '.implode('; ', $missingHandlers));
+
+// La residenza usa il componente condiviso della classe energetica invece di
+// stampare un badge a mano.
+$residenzeDetail = (string) file_get_contents($viewRoot.'/pages/frontend/residenze/detail.php');
+$assert(
+    str_contains($residenzeDetail, "component('energy-class/badge'"),
+    'la scheda residenza usa il componente energy-class condiviso'
+);
+$assert(
+    !str_contains($residenzeDetail, 'text-bg-success'),
+    'il badge energetico scritto a mano è sparito dalla scheda residenza'
+);
+
 echo "Gate unico dei task API\n";
 $taskDir = dirname(__DIR__).'/http/api/task';
 $assert(is_file($taskDir.'/_guard.php'), '_guard.php esiste');

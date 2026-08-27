@@ -1,8 +1,14 @@
 <?php
 
 /**
- * Elenco features (icona + label) di una residenza.
- * Args: ['features' => array<int,string> id]
+ * Dotazioni presenti, rese come icona + etichetta. Trasversale: oggi la usano
+ * le residenze, ed è il posto giusto anche per le dotazioni booleane
+ * dell'immobile (piscina, camino, allarme, …) quando smetteranno di comparire
+ * in `specs` come "Sì".
+ *
+ * Distinto da `specs`, che mostra coppie attributo → valore.
+ *
+ * @var array $args ['features' => array<int, string> id]
  */
 
 use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;

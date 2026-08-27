@@ -1,12 +1,14 @@
 <?php
 
 /**
- * Griglia caratteristiche principali della scheda immobile. Stile con classi
- * utility wonder-image/lib.
+ * Specifiche dell'immobile: coppie attributo → valore. Quali attributi mostrare
+ * (e in che ordine) è configurato in backend (Settings → Scheda immobile), con
+ * fallback ai default del catalogo. Etichette e valori arrivano da
+ * `AttributeCatalog` (fonte condivisa con la scheda PDF).
  *
- * Quali attributi mostrare (e in che ordine) è configurato in backend
- * (Settings → Scheda immobile), con fallback ai default del catalogo. Etichette
- * e valori arrivano da `AttributeCatalog` (fonte condivisa con la scheda PDF).
+ * Distinto da `amenities`, che elenca dotazioni presenti/assenti con icona.
+ * Sta in radice perché non è legato a un reparto: è la resa di una tabella di
+ * dati, oggi usata dagli immobili.
  *
  * @var array $args ['immobile' => object]
  */
