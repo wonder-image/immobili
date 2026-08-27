@@ -615,6 +615,21 @@ $assert(
 );
 $assert(str_contains($reindexHandler, 'ReindexService'), "l'handler delega al service");
 
+echo "Slug localizzati dei due reparti\n";
+foreach (['it', 'en'] as $locale) {
+    $urls = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/urls.json"), true);
+    $assert(is_array($urls), "lang/{$locale}/urls.json è JSON valido");
+
+    foreach (['immobili', 'immobili/list', 'immobili/sold', 'residenze', 'residenze/list'] as $key) {
+        $assert(isset($urls[$key]) && $urls[$key] !== '', "lang/{$locale}: '{$key}' ha uno slug");
+    }
+
+    $assert(
+        str_starts_with((string) ($urls['residenze'] ?? ''), $locale.'/'),
+        "lang/{$locale}: lo slug residenze è prefissato dal locale"
+    );
+}
+
 echo "Simmetria delle cartelle view\n";
 $viewRoot = dirname(__DIR__).'/view';
 

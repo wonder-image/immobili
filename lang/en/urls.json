@@ -1,5 +1,7 @@
 {
     "immobili": "en/properties",
     "immobili/list": "en/properties",
-    "immobili/sold": "en/properties/sold"
+    "immobili/sold": "en/properties/sold",
+    "residenze": "en/developments",
+    "residenze/list": "en/developments"
 }
