@@ -496,6 +496,23 @@ $assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non fini
 $assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
 $assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
+echo "ReindexService\n";
+$reindex = \Wonder\Plugin\Immobili\Sync\ReindexService::class;
+$assert(class_exists($reindex), 'ReindexService esiste');
+$assert(method_exists($reindex, 'run'), 'espone run()');
+$assert(
+    (new ReflectionMethod($reindex, 'run'))->getNumberOfRequiredParameters() === 0,
+    'run() non richiede parametri'
+);
+
+$reindexHandler = (string) file_get_contents(dirname(__DIR__).'/http/api/task/reindex.php');
+$assert(
+    !str_contains($reindexHandler, 'Immobile::update')
+    && !str_contains($reindexHandler, 'Slug::unique'),
+    "l'handler non contiene più logica di dominio"
+);
+$assert(str_contains($reindexHandler, 'ReindexService'), "l'handler delega al service");
+
 echo "Gate unico dei task API\n";
 $taskDir = dirname(__DIR__).'/http/api/task';
 $assert(is_file($taskDir.'/_guard.php'), '_guard.php esiste');
