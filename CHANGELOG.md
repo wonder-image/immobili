@@ -76,6 +76,23 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
 - Slug localizzati per le route residenze (`it/residenze`, `en/developments`).
 - `tests/run.sh`: esegue tutte le suite del modulo in un comando.
 
+### Aggiunto (varianti di card)
+- Tre varianti di `card`, selezionabili con `'variant' => …` su `card` e `cards`:
+  **`base`** (default, invariata), **`overlay`** (immagine a tutta card con testo
+  sovrapposto) e **`overlay-rich`** (come overlay, più indirizzo, dati sintetici
+  e badge in alto). Vivono in `view/components/card/`, una per file: un sito può
+  sovrascriverne una sola. Una variante sconosciuta ricade su `base`.
+- **Gallery sfogliabile dentro la card** (`'gallery' => true`), indipendente
+  dalla variante. Senza Swiper — in una griglia servirebbe un'istanza per card —
+  con `resources/assets/{css/immobili-card.css,js/immobili-card.js}` caricati
+  solo quando serve. Per le residenze le foto arrivano dalla colonna JSON già
+  letta; per gli immobili sono opt-in via `$immobile->images`, perché stanno in
+  tabella figlia e caricarle in lista costerebbe una query per riga.
+- `CardViewModel::VARIANTS` e la proprietà `images`.
+- `Immobili::scriptOnce()`, speculare a `styleOnce()`.
+- `ResidenzaPresenter::previews()`: anteprime responsive della gallery.
+- Chiavi `components.immobili.card.gallery_prev` / `gallery_next` (it/en).
+
 ### Corretto
 - Le etichette del dettaglio immobile (cucina, box auto, arredamento, infissi,
   impianto TV, tipo costruzione, stato manutenzione) erano **hardcoded in
@@ -91,6 +108,18 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
   finire dentro un URL.
 - La scheda residenza usa il componente `energy-class` condiviso invece di un
   badge scritto a mano.
+- **Seeding delle tassonomie che si autobloccava**: `GetrixProvider::syncTaxonomies()`
+  usciva se le tabelle contenevano una riga qualsiasi. Una tabella popolata da una
+  versione precedente del modulo — con il nome ma senza `chiave` né `getrix_id` —
+  superava quel controllo, quindi il seeding non ripartiva mai e
+  `Taxonomy::idByProviderCode()` non poteva risolvere nulla: ogni immobile
+  importato restava senza tassonomia. Ora la guardia verifica che almeno una riga
+  porti il codice nativo del provider, e `upsert()` adotta le righe legacy invece
+  di duplicarle a ogni passata.
+- **`searchFields()` non cancella più i nomi denormalizzati**: se le FK puntano a
+  righe inesistenti (succede quando le tabelle tassonomia vengono riseminate e gli
+  id cambiano), il backfill sovrascriveva `comune_nome` e `tipologia_nome` con
+  stringhe vuote. Ora la risoluzione ha un terzo gradino: il valore già persistito.
 
 ### Rimosso
 - `src/Services/`, sciolta per responsabilità in `Catalog/`, `Media/`, `Sync/`,
