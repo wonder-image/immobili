@@ -16,8 +16,18 @@ namespace Wonder\Plugin\Immobili\Catalog;
 final class CardViewModel
 {
     /**
-     * @param object|null        $badge (object) ['label' => string, 'variant' => string]
-     * @param array<int, object> $meta  (object) ['icon' => string, 'text' => string]
+     * Varianti di resa disponibili per `view/components/card.php`. Cambiano solo
+     * il markup: leggono tutte gli stessi campi di questo view-model.
+     *
+     * @var array<int, string>
+     */
+    public const VARIANTS = ['base', 'overlay', 'overlay-rich'];
+
+    /**
+     * @param object|null        $badge  (object) ['label' => string, 'variant' => string]
+     * @param array<int, object> $meta   (object) ['icon' => string, 'text' => string]
+     * @param array<int, string> $images URL delle anteprime, cover inclusa, per
+     *                                   la gallery sfogliabile dentro la card
      */
     private function __construct(
         public readonly string $url,
@@ -29,10 +39,19 @@ final class CardViewModel
         public readonly string $highlight,
         public readonly string $excerpt,
         public readonly array $meta,
+        public readonly array $images = [],
     ) {
     }
 
-    /** @param object $immobile oggetto prodotto da ImmobilePresenter::card() */
+    /**
+     * @param object $immobile oggetto prodotto da ImmobilePresenter::card()
+     *
+     * La gallery in-card legge `$immobile->images`, che `card()` NON popola:
+     * le foto dell'immobile vivono in tabella figlia e caricarle qui
+     * significherebbe una query per riga di lista. Chi vuole la gallery le
+     * fornisce a monte, con una sola query per l'intera pagina; senza,
+     * `images` resta la sola cover e la variante mostra un'immagine ferma.
+     */
     public static function fromImmobile(object $immobile): self
     {
         $badge = null;
@@ -76,9 +95,22 @@ final class CardViewModel
             $meta[] = (object) ['icon' => 'bi bi-droplet', 'text' => (string) (int) $immobile->bagni];
         }
 
+        $cover = (string) ($immobile->cover ?? '');
+        $images = array_values(array_filter(
+            array_map(
+                static fn ($i): string => is_string($i) ? trim($i) : (string) ($i->src ?? ''),
+                is_array($immobile->images ?? null) ? $immobile->images : []
+            ),
+            static fn (string $src): bool => $src !== ''
+        ));
+
+        if ($images === [] && $cover !== '') {
+            $images = [$cover];
+        }
+
         return new self(
             url:       (string) ($immobile->url ?? '#'),
-            cover:     (string) ($immobile->cover ?? ''),
+            cover:     $cover,
             badge:     $badge,
             eyebrow:   $eyebrow,
             title:     (string) ($immobile->prettyName ?? ''),
@@ -88,6 +120,7 @@ final class CardViewModel
                             : '',
             excerpt:   '',
             meta:      $meta,
+            images:    $images,
         );
     }
 
@@ -123,9 +156,24 @@ final class CardViewModel
             $meta[] = (object) ['icon' => 'bi bi-calendar3', 'text' => $timeline];
         }
 
+        // Le foto della residenza stanno nella colonna JSON già letta con la
+        // riga: la gallery non costa una query in più, quindi si popola sempre.
+        $cover = $presenter->cover($row);
+        $images = array_values(array_filter(
+            array_map(
+                static fn (array $img): string => (string) ($img['src'] ?? ''),
+                $presenter->previews($row)
+            ),
+            static fn (string $src): bool => $src !== ''
+        ));
+
+        if ($images === [] && $cover !== '') {
+            $images = [$cover];
+        }
+
         return new self(
             url:       (string) ($row['url'] ?? '#'),
-            cover:     $presenter->cover($row),
+            cover:     $cover,
             badge:     (object) [
                 'label'   => (string) __t('pages.residenze.stato.'.$stato),
                 'variant' => 'text-bg-primary',
@@ -136,6 +184,7 @@ final class CardViewModel
             highlight: '',
             excerpt:   (string) ($row['descrizione_breve'] ?? ''),
             meta:      $meta,
+            images:    $images,
         );
     }
 

@@ -131,6 +131,31 @@ final class ResidenzaPresenter
     }
 
     /**
+     * Anteprime della gallery (variante responsive), per le card di lista:
+     * stessa forma di `images()`, ma con gli URL leggeri.
+     *
+     * @param array<string, mixed> $row
+     * @return array<int, array{src: string, alt: string}>
+     */
+    public function previews(array $row): array
+    {
+        $alt = (string) ($row['nome'] ?? '');
+        $previews = [];
+
+        foreach ($this->files($row) as $file) {
+            $src = self::previewUrl($file);
+
+            if ($src === '') {
+                continue;
+            }
+
+            $previews[] = ['src' => $src, 'alt' => $alt];
+        }
+
+        return $previews;
+    }
+
+    /**
      * Filename della gallery decodificati dalla colonna JSON `images`.
      *
      * @param array<string, mixed> $row

@@ -25,8 +25,8 @@ o `components/residenze/`.
 
 | Componente | Argomenti |
 | ---------- | --------- |
-| `card` | `['item' => CardViewModel]` |
-| `cards` | `['items' => CardViewModel[], 'layout' => 'grid'\|'swiper', 'class' => 'mt-4', 'id' => '…', 'slide_class' => '…', 'aria_label' => '…']` |
+| `card` | `['item' => CardViewModel, 'variant' => 'base'\|'overlay'\|'overlay-rich', 'gallery' => bool]` |
+| `cards` | `['items' => CardViewModel[], 'layout' => 'grid'\|'swiper', 'variant' => …, 'gallery' => bool, 'class' => 'mt-4', 'id' => '…', 'slide_class' => '…', 'aria_label' => '…']` |
 | `specs` | `['immobile' => $immobile]` — coppie attributo → valore |
 | `amenities` | `['features' => ['ascensore', 'giardino', …]]` — icona + etichetta |
 | `map` | `['features' => $geojson, 'zoom' => 15, 'mapId' => 'id-opzionale']` |
@@ -35,6 +35,52 @@ o `components/residenze/`.
 | `residenze/timeline` | `['inizio' => '03/2025', 'fine' => '2026', 'stato' => '…']` |
 
 Richiamali con `Immobili::component('card', ['item' => $item])`.
+
+### Varianti di card
+
+`card` ha tre varianti, che cambiano solo il markup: leggono tutte gli stessi
+campi del view-model. Ognuna è un file in `view/components/card/`, quindi un
+sito può sovrascriverne una sola senza toccare le altre.
+
+| variant | com'è | quando |
+| ------- | ----- | ------ |
+| `base` (default) | immagine sopra, corpo su fondo chiaro | liste lunghe e colonne strette: il testo sta su fondo pieno, il contrasto non dipende dalla foto |
+| `overlay` | immagine a tutta card, titolo e prezzo sovrapposti in basso | quando la foto è il contenuto e serve impatto |
+| `overlay-rich` | come `overlay`, più indirizzo, dati sintetici e badge in alto | griglie larghe, dove la card ha spazio per reggere più righe sopra la foto |
+
+```php
+<?php Immobili::component('cards', [
+    'items'   => $items,
+    'variant' => 'overlay',
+    'gallery' => true,
+]); ?>
+```
+
+Il gradiente scuro delle varianti `overlay` non è decorativo: è ciò che rende
+leggibile il testo sopra una foto qualsiasi. Se lo togli in un override, il
+titolo sparisce sulle immagini chiare.
+
+Una `variant` sconosciuta ricade su `base` invece di non produrre nulla: in
+lista una card mancante sarebbe un buco silenzioso.
+
+### Gallery dentro la card
+
+`'gallery' => true` rende sfogliabili le immagini senza aprire la scheda. È
+indipendente dalla variante, quindi si combina con tutte e tre. Compare solo se
+il view-model porta più di un'immagine.
+
+Non usa Swiper: in una griglia servirebbe un'istanza per card. Sono CSS più un
+listener delegato (`resources/assets/js/immobili-card.js`), caricati solo quando
+la gallery è effettivamente attiva.
+
+Da dove arrivano le immagini:
+
+- **residenze** — sempre disponibili: stanno nella colonna JSON già letta con la
+  riga, quindi la gallery non costa nulla in più.
+- **immobili** — le foto vivono in tabella figlia. `ImmobilePresenter::card()`
+  **non** le carica, perché sarebbe una query per riga di lista. Chi vuole la
+  gallery sugli immobili valorizza `$immobile->images` a monte, con una sola
+  query per l'intera pagina; senza, la card mostra la sola cover.
 
 ### Card e collezioni
 

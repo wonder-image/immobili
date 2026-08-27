@@ -496,6 +496,31 @@ $assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non fini
 $assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
 $assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
+// Estrae gli IDENTIFICATORI del codice PHP di una view: via commenti, HTML
+// inline e stringhe letterali — li' il nome del modulo compare per forza, nei
+// path degli asset e nelle chiavi di traduzione, senza essere una
+// ramificazione. Restano nomi di classe, variabili e strutture di controllo:
+// e' li' che una ramificazione per reparto (`$residenza`, `ResidenzaPresenter`,
+// `instanceof Residenza`) si vedrebbe.
+$executableCode = static function (string $file): string {
+    $code = implode(' ', array_map(
+        static fn (array $t): string => is_array($t) ? (string) $t[1] : '',
+        array_values(array_filter(
+            token_get_all((string) file_get_contents($file)),
+            static fn ($t): bool => is_array($t)
+                && !in_array($t[0], [
+                    T_COMMENT, T_DOC_COMMENT, T_INLINE_HTML,
+                    T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE,
+                ], true)
+        ))
+    ));
+
+    // Via il nome della classe entrypoint e del namespace (parola esatta
+    // `Immobili`): è il modulo, non un reparto. Restano `$immobile`,
+    // `Residenza`, `ResidenzaPresenter` e simili, che invece lo sono.
+    return (string) preg_replace('/\\\\?\\bImmobili\\b/', '', $code);
+};
+
 echo "CardViewModel — forma comune ai due reparti\n";
 $vmClass = \Wonder\Plugin\Immobili\Catalog\CardViewModel::class;
 
@@ -562,24 +587,75 @@ $assert(
     'residenza: la timeline compare tra i meta'
 );
 
-// Il criterio è che card.php non RAMIFICHI per reparto: il docblock può
-// nominarli per spiegare il concetto, il codice eseguibile no. Si guarda
-// quindi il sorgente privato di commenti e stringhe.
-$cardCode = implode(' ', array_map(
-    static fn (array $token): string => is_array($token) ? (string) $token[1] : '',
-    array_values(array_filter(
-        token_get_all((string) file_get_contents(dirname(__DIR__).'/view/components/card.php')),
-        static fn ($token): bool => is_array($token)
-            && !in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)
-    ))
-));
-// Il namespace del modulo contiene "Immobili" per forza: si neutralizza,
-// così restano solo eventuali riferimenti veri a un reparto.
-$cardCode = str_ireplace('Wonder\\Plugin\\Immobili', '', $cardCode);
+// Il criterio è che le card non RAMIFICHINO per reparto: i docblock possono
+// nominarli per spiegare il concetto, il codice eseguibile no.
+$cardCode = $executableCode(dirname(__DIR__).'/view/components/card.php');
 $assert(
     stripos($cardCode, 'residenz') === false && stripos($cardCode, 'immobil') === false,
     'card.php non conosce i reparti: nessun ramo per tipo nel codice eseguibile'
 );
+
+echo "Varianti di card\n";
+$cardDir = dirname(__DIR__).'/view/components/card';
+
+$assert(
+    \Wonder\Plugin\Immobili\Catalog\CardViewModel::VARIANTS === ['base', 'overlay', 'overlay-rich'],
+    'le varianti dichiarate sono base, overlay, overlay-rich'
+);
+
+foreach (\Wonder\Plugin\Immobili\Catalog\CardViewModel::VARIANTS as $variant) {
+    $assert(is_file($cardDir.'/'.$variant.'.php'), "esiste il file della variante {$variant}");
+}
+$assert(is_file($cardDir.'/media.php'), 'esiste il componente media condiviso');
+
+// Il dispatcher deve ripiegare su base: in lista una variante sconosciuta che
+// non produce nulla lascerebbe un buco silenzioso, difficile da diagnosticare.
+$dispatcher = (string) file_get_contents(dirname(__DIR__).'/view/components/card.php');
+$assert(str_contains($dispatcher, 'VARIANTS'), 'il dispatcher valida contro le varianti dichiarate');
+$assert(str_contains($dispatcher, "\$variant = 'base'"), 'una variante sconosciuta ricade su base');
+
+// Nessuna variante deve conoscere i reparti: e' il patto del view-model.
+foreach (['base', 'overlay', 'overlay-rich', 'media'] as $file) {
+    $code = $executableCode($cardDir.'/'.$file.'.php');
+    $assert(
+        stripos($code, 'residenz') === false && stripos($code, 'immobil') === false,
+        "card/{$file}.php non ramifica per reparto"
+    );
+}
+
+// La gallery non deve trascinarsi dietro Swiper: in una griglia servirebbe
+// un'istanza per card.
+$media = (string) file_get_contents($cardDir.'/media.php');
+$assert(!str_contains($media, '__swiper'), 'la gallery in-card non usa Swiper');
+$assert(str_contains($media, 'immobili-card.js'), 'la gallery carica il proprio JS');
+
+$assert(
+    method_exists(\Wonder\Plugin\Immobili\Immobili::class, 'scriptOnce'),
+    'Immobili::scriptOnce esiste, speculare a styleOnce'
+);
+
+// images: popolate per le residenze (colonna JSON gia' letta), e mai inventate
+// per gli immobili, dove costerebbero una query per riga.
+$vmImmobile = \Wonder\Plugin\Immobili\Catalog\CardViewModel::fromImmobile((object) [
+    'url' => '/x/', 'cover' => 'https://e.test/a-620.webp',
+]);
+$assert($vmImmobile->images === ['https://e.test/a-620.webp'], 'senza foto esplicite images e la sola cover');
+
+$vmConImmagini = \Wonder\Plugin\Immobili\Catalog\CardViewModel::fromImmobile((object) [
+    'url' => '/x/', 'cover' => 'https://e.test/a-620.webp',
+    'images' => ['https://e.test/a-620.webp', 'https://e.test/b-620.webp'],
+]);
+$assert(count($vmConImmagini->images) === 2, 'le foto fornite a monte finiscono nel view-model');
+
+foreach (['it', 'en'] as $locale) {
+    $components = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/components.json"), true);
+    foreach (['gallery_prev', 'gallery_next'] as $key) {
+        $assert(
+            isset($components['immobili']['card'][$key]),
+            "lang/{$locale}: components.immobili.card.{$key} tradotta"
+        );
+    }
+}
 
 echo "Componente cards unificato\n";
 $viewDir = dirname(__DIR__).'/view/components';

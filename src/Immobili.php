@@ -134,6 +134,29 @@ final class Immobili implements ModuleInterface
     }
 
     /**
+     * Emette il tag <script defer> per un JS del modulo una sola volta per
+     * richiesta, anche se il componente che lo usa viene incluso più volte.
+     * Speculare a `styleOnce()`. Nessun output se l'asset non esiste
+     * (framework < 2.2 o file assente).
+     */
+    public static function scriptOnce(string $file): void
+    {
+        static $emitted = [];
+
+        if (isset($emitted[$file])) {
+            return;
+        }
+
+        $emitted[$file] = true;
+
+        $url = self::asset($file);
+
+        if ($url !== '') {
+            echo '<script defer src="'.htmlspecialchars($url, ENT_QUOTES).'"></script>';
+        }
+    }
+
+    /**
      * Risolve il path di una view del modulo, dando priorità all'override del
      * sito in `custom/modules/immobili/view/<path>`.
      */

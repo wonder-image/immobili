@@ -3,7 +3,9 @@
         "card": {
             "sold": "Sold",
             "featured": "Featured",
-            "rooms": "rooms"
+            "rooms": "rooms",
+            "gallery_prev": "Previous image",
+            "gallery_next": "Next image"
         },
         "filters": {
             "search": "Search",

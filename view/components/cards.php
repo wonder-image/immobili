@@ -6,6 +6,8 @@
  * @var array $args [
  *     'items'       => \Wonder\Plugin\Immobili\Catalog\CardViewModel[],
  *     'layout'      => 'grid'|'swiper',   default 'grid'
+ *     'variant'     => 'base'|'overlay'|'overlay-rich',  default 'base'
+ *     'gallery'     => bool,              gallery sfogliabile in ogni card
  *     'class'       => string|string[],
  *     'id'          => string,            solo swiper
  *     'slide_class' => string|string[],   solo swiper
@@ -28,6 +30,12 @@ if ($items === []) {
 }
 
 $layout = ($args['layout'] ?? 'grid') === 'swiper' ? 'swiper' : 'grid';
+
+// Variante e gallery viaggiano insieme agli item fino alla singola card.
+$cardArgs = [
+    'variant' => (string) ($args['variant'] ?? 'base'),
+    'gallery' => (bool) ($args['gallery'] ?? false),
+];
 
 // Classi extra: accettate come stringa o array, normalizzate a lista di token.
 $extraClasses = $args['class'] ?? [];
@@ -54,7 +62,7 @@ if ($layout === 'grid') {
     ?>
     <div class="<?= e(implode(' ', $classes)) ?>">
         <?php foreach ($items as $item) {
-            Immobili::component('card', ['item' => $item]);
+            Immobili::component('card', ['item' => $item] + $cardArgs);
         } ?>
     </div>
     <?php
@@ -65,7 +73,7 @@ $cardPath = Immobili::viewPath('components/card.php');
 $slides = array_map(
     static fn (CardViewModel $item): ViewComponent => ViewComponent::make(
         $cardPath,
-        ['args' => ['item' => $item]]
+        ['args' => ['item' => $item] + $cardArgs]
     ),
     $items
 );

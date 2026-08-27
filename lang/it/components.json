@@ -3,7 +3,9 @@
         "card": {
             "sold": "Venduto",
             "featured": "In evidenza",
-            "rooms": "locali"
+            "rooms": "locali",
+            "gallery_prev": "Immagine precedente",
+            "gallery_next": "Immagine successiva"
         },
         "filters": {
             "search": "Cerca",
