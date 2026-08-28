@@ -85,7 +85,7 @@ Immobili::layout('main');
             <a href="<?= e(__r('immobili.list')) ?>" class="text-small"><i class="bi bi-arrow-left"></i> <?= e(__t('pages.immobili.detail.back')) ?></a>
         </div>
 
-        <h1 class="p-r f-start w-100 title-big mt-3"><?= e($immobile->titolo) ?></h1>
+        <h1 class="p-r f-start w-100 title-big mt-3"><?= e($immobile->prettyName) ?></h1>
 
         <?php if (($immobile->prettyAddress ?? '') !== '') { ?>
             <p class="p-r f-start w-100 text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e($immobile->prettyAddress) ?></p>
