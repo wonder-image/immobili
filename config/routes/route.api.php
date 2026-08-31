@@ -12,7 +12,7 @@ Route::area('api')
 
                 // Sincronizzazione feed. Con parametro `feed` (id) sincronizza
                 // solo quella FeedSource, altrimenti tutti i feed attivi. Pensata
-                // per il cron lato hosting e per il push di Gestim (che invia
+                // per scheduler HTTP esterni e per il push di Gestim (che invia
                 // `callback` in querystring). Vedi http/api/task/sync.php.
                 Route::get('/sync/', Immobili::httpPath('api/task/sync.php'))
                     ->name('sync');

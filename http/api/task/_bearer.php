@@ -4,8 +4,8 @@
  * Ponte query→Bearer per gli endpoint di sincronizzazione immobili.
  *
  * L'autenticazione avviene con il token dell'utente API dedicato `@immobili`
- * (vedi Wonder\Plugin\Immobili\Sync\SyncApiUser). I cron lo inviano nel
- * modo standard, `Authorization: Bearer <token>`. Gestim, in push, non può
+ * (vedi Wonder\Plugin\Immobili\Sync\SyncApiUser). Gli scheduler HTTP lo
+ * inviano nel modo standard, `Authorization: Bearer <token>`. Gestim, in push, non può
  * impostare header: appende solo `?token=<token>` all'URL di notifica.
  *
  * Qui, se l'header Authorization manca ma è presente `?token=`, lo

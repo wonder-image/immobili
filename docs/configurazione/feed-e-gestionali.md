@@ -42,13 +42,14 @@ tocca gli immobili degli altri.
 
 ## Sincronizzazione automatica
 
-La sincronizzazione si autentica con il **token di un utente API dedicato** (`@immobili`),
-creato automaticamente dal modulo — nessuna variabile d'ambiente. Il modo di aggiornare
-dipende dal gestionale:
+Gli endpoint HTTP si autenticano con il **token di un utente API dedicato** (`@immobili`), creato
+automaticamente dal modulo; la CLI locale non richiede token. Il modo di aggiornare dipende dal
+gestionale:
 
 - **Getrix — pull**: serve un cron che legge il feed periodicamente.
 - **Gestim — push**: è Gestim a chiamare il tuo URL; **niente** cron di sync.
 - **Immagini**: cron separato per il resize webp, per entrambi i provider.
 
-I comandi cron esatti (con il token e gli URL) sono nella
-[guida ai cron](../riferimento/api-e-sync.md), la stessa linkata dal pannello del feed.
+I comandi cron esatti, sia CLI sia HTTP, sono nella
+[guida ai cron](../riferimento/api-e-sync.md), la stessa linkata dal pannello del feed. Per ogni task
+va configurata una sola modalità.

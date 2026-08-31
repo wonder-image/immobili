@@ -27,5 +27,6 @@ il resto dell'amministrazione.
 ## Endpoint di sincronizzazione
 
 Gli endpoint `/api/immobili/{sync,images}/` sono protetti dal token dell'utente API `@immobili`
-(authority `immobili_sync`): i cron lo inviano in header Bearer, Gestim (push) come `?token=…`.
-Nessuna variabile d'ambiente. Vedi [API e sincronizzazione](../riferimento/api-e-sync.md).
+(authority `immobili_sync`): gli scheduler HTTP lo inviano in header Bearer, Gestim (push) come
+`?token=…`. La CLI locale non passa da questi endpoint. Nessuna variabile d'ambiente. Vedi
+[API, CLI e sincronizzazione](../riferimento/api-e-sync.md).

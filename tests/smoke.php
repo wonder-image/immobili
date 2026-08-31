@@ -968,6 +968,35 @@ $assert(immobiliTaskPresentedToken() === '', "senza header né query il token è
 
 if ($hostWas === null) { unset($_SERVER['HTTP_HOST']); } else { $_SERVER['HTTP_HOST'] = $hostWas; }
 
+echo "CLI dei cron\n";
+$moduleRoot = dirname(__DIR__);
+$composerConfig = json_decode((string) file_get_contents($moduleRoot.'/composer.json'), true);
+$assert(
+    ($composerConfig['bin'] ?? []) === ['bin/immobili'],
+    'Composer espone un solo binario immobili'
+);
+$assert(is_executable($moduleRoot.'/bin/immobili'), 'il binario reale del modulo è eseguibile direttamente');
+
+$syncCommand = new \Wonder\Plugin\Immobili\Console\SyncCommand($moduleRoot);
+$imagesCommand = new \Wonder\Plugin\Immobili\Console\ImagesCommand($moduleRoot);
+$assert($syncCommand->getName() === 'sync', 'la CLI espone il sottocomando sync');
+$assert($syncCommand->getDefinition()->hasOption('feed'), 'sync accetta --feed');
+$assert($imagesCommand->getName() === 'images', 'la CLI espone il sottocomando images');
+$assert($imagesCommand->getDefinition()->hasOption('limit'), 'images accetta --limit');
+
+$syncCommandSource = (string) file_get_contents($moduleRoot.'/src/Console/SyncCommand.php');
+$imagesCommandSource = (string) file_get_contents($moduleRoot.'/src/Console/ImagesCommand.php');
+$assert(
+    str_contains($syncCommandSource, 'new FeedSyncService()')
+    && !str_contains($syncCommandSource, 'curl'),
+    'sync riusa FeedSyncService senza richiamare l’endpoint HTTP'
+);
+$assert(
+    str_contains($imagesCommandSource, 'new ImageProcessor()')
+    && !str_contains($imagesCommandSource, 'curl'),
+    'images riusa ImageProcessor senza richiamare l’endpoint HTTP'
+);
+
 echo "Route cartello vetrina venduto\n";
 $pdfRoutes = \Wonder\Http\Route::load([dirname(__DIR__).'/config/routes/route.frontend.php']);
 $soldRoute = current(array_filter(

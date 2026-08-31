@@ -152,9 +152,10 @@ final class FeedSourceResource extends Resource
     }
 
     /**
-     * Nota secondaria del pannello feed: la sincronizzazione si autentica con
+     * Nota secondaria del pannello feed: gli endpoint HTTP si autenticano con
      * il token dell'utente API dedicato `@immobili` (nessuna variabile
-     * d'ambiente). Non mostra i comandi cron — rimanda alla documentazione.
+     * d'ambiente); la CLI locale non ne ha bisogno. Non mostra i comandi cron
+     * e rimanda alla documentazione.
      *
      * Provisiona l'utente/token al primo render (idempotente) così l'admin può
      * copiarlo subito per configurare i cron.
@@ -175,7 +176,7 @@ final class FeedSourceResource extends Resource
             : '';
 
         return
-            'La sincronizzazione usa un <strong>token API dedicato</strong>.'
+            'Gli endpoint HTTP usano un <strong>token API dedicato</strong>; la CLI locale no.'
             .$tokenBlock
             .'<br><a href="'.htmlspecialchars($docs, ENT_QUOTES).'" target="_blank" rel="noopener">'
             .'Guida alla configurazione dei cron</a>';

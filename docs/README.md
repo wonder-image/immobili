@@ -12,7 +12,8 @@ pronti, **bilingua (it/en)**.
 - **Modello dati unico**: tutti gli immobili confluiscono nelle tabelle `immobili*`, distinti da
   `provider` e dal feed di origine.
 - **Frontend pronto**: lista con mappa e filtri, scheda dettaglio, immobili venduti, scheda PDF.
-- **Backend**: configurazione feed, sincronizzazione, gestione di visibilità/evidenza/venduto.
+- **Backend e automazione**: configurazione feed, sincronizzazione manuale, CLI/cron e gestione di
+  visibilità/evidenza/venduto.
 - **Bilingua**: interfaccia e slug in italiano e inglese; descrizioni multilingua importate dal feed.
 - **Estendibile**: nuovi gestionali via `FeedProvider`; view personalizzabili dal sito.
 
@@ -21,6 +22,7 @@ pronti, **bilingua (it/en)**.
 1. [Installazione](getting-started/installazione.md)
 2. [Struttura del modulo](getting-started/struttura-modulo.md)
 3. [Collegare uno o più feed](configurazione/feed-e-gestionali.md)
+4. [Automatizzare con CLI o API](riferimento/api-e-sync.md#creare-i-cron)
 
 ## Mappa della documentazione
 
@@ -28,4 +30,4 @@ pronti, **bilingua (it/en)**.
 - **Configurazione** — feed e gestionali, impostazioni, permessi.
 - **Provider** — Getrix, Gestim, come aggiungerne di nuovi.
 - **Frontend** — route/flusso e personalizzazione delle view.
-- **Riferimento** — modello dati, API/sync, traduzioni, backend, sviluppo e test.
+- **Riferimento** — modello dati, API/CLI/sync, traduzioni, backend, sviluppo e test.

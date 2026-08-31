@@ -1,0 +1,51 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Symfony\Component\Console\Application;
+use Wonder\Plugin\Immobili\Console\ImagesCommand;
+use Wonder\Plugin\Immobili\Console\SyncCommand;
+
+$autoloadCandidates = [];
+$composerAutoload = $GLOBALS['_composer_autoload_path'] ?? null;
+
+if (is_string($composerAutoload) && $composerAutoload !== '') {
+    $autoloadCandidates[] = $composerAutoload;
+}
+
+$invokedPath = (string) ($_SERVER['argv'][0] ?? '');
+if ($invokedPath !== '' && !str_starts_with($invokedPath, '/')) {
+    $invokedPath = (getcwd() ?: '.').'/'.$invokedPath;
+}
+
+$directory = dirname($invokedPath !== '' ? $invokedPath : __FILE__);
+while ($directory !== dirname($directory)) {
+    $autoloadCandidates[] = $directory.'/autoload.php';
+    $autoloadCandidates[] = $directory.'/vendor/autoload.php';
+    $directory = dirname($directory);
+}
+
+$autoloadPath = null;
+foreach (array_unique($autoloadCandidates) as $candidate) {
+    if (is_file($candidate)) {
+        $autoloadPath = $candidate;
+        break;
+    }
+}
+
+if ($autoloadPath === null) {
+    fwrite(STDERR, "Autoload Composer non trovato. Esegui il comando dal modulo installato nel sito.\n");
+    exit(1);
+}
+
+require_once $autoloadPath;
+
+$root = dirname($autoloadPath, 2);
+$application = new Application('Wonder Immobili');
+$application->addCommands([
+    new SyncCommand($root),
+    new ImagesCommand($root),
+]);
+
+exit($application->run());

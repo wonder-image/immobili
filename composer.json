@@ -24,6 +24,9 @@
             "src/helpers.php"
         ]
     },
+    "bin": [
+        "bin/immobili"
+    ],
     "extra": {
         "wonder": {
             "module": true

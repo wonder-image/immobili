@@ -46,3 +46,15 @@ Apri il backend → sezione **Immobili → Feed**, aggiungi un feed (provider + 
 
 Il frontend è disponibile su `/immobili/` (lista), `/immobili/{slug}/` (dettaglio),
 `/immobili/venduti/` (venduti).
+
+## 6. Verifica la CLI e configura i cron
+
+Il comando seguente usa il file reale installato dal modulo e non richiede il link `vendor/bin`:
+
+```bash
+php vendor/wonder-image/immobili/bin/immobili list
+```
+
+Deve elencare `sync` e `images`. Configura quindi i due task separati seguendo
+[API, CLI e sincronizzazione](../riferimento/api-e-sync.md#creare-i-cron): CLI con path assoluto se
+il cron gira sul server del sito, endpoint HTTP con token soltanto per scheduler esterni.

@@ -12,9 +12,10 @@ namespace Wonder\Plugin\Immobili\Sync;
  * `immobili_sync` e ne espone il token JWT.
  *
  * Il token generato è lo stesso che:
- *   - i cron di Getrix/immagini inviano nell'header `Authorization: Bearer …`;
+ *   - gli scheduler HTTP di Getrix/immagini inviano nell'header `Authorization: Bearer …`;
  *   - Gestim (push) passa come query `?token=…` (l'endpoint lo trasforma in
  *     Bearer prima di validarlo con `Wonder\Api\Endpoint`).
+ * I comandi CLI locali richiamano i servizi direttamente e non usano token.
  *
  * L'idempotenza è garantita dal controllo di esistenza: `ensure()` è sicuro da
  * chiamare a ogni render del backend feed.

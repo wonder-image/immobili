@@ -24,7 +24,7 @@ https://tuosito.it/api/immobili/sync/?feed=<ID_FEED>&token=<TOKEN>
 
 Gestim aggiungerà automaticamente `&callback=<url-zip>` alla chiamata. `<ID_FEED>` è l'id della riga
 feed nel backend; `<TOKEN>` è il token dell'utente API dedicato `@immobili`, mostrato come testo
-secondario nel pannello del feed (vedi [API e sincronizzazione](../riferimento/api-e-sync.md)).
+secondario nel pannello del feed (vedi [API, CLI e sincronizzazione](../riferimento/api-e-sync.md)).
 
 ## Cosa importa
 
@@ -41,10 +41,6 @@ secondario nel pannello del feed (vedi [API e sincronizzazione](../riferimento/a
 ## Cron (Gestim = push)
 
 Gestim è **push**: chiama lui il tuo URL, quindi **non serve un cron di sincronizzazione**. Serve solo
-il cron **immagini** (con il token in header Bearer):
-
-```cron
-*/5 * * * * curl -s -H "Authorization: Bearer <TOKEN>" "https://TUOSITO/api/immobili/images/" > /dev/null
-```
-
-Vedi la [guida ai cron](../riferimento/api-e-sync.md) per i dettagli.
+il cron **immagini**. Usa la CLI con path assoluto se il cron gira sul server del sito, oppure
+l'endpoint con token Bearer per uno scheduler esterno. Vedi la
+[guida ai cron](../riferimento/api-e-sync.md) per il comando unico da configurare.

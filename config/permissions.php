@@ -13,7 +13,7 @@ return [
     ],
 
     // Authority (area API) dell'utente dedicato alla sincronizzazione dei feed.
-    // È l'identità con cui i cron/Gestim autenticano le chiamate a
+    // È l'identità con cui gli scheduler HTTP e Gestim autenticano le chiamate a
     // /api/immobili/{sync,images,seed}/: il token JWT dell'utente `@immobili`
     // vive in `api_users` (vedi SyncApiUser) ed è l'unico segreto necessario
     // (nessuna variabile d'ambiente). L'area `api` fornisce già le funzioni

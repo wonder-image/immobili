@@ -12,7 +12,7 @@ use Wonder\Plugin\Immobili\Sync\FeedSyncService;
  *   GET /api/immobili/sync/?feed=<id>&callback=<zip> → push Gestim
  *
  * Autenticazione: token dell'utente API dedicato `@immobili` (authority
- * `immobili_sync`, area `api`). I cron lo inviano come
+ * `immobili_sync`, area `api`). Gli scheduler HTTP lo inviano come
  * `Authorization: Bearer <token>`; Gestim lo appende come `?token=<token>`,
  * trasformato in Bearer dal ponte incluso qui sotto. La validazione (firma JWT,
  * utente, authority, IP/dominio) è a carico di Wonder\Api\Endpoint.

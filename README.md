@@ -43,6 +43,11 @@ php forge update --local
 
 Poi apri il backend, aggiungi un feed (provider + credenziali) e premi **Sincronizza ora**.
 
+Per i cron esiste una CLI che richiama direttamente gli stessi servizi degli endpoint HTTP e può
+essere eseguita tramite il path assoluto del file reale, senza link. I comandi canonici, inclusa
+l'alternativa HTTP per scheduler esterni, sono mantenuti in un solo punto:
+[`docs/riferimento/api-e-sync.md`](docs/riferimento/api-e-sync.md#creare-i-cron).
+
 ## Documentazione
 
 La documentazione completa (in italiano) è nella cartella [`docs/`](docs/README.md).

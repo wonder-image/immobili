@@ -66,8 +66,9 @@ il resto della pagina funziona normalmente.
 
 ## Token di sincronizzazione
 
-Gli endpoint di sync **non** usano variabili d'ambiente: il modulo crea automaticamente un
+Gli endpoint HTTP di sync **non** usano variabili d'ambiente: il modulo crea automaticamente un
 **utente API dedicato** (`@immobili`) con un token, generato al primo accesso al pannello
 **Immobili → Feed**. È quel token a proteggere le chiamate (header `Authorization: Bearer …`
-o, per Gestim in push, `?token=…`). Dettagli e cron in
-[API e sincronizzazione](../riferimento/api-e-sync.md).
+o, per Gestim in push, `?token=…`). La CLI locale non passa dagli endpoint e non usa il token.
+Dettagli e cron in
+[API, CLI e sincronizzazione](../riferimento/api-e-sync.md).

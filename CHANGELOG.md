@@ -58,6 +58,10 @@ Invariati: `…\Models\Immobile`, `…\Models\Residenza`, `…\Resources\*`,
 traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
 
 ### Aggiunto
+- CLI Composer `immobili` con i sottocomandi `sync` e `images`, eseguibile sia tramite
+  `vendor/bin/immobili` sia dal path assoluto reale del modulo. I comandi avviano il sito e
+  richiamano direttamente `FeedSyncService` e `ImageProcessor`, senza duplicare la logica degli
+  endpoint HTTP né richiedere un token Bearer.
 - Reparto **Residenze** (cantieri/costruzioni): Model `Residenza`,
   `ResidenzaResource` (CRUD backend), frontend `/residenze/` e
   `/residenze/{slug}/` con timeline, features, capitolato PDF, classe

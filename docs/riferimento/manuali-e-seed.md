@@ -43,14 +43,15 @@ Puoi anche aprire l'URL nel browser. Poi visita `https://TUOSITO.test/immobili/`
 Le immagini si vedono **subito**: il presenter usa le varianti webp solo se l'immagine è già stata
 processata (`resized`), altrimenti ricade sulla `source_url`. Non serve quindi lanciare
 `/api/immobili/images/` per vedere il seed — quell'endpoint è utile solo se vuoi convertire le
-placeholder in webp locali (e richiede il token API).
+placeholder in webp locali e richiede il token API; in alternativa puoi usare `immobili images`
+dalla CLI locale senza token.
 
 > **Cosa prova il seed (e cosa no).** Il seed verifica **frontend, filtri, mappa, scheda, PDF e
 > backend**, ma **non** esercita il codice di import (`GetrixProvider`/`GestimProvider`, tassonomie,
-> upsert idempotente, autenticazione dei cron). Per validare una **sincronizzazione end-to-end** —
-> parsing del feed, token dell'utente API `@immobili`, cron in pull/push — crea invece un
-> `FeedSource` reale (anche di un cliente di prova) e premi **Sincronizza ora**. Vedi
-> [API e sincronizzazione](api-e-sync.md).
+> upsert idempotente, CLI o autenticazione degli endpoint). Per validare una **sincronizzazione
+> end-to-end** — parsing del feed, esecuzione CLI oppure token HTTP dell'utente API `@immobili` —
+> crea invece un `FeedSource` reale (anche di un cliente di prova) e premi **Sincronizza ora** o usa
+> il comando Getrix documentato in [API, CLI e sincronizzazione](api-e-sync.md).
 
 ## Migrazione allo schema canonico (reseed)
 

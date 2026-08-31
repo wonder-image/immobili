@@ -30,7 +30,7 @@
 
 * [Modello immobile](riferimento/modello-immobile.md)
 * [Immagini e media](riferimento/immagini-e-media.md)
-* [API e sincronizzazione](riferimento/api-e-sync.md)
+* [API, CLI e sincronizzazione](riferimento/api-e-sync.md)
 * [Immobili manuali e seed](riferimento/manuali-e-seed.md)
 * [Traduzioni e bilingua](riferimento/traduzioni-bilingua.md)
 * [Backend](riferimento/backend.md)

@@ -42,12 +42,7 @@ Salva e premi **Sincronizza ora**.
 ## Cron (Getrix = pull)
 
 Getrix richiede un **cron di sincronizzazione** (sei tu a scaricare il file) più il cron immagini.
-Il token è quello dell'utente API dedicato `@immobili`, inviato in header Bearer:
-
-```cron
-*/30 * * * * curl -s -H "Authorization: Bearer <TOKEN>" "https://TUOSITO/api/immobili/sync/?feed=<ID>" > /dev/null
-*/5  * * * * curl -s -H "Authorization: Bearer <TOKEN>" "https://TUOSITO/api/immobili/images/"         > /dev/null
-```
-
-`<ID>` = id del feed · `<TOKEN>` = token API mostrato nel pannello del feed. Vedi la
-[guida ai cron](../riferimento/api-e-sync.md) e [Feed e gestionali](../configurazione/feed-e-gestionali.md).
+Usa la **CLI con path assoluto** se il cron gira sul server del sito; usa gli endpoint con token
+Bearer solo per uno scheduler esterno. I comandi completi sono raccolti nella
+[guida ai cron](../riferimento/api-e-sync.md), così non ci sono configurazioni concorrenti o esempi
+divergenti. Vedi anche [Feed e gestionali](../configurazione/feed-e-gestionali.md).
