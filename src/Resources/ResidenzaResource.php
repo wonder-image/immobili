@@ -110,7 +110,6 @@ final class ResidenzaResource extends Resource
             FormField::key('sold')->bool()->value('false'),
             FormField::key('evidence')->bool()->value('false'),
             FormField::key('visible')->bool()->value('true'),
-            self::numberField('position'),
         ];
     }
 
@@ -172,7 +171,6 @@ final class ResidenzaResource extends Resource
                     static::getInput('sold')->columnSpan(12),
                     static::getInput('evidence')->columnSpan(12),
                     static::getInput('visible')->columnSpan(12),
-                    static::getInput('position')->columnSpan(12),
                     (new Submit('upload'))
                         ->label(ResidenzaForm::text('buttons.save'))
                         ->buttonClass('btn btn-dark w-100')
