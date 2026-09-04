@@ -183,7 +183,7 @@ final class Immobili implements ModuleInterface
      * del framework (SEO, SOCIETY, PATH, STATE, …) restano disponibili.
      *
      * Esempio:
-     *     <?= Immobili::component('card', ['immobile' => $immobile]) ?>
+     *     <?php Immobili::component('immobili/card-base', ['immobile' => $immobile]); ?>
      */
     public static function component(string $name, array $args = []): void
     {

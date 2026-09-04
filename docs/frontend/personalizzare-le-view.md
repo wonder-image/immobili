@@ -9,7 +9,8 @@ Crea lo stesso file sotto `custom/modules/immobili/view/` nel sito. Ha priorità
 Esempi:
 
 ```
-custom/modules/immobili/view/components/card.php                    → sostituisce la card
+custom/modules/immobili/view/components/immobili/card-base.php     → sostituisce la card base degli immobili
+custom/modules/immobili/view/components/residenze/card-base.php    → sostituisce la card base delle residenze
 custom/modules/immobili/view/pages/frontend/immobili/list.php      → sostituisce la lista immobili
 custom/modules/immobili/view/pages/frontend/residenze/list.php     → sostituisce la lista residenze
 custom/modules/immobili/view/layout/frontend/immobili.main.php     → sostituisce il layout
@@ -25,8 +26,12 @@ o `components/residenze/`.
 
 | Componente | Argomenti |
 | ---------- | --------- |
-| `card` | `['item' => CardViewModel, 'variant' => 'base'\|'overlay'\|'overlay-rich', 'gallery' => bool]` |
-| `cards` | `['items' => CardViewModel[], 'layout' => 'grid'\|'swiper', 'variant' => …, 'gallery' => bool, 'class' => 'mt-4', 'id' => '…', 'slide_class' => '…', 'aria_label' => '…']` |
+| `immobili/card-base` · `card-overlay` · `card-overlay-rich` | `['immobile' => object, 'gallery' => bool]` |
+| `immobili/cards-grid` | `['immobili' => object[], 'card' => 'card-base', 'gallery' => bool, 'card_args' => [], 'class' => 'mt-4']` |
+| `immobili/cards-swiper` | come la griglia, più `id`, `slide_class`, `aria_label` |
+| `residenze/card-base` · `card-overlay` · `card-overlay-rich` | `['residenza' => array, 'presenter' => ResidenzaPresenter, 'gallery' => bool]` |
+| `residenze/cards-grid` | `['residenze' => array[], 'presenter' => ResidenzaPresenter, 'card' => 'card-base', 'gallery' => bool, 'card_args' => [], 'class' => 'mt-4']` |
+| `residenze/cards-swiper` | come la griglia, più `id`, `slide_class`, `aria_label` |
 | `specs` | `['immobile' => $immobile]` — coppie attributo → valore |
 | `amenities` | `['features' => ['ascensore', 'giardino', …]]` — icona + etichetta |
 | `map` | `['features' => $geojson, 'zoom' => 15, 'mapId' => 'id-opzionale']` |
@@ -34,24 +39,33 @@ o `components/residenze/`.
 | `immobili/filters` | `['filters' => [...], 'action' => $url]` |
 | `residenze/timeline` | `['inizio' => '03/2025', 'fine' => '2026', 'stato' => '…']` |
 
-Richiamali con `Immobili::component('card', ['item' => $item])`.
+Richiama sempre la card nel namespace del suo reparto:
+
+```php
+Immobili::component('immobili/card-base', ['immobile' => $immobile]);
+Immobili::component('residenze/card-base', [
+    'residenza' => $residenza,
+    'presenter' => $presenter,
+]);
+```
 
 ### Varianti di card
 
-`card` ha tre varianti, che cambiano solo il markup: leggono tutte gli stessi
-campi del view-model. Ognuna è un file in `view/components/card/`, quindi un
-sito può sovrascriverne una sola senza toccare le altre.
+Ogni reparto possiede le proprie card e legge direttamente i propri dati. Non
+c'è un dispatcher comune: il nome della variante coincide con il nome del file.
+Un sito può quindi sostituire una card, oppure aggiungerne una nuova, senza
+creare un view-model condiviso fra immobili e residenze.
 
-| variant | com'è | quando |
-| ------- | ----- | ------ |
-| `base` (default) | immagine sopra, corpo su fondo chiaro | liste lunghe e colonne strette: il testo sta su fondo pieno, il contrasto non dipende dalla foto |
-| `overlay` | immagine a tutta card, titolo e prezzo sovrapposti in basso | quando la foto è il contenuto e serve impatto |
-| `overlay-rich` | come `overlay`, più indirizzo, dati sintetici e badge in alto | griglie larghe, dove la card ha spazio per reggere più righe sopra la foto |
+| file | com'è | quando |
+| ---- | ----- | ------ |
+| `card-base.php` (default) | immagine sopra, corpo su fondo chiaro | liste lunghe e colonne strette: il testo sta su fondo pieno, il contrasto non dipende dalla foto |
+| `card-overlay.php` | immagine a tutta card, testo essenziale sovrapposto in basso | quando la foto è il contenuto e serve impatto |
+| `card-overlay-rich.php` | come overlay, con più informazioni sintetiche | griglie larghe, dove la card ha spazio per reggere più righe sopra la foto |
 
 ```php
-<?php Immobili::component('cards', [
-    'items'   => $items,
-    'variant' => 'overlay',
+<?php Immobili::component('immobili/cards-grid', [
+    'immobili' => $immobili,
+    'card' => 'card-overlay',
     'gallery' => true,
 ]); ?>
 ```
@@ -60,14 +74,17 @@ Il gradiente scuro delle varianti `overlay` non è decorativo: è ciò che rende
 leggibile il testo sopra una foto qualsiasi. Se lo togli in un override, il
 titolo sparisce sulle immagini chiare.
 
-Una `variant` sconosciuta ricade su `base` invece di non produrre nulla: in
-lista una card mancante sarebbe un buco silenzioso.
+Per aggiungere, ad esempio, `card-compact.php`, crealo nella cartella del
+reparto (nel modulo o nell'override del sito) e passa `'card' => 'card-compact'`
+a `cards-grid` o `cards-swiper` dello stesso reparto. Se la nuova card richiede
+opzioni proprie, passale in `card_args`: il contenitore le inoltra a ogni card,
+ma conserva sempre il dato nativo corretto (`immobile` o `residenza`).
 
 ### Gallery dentro la card
 
 `'gallery' => true` rende sfogliabili le immagini senza aprire la scheda. È
-indipendente dalla variante, quindi si combina con tutte e tre. Compare solo se
-il view-model porta più di un'immagine.
+indipendente dalla card scelta e compare solo quando il dato nativo porta più
+di un'immagine. Ogni reparto possiede il proprio `card-media.php`.
 
 Non usa Swiper: in una griglia servirebbe un'istanza per card. Sono CSS più un
 listener delegato (`resources/assets/js/immobili-card.js`), caricati solo quando
@@ -82,50 +99,46 @@ Da dove arrivano le immagini:
   gallery sugli immobili valorizza `$immobile->images` a monte, con una sola
   query per l'intera pagina; senza, la card mostra la sola cover.
 
-### Card e collezioni
+### Dati nativi e collezioni
 
-`card` è **una sola** per i due reparti: riceve un `CardViewModel`, che appiattisce le
-differenze fra immobile e residenza in slot opzionali (`highlight` per il prezzo,
-`excerpt` per la descrizione breve, `meta` per la riga di icone). Dentro il componente non
-c'è nessun ramo per tipo.
-
-Il view-model si costruisce dal presenter del reparto:
+Le card non richiedono una conversione intermedia. Gli immobili usano gli
+oggetti prodotti da `ImmobileQuery::cards()`; le residenze usano le righe del
+modello e il loro `ResidenzaPresenter`:
 
 ```php
-use Wonder\Plugin\Immobili\Catalog\CardViewModel;
-
-// Immobili: da ImmobileQuery::cards()
-$items = CardViewModel::fromImmobili($query->cards($rows));
-
-// Residenze: dalle righe DB + ResidenzaPresenter
-$items = CardViewModel::fromResidenze($rows, $presenter);
+$immobili = $query->cards($rows);
+$residenze = $rows;
+$presenter = new ResidenzaPresenter();
 ```
 
-`cards` rende la collezione nei due layout:
+Ogni reparto espone un componente distinto per ciascun layout:
 
 ```php
-<?php Immobili::component('cards', [
-    'items' => $items,
+<?php Immobili::component('immobili/cards-grid', [
+    'immobili' => $immobili,
     'class' => 'mt-4',
 ]); ?>
 
-<?php Immobili::component('cards', [
-    'items' => $items,
-    'layout' => 'swiper',
+<?php Immobili::component('immobili/cards-swiper', [
+    'immobili' => $immobili,
+    'card' => 'card-overlay-rich',
     'id' => 'immobili-in-evidenza',
     'class' => 'mt-6',
     'aria_label' => __t('pages.home.content.properties.carousel_label'),
 ]); ?>
+
+<?php Immobili::component('residenze/cards-grid', [
+    'residenze' => $residenze,
+    'presenter' => $presenter,
+    'card' => 'card-base',
+]); ?>
 ```
 
-Il layout `grid` riusa la griglia responsive del modulo; `swiper` abilita la dipendenza Swiper e
+`cards-grid` usa la griglia responsive del modulo; `cards-swiper` abilita la dipendenza Swiper e
 applica i breakpoint mobile-first standard: 1,05 card, 2 card da 769 px, 3 card da 993 px.
 `id`, `slide_class` e `aria_label` valgono solo per lo swiper e sono ignorati dalla griglia.
-In entrambi i casi non viene prodotto markup quando `items` è vuoto: titoli, messaggi di lista
-vuota e paginazione restano responsabilità della pagina.
-
-Il prefisso `immobili-` non è necessario nei nomi: il namespace è già espresso dalla chiamata
-`Immobili::component(...)`.
+In entrambi i casi non viene prodotto markup quando `immobili` o `residenze` è vuoto: titoli,
+messaggi di lista vuota e paginazione restano responsabilità della pagina.
 
 ## Galleria della scheda immobile
 

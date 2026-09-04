@@ -56,7 +56,9 @@
     },
     "residenze": {
         "card": {
-            "part_of": "Part of the development:"
+            "part_of": "Part of the development:",
+            "gallery_prev": "Previous image",
+            "gallery_next": "Next image"
         }
     }
 }

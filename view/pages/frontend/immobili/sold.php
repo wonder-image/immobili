@@ -6,7 +6,6 @@
 
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
-use Wonder\Plugin\Immobili\Catalog\CardViewModel;
 use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 
 $PAGE_KEY = 'immobili.sold';
@@ -30,7 +29,7 @@ $where = $query->where([], true);
 $PAGINATION = pagination('immobili', $where, $perPage);
 $rows = Immobile::safeFind($where, $PAGINATION->limit, $order, $direction) ?? [];
 
-$items = CardViewModel::fromImmobili($query->cards($rows));
+$immobili = $query->cards($rows);
 $geojson = $query->geojson($where);
 
 Immobili::layout('main');
@@ -49,11 +48,11 @@ Immobili::layout('main');
 <?php } ?>
 
 <section class="content mt-6 mb-10">
-    <?php if ($items === []) { ?>
+    <?php if ($immobili === []) { ?>
         <p class="text"><?= e(__t('pages.immobili.sold.empty')) ?></p>
     <?php } else { ?>
-        <?php Immobili::component('cards', [
-            'items' => $items,
+        <?php Immobili::component('immobili/cards-grid', [
+            'immobili' => $immobili,
             'class' => 'mt-4',
         ]); ?>
     <?php } ?>

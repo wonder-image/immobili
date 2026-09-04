@@ -17,10 +17,10 @@ modulo — va cercato a mano.
 
 | prima | dopo |
 |---|---|
-| `components/card.php` | `components/card.php` (invariato di path, ma ora riceve `['item' => CardViewModel]`) |
-| `components/cards-grid.php` | `components/cards.php` con `'layout' => 'grid'` (default) |
-| `components/cards-swiper.php` | `components/cards.php` con `'layout' => 'swiper'` |
-| `components/residenze/card.php` | `components/card.php` (unificata) |
+| `components/card.php` | `components/immobili/card-base.php` (riceve `['immobile' => object]`) |
+| `components/cards-grid.php` | `components/immobili/cards-grid.php` |
+| `components/cards-swiper.php` | `components/immobili/cards-swiper.php` |
+| `components/residenze/card.php` | `components/residenze/card-base.php` |
 | `components/features.php` | `components/specs.php` |
 | `components/residenze/features.php` | `components/amenities.php` |
 | `components/filters.php` | `components/immobili/filters.php` |
@@ -51,8 +51,12 @@ reparto**, sia in `view/` sia in `src/`.
 Invariati: `…\Models\Immobile`, `…\Models\Residenza`, `…\Resources\*`,
 `…\Support\{Slug,Taxonomy,EnergyScale,AttributeCatalog}`, `…\Feed\*`, `…\Pdf\*`.
 
-**API rimossa**: `ResidenzaForm::uniqueSlug()` → usare
-`Slug::fromParts([$nome], Residenza::class, $excludeId, 'residenza')`.
+**API rimosse**:
+
+- `ResidenzaForm::uniqueSlug()` → usare
+  `Slug::fromParts([$nome], Residenza::class, $excludeId, 'residenza')`;
+- `Catalog\CardViewModel`, il dispatcher `components/card.php` e la collezione
+  `components/cards.php` → passare i dati nativi ai componenti del reparto.
 
 **Non cambiano**: nessuna URL, nessun nome di route, nessuna chiave di
 traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
@@ -69,9 +73,6 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
   `immobili.residenza_id`). Traduzioni it/en. La gallery è un upload
   multiplo salvato come array JSON di filename nella colonna `images`
   della residenza (fino a 12 immagini); cover = prima immagine.
-- `Catalog\CardViewModel`: forma comune delle card dei due reparti. I campi non
-  pertinenti a un reparto sono stringa vuota, mai assenti, così
-  `components/card.php` non ramifica per tipo.
 - `Media\MediaUrl`: fonte unica per URL di upload e varianti responsive.
 - `Sync\ReindexService`: il backfill esce dall'handler HTTP.
 - `Support\Forms\FormText`: base condivisa dei form di reparto.
@@ -80,22 +81,26 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
 - Slug localizzati per le route residenze (`it/residenze`, `en/developments`).
 - `tests/run.sh`: esegue tutte le suite del modulo in un comando.
 
-### Aggiunto (varianti di card)
-- Tre varianti di `card`, selezionabili con `'variant' => …` su `card` e `cards`:
-  **`base`** (default, invariata), **`overlay`** (immagine a tutta card con testo
-  sovrapposto) e **`overlay-rich`** (come overlay, più indirizzo, dati sintetici
-  e badge in alto). Vivono in `view/components/card/`, una per file: un sito può
-  sovrascriverne una sola. Una variante sconosciuta ricade su `base`.
+### Aggiunto (card di reparto)
+- Tre card per ciascun reparto: **`card-base`** (default), **`card-overlay`**
+  (immagine a tutta card con testo sovrapposto) e **`card-overlay-rich`** (come
+  overlay, con più informazioni sintetiche). Vivono rispettivamente in
+  `view/components/immobili/` e `view/components/residenze/`, ricevono i dati
+  nativi del reparto e possono essere sovrascritte singolarmente dal sito.
+- Ogni reparto espone `cards-grid` e `cards-swiper`. Il parametro `'card' =>
+  'card-*'` sceglie la card senza un dispatcher comune; gli immobili ricevono
+  gli oggetti di `ImmobileQuery::cards()`, le residenze le righe DB e un
+  `ResidenzaPresenter` opzionale.
 - **Gallery sfogliabile dentro la card** (`'gallery' => true`), indipendente
-  dalla variante. Senza Swiper — in una griglia servirebbe un'istanza per card —
+  dalla card scelta. Senza Swiper — in una griglia servirebbe un'istanza per card —
   con `resources/assets/{css/immobili-card.css,js/immobili-card.js}` caricati
   solo quando serve. Per le residenze le foto arrivano dalla colonna JSON già
   letta; per gli immobili sono opt-in via `$immobile->images`, perché stanno in
   tabella figlia e caricarle in lista costerebbe una query per riga.
-- `CardViewModel::VARIANTS` e la proprietà `images`.
 - `Immobili::scriptOnce()`, speculare a `styleOnce()`.
 - `ResidenzaPresenter::previews()`: anteprime responsive della gallery.
-- Chiavi `components.immobili.card.gallery_prev` / `gallery_next` (it/en).
+- Chiavi `components.{immobili,residenze}.card.gallery_prev` / `gallery_next`
+  (it/en).
 
 ### Corretto
 - Le etichette del dettaglio immobile (cucina, box auto, arredamento, infissi,
@@ -128,8 +133,9 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
 ### Rimosso
 - `src/Services/`, sciolta per responsabilità in `Catalog/`, `Media/`, `Sync/`,
   `Seeding/`, `Export/`.
-- `components/cards-grid.php`, `components/cards-swiper.php`,
-  `components/residenze/card.php`, assorbiti da `card`/`cards`.
+- `Catalog\CardViewModel`, `components/card.php`, `components/card/*` e
+  `components/cards.php`: le card e le collezioni non sono più unificate fra i
+  due reparti.
 - La griglia scritta a mano nella lista residenze (terza copia della stessa
   griglia).
 

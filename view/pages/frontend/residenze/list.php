@@ -6,7 +6,6 @@
 
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Catalog\CardViewModel;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
 $PAGE_KEY = 'residenze.list';
@@ -40,8 +39,9 @@ Immobili::layout('main');
         <?php if ($rows === []) { ?>
             <p class="text mt-4"><?= e(__t('pages.residenze.list.empty')) ?></p>
         <?php } else { ?>
-            <?php Immobili::component('cards', [
-                'items' => CardViewModel::fromResidenze($rows, $presenter),
+            <?php Immobili::component('residenze/cards-grid', [
+                'residenze' => $rows,
+                'presenter' => $presenter,
                 'class' => 'mt-4',
             ]); ?>
         <?php } ?>

@@ -496,183 +496,240 @@ $assert($mediaUrl::firstFile('[broken') === '', "JSON malformato => '' (non fini
 $assert($mediaUrl::firstFile('{"a":1') === '', "oggetto JSON troncato => ''");
 $assert($mediaUrl::firstFile('"uno.jpg"') === 'uno.jpg', "stringa JSON valida => filename");
 
-// Estrae gli IDENTIFICATORI del codice PHP di una view: via commenti, HTML
-// inline e stringhe letterali — li' il nome del modulo compare per forza, nei
-// path degli asset e nelle chiavi di traduzione, senza essere una
-// ramificazione. Restano nomi di classe, variabili e strutture di controllo:
-// e' li' che una ramificazione per reparto (`$residenza`, `ResidenzaPresenter`,
-// `instanceof Residenza`) si vedrebbe.
-$executableCode = static function (string $file): string {
-    $code = implode(' ', array_map(
-        static fn (array $t): string => is_array($t) ? (string) $t[1] : '',
-        array_values(array_filter(
-            token_get_all((string) file_get_contents($file)),
-            static fn ($t): bool => is_array($t)
-                && !in_array($t[0], [
-                    T_COMMENT, T_DOC_COMMENT, T_INLINE_HTML,
-                    T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE,
-                ], true)
-        ))
-    ));
+echo "Card e collezioni separate per reparto\n";
+$moduleRoot = dirname(__DIR__);
+$viewDir = $moduleRoot.'/view/components';
+$cardFiles = [
+    'card-base.php',
+    'card-overlay.php',
+    'card-overlay-rich.php',
+    'card-media.php',
+    'cards-grid.php',
+    'cards-swiper.php',
+];
 
-    // Via il nome della classe entrypoint e del namespace (parola esatta
-    // `Immobili`): è il modulo, non un reparto. Restano `$immobile`,
-    // `Residenza`, `ResidenzaPresenter` e simili, che invece lo sono.
-    return (string) preg_replace('/\\\\?\\bImmobili\\b/', '', $code);
-};
+foreach (['immobili', 'residenze'] as $department) {
+    $departmentDir = $viewDir.'/'.$department;
 
-echo "CardViewModel — forma comune ai due reparti\n";
-$vmClass = \Wonder\Plugin\Immobili\Catalog\CardViewModel::class;
+    foreach ($cardFiles as $file) {
+        $assert(
+            is_file($departmentDir.'/'.$file),
+            "{$department}: esiste components/{$department}/{$file}"
+        );
+    }
 
-$immobileVm = $vmClass::fromImmobile((object) [
-    'url'              => '/immobili/trilocale-milano/',
-    'cover'            => 'https://example.test/upload/immobili/a-620.webp',
-    'sold'             => false,
-    'evidence'         => true,
-    'tipologia'        => 'Trilocale',
-    'contratto'        => 'Vendita',
-    'prettyName'       => 'Trilocale, Via Roma 10',
-    'prettyAddress'    => 'Via Roma 10 — Milano',
-    'prezzo'           => 250000,
-    'prettyPrezzo'     => '€ 250.000',
-    'prettySuperficie' => '120 mq',
-    'locali'           => 3,
-    'camere'           => 2,
-    'bagni'            => 1,
-]);
+    $departmentSources = '';
+    foreach ($cardFiles as $file) {
+        $departmentSources .= (string) file_get_contents($departmentDir.'/'.$file);
+    }
 
-$residenzaVm = $vmClass::fromResidenza([
-    'url'               => '/residenze/corte-verde/',
-    'nome'              => 'Corte Verde',
-    'comune_nome'       => 'Bergamo',
-    'descrizione_breve' => 'Otto unità in classe A.',
-    'images'            => '[]',
-    'sold'              => 'false',
-    'stato'             => 'in_corso',
-    'inizio_anno'       => 2025,
-    'inizio_mese'       => 3,
-    'fine_anno'         => 2026,
-    'fine_mese'         => 0,
-]);
-
-$vmKeys = static fn (object $vm): array => array_keys(get_object_vars($vm));
-$assert($vmKeys($immobileVm) === $vmKeys($residenzaVm), 'i due reparti espongono esattamente le stesse chiavi');
-
-foreach (['url', 'cover', 'eyebrow', 'title', 'subtitle', 'highlight', 'excerpt'] as $stringField) {
-    $assert(is_string($immobileVm->$stringField), "immobile.{$stringField} è sempre string");
-    $assert(is_string($residenzaVm->$stringField), "residenza.{$stringField} è sempre string");
-}
-
-$assert($immobileVm->title === 'Trilocale, Via Roma 10', 'immobile: title = prettyName');
-$assert($immobileVm->highlight === '€ 250.000', 'immobile: highlight = prezzo formattato');
-$assert($immobileVm->excerpt === '', 'immobile: excerpt vuoto, non assente');
-$assert($immobileVm->eyebrow === 'Trilocale · Vendita', 'immobile: eyebrow = tipologia · contratto');
-
-$assert($residenzaVm->title === 'Corte Verde', 'residenza: title = nome');
-$assert($residenzaVm->subtitle === 'Bergamo', 'residenza: subtitle = comune');
-$assert($residenzaVm->highlight === '', 'residenza: highlight vuoto, non assente');
-$assert($residenzaVm->excerpt === 'Otto unità in classe A.', 'residenza: excerpt = descrizione breve');
-
-$assert(is_object($immobileVm->badge) && $immobileVm->badge->label !== '', 'immobile in evidenza ha un badge');
-$assert(is_object($residenzaVm->badge), 'la residenza ha sempre il badge di stato');
-
-$assert(is_array($immobileVm->meta) && count($immobileVm->meta) === 4, 'immobile: 4 voci meta (mq, locali, camere, bagni)');
-$assert(
-    ($immobileVm->meta[0]->text ?? '') === '120 mq',
-    'immobile: la superficie è formattata, non il valore grezzo'
-);
-$assert(is_array($residenzaVm->meta), 'residenza: meta è sempre array');
-$assert(
-    ($residenzaVm->meta[0]->text ?? '') === '03/2025 → 2026',
-    'residenza: la timeline compare tra i meta'
-);
-
-// Il criterio è che le card non RAMIFICHINO per reparto: i docblock possono
-// nominarli per spiegare il concetto, il codice eseguibile no.
-$cardCode = $executableCode(dirname(__DIR__).'/view/components/card.php');
-$assert(
-    stripos($cardCode, 'residenz') === false && stripos($cardCode, 'immobil') === false,
-    'card.php non conosce i reparti: nessun ramo per tipo nel codice eseguibile'
-);
-
-echo "Varianti di card\n";
-$cardDir = dirname(__DIR__).'/view/components/card';
-
-$assert(
-    \Wonder\Plugin\Immobili\Catalog\CardViewModel::VARIANTS === ['base', 'overlay', 'overlay-rich'],
-    'le varianti dichiarate sono base, overlay, overlay-rich'
-);
-
-foreach (\Wonder\Plugin\Immobili\Catalog\CardViewModel::VARIANTS as $variant) {
-    $assert(is_file($cardDir.'/'.$variant.'.php'), "esiste il file della variante {$variant}");
-}
-$assert(is_file($cardDir.'/media.php'), 'esiste il componente media condiviso');
-
-// Il dispatcher deve ripiegare su base: in lista una variante sconosciuta che
-// non produce nulla lascerebbe un buco silenzioso, difficile da diagnosticare.
-$dispatcher = (string) file_get_contents(dirname(__DIR__).'/view/components/card.php');
-$assert(str_contains($dispatcher, 'VARIANTS'), 'il dispatcher valida contro le varianti dichiarate');
-$assert(str_contains($dispatcher, "\$variant = 'base'"), 'una variante sconosciuta ricade su base');
-
-// Nessuna variante deve conoscere i reparti: e' il patto del view-model.
-foreach (['base', 'overlay', 'overlay-rich', 'media'] as $file) {
-    $code = $executableCode($cardDir.'/'.$file.'.php');
     $assert(
-        stripos($code, 'residenz') === false && stripos($code, 'immobil') === false,
-        "card/{$file}.php non ramifica per reparto"
+        !str_contains($departmentSources, 'CardViewModel'),
+        "{$department}: le card usano i dati nativi del reparto"
+    );
+
+    $gridSource = (string) file_get_contents($departmentDir.'/cards-grid.php');
+    $swiperSource = (string) file_get_contents($departmentDir.'/cards-swiper.php');
+
+    $assert(str_contains($gridSource, 'd-grid'), "{$department}: cards-grid rende una griglia");
+    $assert(str_contains($swiperSource, '__swiper'), "{$department}: cards-swiper usa il builder Swiper");
+
+    foreach (['grid' => $gridSource, 'swiper' => $swiperSource] as $layout => $source) {
+        $assert(
+            str_contains($source, "\$args['card']")
+            && str_contains($source, "^card-[a-z0-9]+")
+            && str_contains($source, "is_file(\$cardPath)"),
+            "{$department}: cards-{$layout} seleziona soltanto file card-* esistenti"
+        );
+        $assert(
+            str_contains($source, "\$card = 'card-base'"),
+            "{$department}: cards-{$layout} ripiega su card-base"
+        );
+    }
+
+    $assert(
+        !str_contains($swiperSource, 'ViewComponent') && !str_contains($swiperSource, 'ob_start'),
+        "{$department}: cards-swiper non reintroduce ViewComponent o buffering manuale"
     );
 }
 
-// La gallery non deve trascinarsi dietro Swiper: in una griglia servirebbe
-// un'istanza per card.
-$media = (string) file_get_contents($cardDir.'/media.php');
-$assert(!str_contains($media, '__swiper'), 'la gallery in-card non usa Swiper');
-$assert(str_contains($media, 'immobili-card.js'), 'la gallery carica il proprio JS');
+$assert(!is_file($moduleRoot.'/src/Catalog/CardViewModel.php'), 'CardViewModel è stato rimosso');
+$assert(!is_file($viewDir.'/card.php'), 'il dispatcher root card.php è stato rimosso');
+$assert(!is_dir($viewDir.'/card'), 'la cartella root card/ è stata rimossa');
+$assert(!is_file($viewDir.'/cards.php'), 'il componente root cards.php è stato rimosso');
+
+if (!function_exists('e')) {
+    function e(mixed $value): string
+    {
+        return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+defined('APP_URL') || define('APP_URL', 'https://example.test');
+defined('RESPONSIVE_IMAGE_SIZES') || define('RESPONSIVE_IMAGE_SIZES', [240, 620, 1440]);
+
+if (!function_exists('__swiper')) {
+    function __swiper(array $images = []): \Wonder\Elements\Media\Swiper
+    {
+        return \Wonder\Elements\Media\Swiper::make($images);
+    }
+}
+
+echo "Rendering delle card e delle collezioni native\n";
+$sampleImmobili = [
+    (object) [
+        'url' => '/immobili/casa-a/',
+        'cover' => 'https://example.test/casa-a.jpg',
+        'prettyName' => 'Casa A',
+    ],
+    (object) [
+        'url' => '/immobili/casa-b/',
+        'cover' => 'https://example.test/casa-b.jpg',
+        'prettyName' => 'Casa B',
+    ],
+];
+$sampleResidenze = [
+    ['url' => '/residenze/borgo-a/', 'nome' => 'Borgo A', 'stato' => 'in_corso', 'images' => []],
+    ['url' => '/residenze/borgo-b/', 'nome' => 'Borgo B', 'stato' => 'in_corso', 'images' => []],
+];
+
+foreach (['cards-grid', 'cards-swiper'] as $collection) {
+    $immobiliHtml = \Wonder\View\View::component(
+        $viewDir.'/immobili/'.$collection.'.php',
+        ['args' => ['immobili' => $sampleImmobili, 'card' => 'card-overlay']]
+    );
+    $residenzeHtml = \Wonder\View\View::component(
+        $viewDir.'/residenze/'.$collection.'.php',
+        ['args' => ['residenze' => $sampleResidenze, 'card' => 'card-overlay']]
+    );
+
+    $assert(
+        str_contains($immobiliHtml, 'Casa A') && str_contains($immobiliHtml, 'Casa B'),
+        "immobili/{$collection} rende gli oggetti nativi"
+    );
+    $assert(
+        str_contains($residenzeHtml, 'Borgo A') && str_contains($residenzeHtml, 'Borgo B'),
+        "residenze/{$collection} rende le righe native"
+    );
+}
+
+$fallbackHtml = \Wonder\View\View::component(
+    $viewDir.'/immobili/cards-grid.php',
+    ['args' => ['immobili' => [$sampleImmobili[0]], 'card' => '../card-overlay']]
+);
+$assert(
+    str_contains($fallbackHtml, 'bg-white') && !str_contains($fallbackHtml, 'immobili-card--overlay'),
+    'un nome card non valido non evade la cartella e ricade su card-base'
+);
+
+$overrideRoot = sys_get_temp_dir().'/immobili-card-'.bin2hex(random_bytes(6));
+$overrideComponents = $overrideRoot.'/custom/modules/immobili/view/components';
+mkdir($overrideComponents.'/immobili', 0777, true);
+mkdir($overrideComponents.'/residenze', 0777, true);
+
+file_put_contents($overrideComponents.'/immobili/card-compact.php', <<<'PHP'
+<?php
+echo '<article data-token="'.e((string) ($args['token'] ?? '')).'">'
+    .e((string) ($args['immobile']->prettyName ?? '')).'</article>';
+PHP);
+file_put_contents($overrideComponents.'/residenze/card-compact.php', <<<'PHP'
+<?php
+echo '<article data-token="'.e((string) ($args['token'] ?? '')).'">'
+    .e((string) ($args['residenza']['nome'] ?? '')).'</article>';
+PHP);
+
+$rootExisted = array_key_exists('ROOT', $GLOBALS);
+$rootBefore = $GLOBALS['ROOT'] ?? null;
+$GLOBALS['ROOT'] = $overrideRoot;
+
+$customImmobileHtml = \Wonder\View\View::component(
+    $viewDir.'/immobili/cards-grid.php',
+    ['args' => [
+        'immobili' => [$sampleImmobili[0]],
+        'card' => 'card-compact',
+        'card_args' => ['token' => 'immobile-custom'],
+    ]]
+);
+$customResidenzaHtml = \Wonder\View\View::component(
+    $viewDir.'/residenze/cards-swiper.php',
+    ['args' => [
+        'residenze' => [$sampleResidenze[0]],
+        'card' => 'card-compact',
+        'card_args' => ['token' => 'residenza-custom'],
+    ]]
+);
+
+$assert(
+    str_contains($customImmobileHtml, 'data-token="immobile-custom"')
+    && str_contains($customImmobileHtml, 'Casa A'),
+    'immobili: una card-* presente solo nel sito funziona in cards-grid e riceve card_args'
+);
+$assert(
+    str_contains($customResidenzaHtml, 'data-token="residenza-custom"')
+    && str_contains($customResidenzaHtml, 'Borgo A'),
+    'residenze: una card-* presente solo nel sito funziona in cards-swiper e riceve card_args'
+);
+
+if ($rootExisted) {
+    $GLOBALS['ROOT'] = $rootBefore;
+} else {
+    unset($GLOBALS['ROOT']);
+}
+
+unlink($overrideComponents.'/immobili/card-compact.php');
+unlink($overrideComponents.'/residenze/card-compact.php');
+
+foreach (array_reverse([
+    $overrideRoot,
+    $overrideRoot.'/custom',
+    $overrideRoot.'/custom/modules',
+    $overrideRoot.'/custom/modules/immobili',
+    $overrideRoot.'/custom/modules/immobili/view',
+    $overrideComponents,
+    $overrideComponents.'/immobili',
+    $overrideComponents.'/residenze',
+]) as $directory) {
+    rmdir($directory);
+}
 
 $assert(
     method_exists(\Wonder\Plugin\Immobili\Immobili::class, 'scriptOnce'),
     'Immobili::scriptOnce esiste, speculare a styleOnce'
 );
 
-// images: popolate per le residenze (colonna JSON gia' letta), e mai inventate
-// per gli immobili, dove costerebbero una query per riga.
-$vmImmobile = \Wonder\Plugin\Immobili\Catalog\CardViewModel::fromImmobile((object) [
-    'url' => '/x/', 'cover' => 'https://e.test/a-620.webp',
-]);
-$assert($vmImmobile->images === ['https://e.test/a-620.webp'], 'senza foto esplicite images e la sola cover');
-
-$vmConImmagini = \Wonder\Plugin\Immobili\Catalog\CardViewModel::fromImmobile((object) [
-    'url' => '/x/', 'cover' => 'https://e.test/a-620.webp',
-    'images' => ['https://e.test/a-620.webp', 'https://e.test/b-620.webp'],
-]);
-$assert(count($vmConImmagini->images) === 2, 'le foto fornite a monte finiscono nel view-model');
-
 foreach (['it', 'en'] as $locale) {
-    $components = json_decode((string) file_get_contents(dirname(__DIR__)."/lang/{$locale}/components.json"), true);
-    foreach (['gallery_prev', 'gallery_next'] as $key) {
-        $assert(
-            isset($components['immobili']['card'][$key]),
-            "lang/{$locale}: components.immobili.card.{$key} tradotta"
-        );
+    $components = json_decode((string) file_get_contents($moduleRoot."/lang/{$locale}/components.json"), true);
+
+    foreach (['immobili', 'residenze'] as $department) {
+        foreach (['gallery_prev', 'gallery_next'] as $key) {
+            $assert(
+                isset($components[$department]['card'][$key]),
+                "lang/{$locale}: components.{$department}.card.{$key} tradotta"
+            );
+        }
     }
 }
 
-echo "Componente cards unificato\n";
-$viewDir = dirname(__DIR__).'/view/components';
-$assert(is_file($viewDir.'/cards.php'), 'cards.php esiste');
-$assert(!is_file($viewDir.'/cards-grid.php'), 'cards-grid.php è stato assorbito');
-$assert(!is_file($viewDir.'/cards-swiper.php'), 'cards-swiper.php è stato assorbito');
-$assert(!is_file($viewDir.'/residenze/card.php'), 'la card delle residenze è stata unificata');
+echo "Call-site delle collezioni di reparto\n";
+$collectionCallSites = [
+    'pages/frontend/immobili/list.php'      => 'immobili/cards-grid',
+    'pages/frontend/immobili/sold.php'      => 'immobili/cards-grid',
+    'pages/frontend/residenze/list.php'     => 'residenze/cards-grid',
+    'pages/frontend/residenze/detail.php'   => 'immobili/cards-grid',
+];
 
-$cardsSource = (string) file_get_contents($viewDir.'/cards.php');
-$assert(str_contains($cardsSource, "'swiper'"), 'cards.php gestisce il layout swiper');
-$assert(str_contains($cardsSource, 'd-grid'), 'cards.php gestisce il layout griglia');
+foreach ($collectionCallSites as $relativePath => $component) {
+    $source = (string) file_get_contents($moduleRoot.'/view/'.$relativePath);
 
-$residenzeList = (string) file_get_contents(dirname(__DIR__).'/view/pages/frontend/residenze/list.php');
-$assert(
-    !str_contains($residenzeList, 'd-grid col-3'),
-    'la lista residenze non ha più la griglia scritta a mano'
-);
+    $assert(
+        str_contains($source, "component('{$component}'"),
+        "{$relativePath} usa {$component}"
+    );
+    $assert(
+        !str_contains($source, 'CardViewModel') && !str_contains($source, "component('cards'"),
+        "{$relativePath} non usa più l'API unificata"
+    );
+}
 
 echo "Ogni classe del modulo è raggiungibile dal punto in cui viene usata\n";
 // Questo test esiste per una classe di bug che la riorganizzazione dei
@@ -888,10 +945,22 @@ echo "Simmetria delle cartelle view\n";
 $viewRoot = dirname(__DIR__).'/view';
 
 foreach ([
-    'components/card.php', 'components/cards.php', 'components/specs.php',
-    'components/amenities.php', 'components/map.php',
+    'components/specs.php', 'components/amenities.php', 'components/map.php',
     'components/energy-class/energy-class.php',
-    'components/immobili/filters.php', 'components/residenze/timeline.php',
+    'components/immobili/filters.php',
+    'components/immobili/card-base.php',
+    'components/immobili/card-overlay.php',
+    'components/immobili/card-overlay-rich.php',
+    'components/immobili/card-media.php',
+    'components/immobili/cards-grid.php',
+    'components/immobili/cards-swiper.php',
+    'components/residenze/timeline.php',
+    'components/residenze/card-base.php',
+    'components/residenze/card-overlay.php',
+    'components/residenze/card-overlay-rich.php',
+    'components/residenze/card-media.php',
+    'components/residenze/cards-grid.php',
+    'components/residenze/cards-swiper.php',
     'pages/frontend/immobili/list.php', 'pages/frontend/immobili/detail.php',
     'pages/frontend/immobili/sold.php',
     'pages/frontend/residenze/list.php', 'pages/frontend/residenze/detail.php',
@@ -900,11 +969,15 @@ foreach ([
 }
 
 foreach ([
+    'components/card.php', 'components/card', 'components/cards.php',
     'components/features.php', 'components/filters.php',
     'components/residenze/features.php', 'components/residenze/card.php',
     'pages/frontend/list.php', 'pages/frontend/detail.php', 'pages/frontend/sold.php',
 ] as $gone) {
-    $assert(!is_file($viewRoot.'/'.$gone), "view/{$gone} è stato spostato");
+    $assert(
+        !file_exists($viewRoot.'/'.$gone),
+        "view/{$gone} è stato rimosso o spostato"
+    );
 }
 
 // Ogni handler dichiarato nelle route frontend deve esistere davvero: è il

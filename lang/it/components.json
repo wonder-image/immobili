@@ -60,7 +60,9 @@
     },
     "residenze": {
         "card": {
-            "part_of": "Parte della residenza:"
+            "part_of": "Parte della residenza:",
+            "gallery_prev": "Immagine precedente",
+            "gallery_next": "Immagine successiva"
         }
     }
 }

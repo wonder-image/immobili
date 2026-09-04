@@ -14,7 +14,7 @@ immobili/
 │   ├── helpers.php          Funzioni globali immobili*()
 │   ├── Models/              Immobile, Residenza, + Taxonomy/ e System/
 │   ├── Resources/           CRUD backend (Immobile, Residenza, FeedSource, SyncLog, Settings)
-│   ├── Catalog/             Presenter, query e CardViewModel dei due reparti
+│   ├── Catalog/             Presenter e query dei due reparti
 │   ├── Media/               MediaUrl, ImageProcessor
 │   ├── Sync/                FeedSyncService, SyncApiUser, ReindexService
 │   ├── Seeding/             ImmobileSeeder, ResidenzaSeeder
@@ -28,8 +28,9 @@ immobili/
 │   ├── frontend/            idealista.php, immobile/pdf/*
 │   └── backend/             feed/sync.php, sync-log/download.php
 ├── view/
-│   ├── components/          card · cards · specs · amenities · map · energy-class/
-│   │                        + immobili/filters · residenze/timeline
+│   ├── components/          specs · amenities · map · energy-class/
+│   │   ├── immobili/       card-* · card-media · cards-grid · cards-swiper · filters
+│   │   └── residenze/      card-* · card-media · cards-grid · cards-swiper · timeline
 │   ├── pages/frontend/      immobili/{list,detail,sold} · residenze/{list,detail}
 │   ├── pages/backend/       immobili/{form,show}
 │   └── layout/frontend/     immobili.main.php
@@ -49,7 +50,9 @@ immobili/
   e **residenze** (cantieri, sempre manuali). La regola di collocazione è *radice =
   trasversale, sottocartella = reparto*, sia in `src/` sia in `view/`.
 - **Presenter** (`Catalog/`): arricchiscono le righe per le view (prezzo/indirizzo formattati,
-  etichette, immagini, descrizione nella lingua corrente, GeoJSON). `CardViewModel` appiattisce
-  le differenze fra i due reparti nella forma comune consumata da `components/card.php`.
+  etichette, immagini, descrizione nella lingua corrente, GeoJSON).
+- **Card di reparto** (`view/components/{immobili,residenze}/`): ogni reparto legge i propri dati
+  nativi e possiede varianti `card-*`, una collezione `cards-grid` e una `cards-swiper`. Il parametro
+  `card` seleziona il file da usare senza passare da un dispatcher o da un view-model comune.
 
 Vedi anche [Modello immobile](../riferimento/modello-immobile.md).
