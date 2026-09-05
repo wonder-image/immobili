@@ -73,7 +73,8 @@ $swiper = __swiper()
     ->autoHeight()
     ->keyboard()
     ->watchOverflow()
-    ->navigation();
+    ->navigation()
+    ->addClass('o-unset');
 
 $id = trim((string) ($args['id'] ?? ''));
 

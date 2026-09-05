@@ -7,11 +7,14 @@
  *     'residenza' => array,
  *     'presenter' => \Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter,
  *     'gallery'   => bool,
+ *     'ratio'     => string,
+ *     'slide_class' => string|string[],
  * ]
  */
 
+use Wonder\App\Dependencies;
+use Wonder\Elements\Components\Container;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
-use Wonder\Plugin\Immobili\Immobili;
 
 $residenza = is_array($args['residenza'] ?? null) ? $args['residenza'] : null;
 
@@ -35,31 +38,70 @@ $timeline = trim(
     ),
     ' →'
 );
+$alt = trim((string) ($residenza['nome'] ?? ''));
+$images = [];
 
-Immobili::styleOnce('css/immobili-card.css');
+foreach ($presenter->images($residenza) as $image) {
+    $src = trim((string) ($image['src'] ?? ''));
+
+    if ($src !== '') {
+        $images[$src] = trim((string) ($image['alt'] ?? $alt));
+    }
+}
+
+$cover = trim($presenter->cover($residenza));
+$useSwiper = (bool) ($args['gallery'] ?? false) && count($images) > 1;
+$singleSrc = $cover !== '' ? $cover : (string) (array_key_first($images) ?? '');
+$singleAlt = $singleSrc !== '' ? (string) ($images[$singleSrc] ?? $alt) : '';
+$ratio = trim((string) ($args['ratio'] ?? '3:2')) ?: '3:2';
+
+if ($useSwiper) {
+    Dependencies::swiper();
+}
 
 ?>
-<a class="d-block p-r b-r-15 o-hidden tx-white immobili-card immobili-card--overlay" href="<?= e((string) ($residenza['url'] ?? '#')) ?>">
-    <div class="f-3-2 p-r o-hidden">
-        <?php Immobili::component('residenze/card-media', [
-            'residenza' => $residenza,
-            'presenter' => $presenter,
-            'gallery' => (bool) ($args['gallery'] ?? false),
-        ]); ?>
+<a class="d-block p-r b-r-15 o-hidden tx-white" href="<?= e((string) ($residenza['url'] ?? '#')) ?>">
+    <div class="p-r o-hidden">
+        <?php if ($useSwiper) {
+            $swiper = __swiper($images)
+                ->ratio($ratio)
+                ->keyboard()
+                ->watchOverflow()
+                ->navigation();
 
-        <div class="p-a w-100 h-100 immobili-card__scrim"></div>
+            $slideClass = $args['slide_class'] ?? [];
+            if ((is_string($slideClass) && trim($slideClass) !== '') || (is_array($slideClass) && $slideClass !== [])) {
+                $swiper->slideClass($slideClass);
+            }
 
-        <div class="p-a w-100 d-flex a-items-center gap-2 p-3 immobili-card__topbar">
-            <span class="badge text-bg-primary tx-upper"><?= e(__t('pages.residenze.stato.'.$stato)) ?></span>
+            echo $swiper->render('wonder');
+        } else {
+            $media = (new Container())->ratio($ratio)->addClass('o-hidden');
+
+            if ($singleSrc !== '') {
+                $image = __ri($singleSrc)->alt($singleAlt)->fitCover();
+
+                if ($cover !== '') {
+                    $image->sizes([])->hasWebP(false);
+                }
+
+                $media->components([$image]);
+            }
+
+            echo $media->render('wonder');
+        } ?>
+
+        <div class="p-a top start w-100 d-flex a-items-center gap-2 p-3">
+            <span class="badge badge-primary tx-upper"><?= e(__t('pages.residenze.stato.'.$stato)) ?></span>
         </div>
 
-        <div class="p-a w-100 p-4 d-grid gap-1 immobili-card__caption">
+        <div class="p-a bottom start w-100 p-4 d-grid gap-1 bg-black-o-70 tx-white">
             <div class="text fw-600"><?= e((string) ($residenza['nome'] ?? '')) ?></div>
             <?php if (trim((string) ($residenza['comune_nome'] ?? '')) !== '') { ?>
-                <div class="text-small immobili-card__eyebrow"><i class="bi bi-geo-alt"></i> <?= e((string) $residenza['comune_nome']) ?></div>
+                <div class="text-small"><i class="bi bi-geo-alt"></i> <?= e((string) $residenza['comune_nome']) ?></div>
             <?php } ?>
             <?php if ($timeline !== '') { ?>
-                <div class="d-flex gap-3 text-small immobili-card__eyebrow mt-1">
+                <div class="d-flex gap-3 text-small mt-1">
                     <span><i class="bi bi-calendar3"></i> <?= e($timeline) ?></span>
                 </div>
             <?php } ?>

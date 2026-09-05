@@ -70,9 +70,8 @@ creare un view-model condiviso fra immobili e residenze.
 ]); ?>
 ```
 
-Il gradiente scuro delle varianti `overlay` non è decorativo: è ciò che rende
-leggibile il testo sopra una foto qualsiasi. Se lo togli in un override, il
-titolo sparisce sulle immagini chiare.
+Le varianti `overlay` usano esclusivamente utility class della libreria Wonder,
+compresa la fascia scura che mantiene leggibile il testo sulle foto chiare.
 
 Per aggiungere, ad esempio, `card-compact.php`, crealo nella cartella del
 reparto (nel modulo o nell'override del sito) e passa `'card' => 'card-compact'`
@@ -82,13 +81,15 @@ ma conserva sempre il dato nativo corretto (`immobile` o `residenza`).
 
 ### Gallery dentro la card
 
-`'gallery' => true` rende sfogliabili le immagini senza aprire la scheda. È
-indipendente dalla card scelta e compare solo quando il dato nativo porta più
-di un'immagine. Ogni reparto possiede il proprio `card-media.php`.
+`'gallery' => true` rende sfogliabili le immagini quando il dato nativo ne porta
+più di una. Ogni file `card-*` gestisce direttamente i propri media: usa
+`__ri()` per la cover singola e `__swiper()` per la gallery. Non esiste un
+componente `card-media` condiviso e non servono CSS o JavaScript dedicati.
 
-Non usa Swiper: in una griglia servirebbe un'istanza per card. Sono CSS più un
-listener delegato (`resources/assets/js/immobili-card.js`), caricati solo quando
-la gallery è effettivamente attiva.
+Le card accettano inoltre `ratio` (default `3:2`), applicato sia alla cover
+singola sia alla gallery, e `slide_class`, inoltrato al builder Swiper. In questo
+modo rapporto e classi delle slide restano configurabili senza uscire dall'API
+dei componenti del framework.
 
 Da dove arrivano le immagini:
 

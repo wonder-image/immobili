@@ -29,8 +29,8 @@ immobili/
 │   └── backend/             feed/sync.php, sync-log/download.php
 ├── view/
 │   ├── components/          specs · amenities · map · energy-class/
-│   │   ├── immobili/       card-* · card-media · cards-grid · cards-swiper · filters
-│   │   └── residenze/      card-* · card-media · cards-grid · cards-swiper · timeline
+│   │   ├── immobili/       card-* · cards-grid · cards-swiper · filters
+│   │   └── residenze/      card-* · cards-grid · cards-swiper · timeline
 │   ├── pages/frontend/      immobili/{list,detail,sold} · residenze/{list,detail}
 │   ├── pages/backend/       immobili/{form,show}
 │   └── layout/frontend/     immobili.main.php
@@ -53,6 +53,7 @@ immobili/
   etichette, immagini, descrizione nella lingua corrente, GeoJSON).
 - **Card di reparto** (`view/components/{immobili,residenze}/`): ogni reparto legge i propri dati
   nativi e possiede varianti `card-*`, una collezione `cards-grid` e una `cards-swiper`. Il parametro
-  `card` seleziona il file da usare senza passare da un dispatcher o da un view-model comune.
+  `card` seleziona il file da usare senza passare da un dispatcher, da un view-model comune o da un
+  componente media intermedio; ogni card usa direttamente `__ri()` oppure `__swiper()`.
 
 Vedi anche [Modello immobile](../riferimento/modello-immobile.md).

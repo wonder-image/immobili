@@ -92,15 +92,15 @@ traduzione esistente, nessuno schema tabella. **Nessuna migrazione DB.**
   gli oggetti di `ImmobileQuery::cards()`, le residenze le righe DB e un
   `ResidenzaPresenter` opzionale.
 - **Gallery sfogliabile dentro la card** (`'gallery' => true`), indipendente
-  dalla card scelta. Senza Swiper — in una griglia servirebbe un'istanza per card —
-  con `resources/assets/{css/immobili-card.css,js/immobili-card.js}` caricati
-  solo quando serve. Per le residenze le foto arrivano dalla colonna JSON già
-  letta; per gli immobili sono opt-in via `$immobile->images`, perché stanno in
-  tabella figlia e caricarle in lista costerebbe una query per riga.
-- `Immobili::scriptOnce()`, speculare a `styleOnce()`.
+  dalla card scelta. Ogni `card-*` usa direttamente `__ri()` per la cover e
+  `__swiper()` quando riceve più immagini; `ratio` e `slide_class` restano
+  configurabili attraverso gli argomenti della card e le cover vuote mantengono
+  il rapporto senza collassare. Non ci sono componenti media intermedi né
+  CSS/JavaScript dedicati. Per le residenze le foto arrivano dalla colonna JSON
+  già letta; per gli immobili sono opt-in via
+  `$immobile->images`, perché stanno in tabella figlia e caricarle in lista
+  costerebbe una query per riga.
 - `ResidenzaPresenter::previews()`: anteprime responsive della gallery.
-- Chiavi `components.{immobili,residenze}.card.gallery_prev` / `gallery_next`
-  (it/en).
 
 ### Corretto
 - Le etichette del dettaglio immobile (cucina, box auto, arredamento, infissi,

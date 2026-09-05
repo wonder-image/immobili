@@ -3,9 +3,7 @@
         "card": {
             "sold": "Venduto",
             "featured": "In evidenza",
-            "rooms": "locali",
-            "gallery_prev": "Immagine precedente",
-            "gallery_next": "Immagine successiva"
+            "rooms": "locali"
         },
         "filters": {
             "search": "Cerca",
@@ -60,9 +58,7 @@
     },
     "residenze": {
         "card": {
-            "part_of": "Parte della residenza:",
-            "gallery_prev": "Immagine precedente",
-            "gallery_next": "Immagine successiva"
+            "part_of": "Parte della residenza:"
         }
     }
 }

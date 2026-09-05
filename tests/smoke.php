@@ -503,10 +503,10 @@ $cardFiles = [
     'card-base.php',
     'card-overlay.php',
     'card-overlay-rich.php',
-    'card-media.php',
     'cards-grid.php',
     'cards-swiper.php',
 ];
+$cardVariantFiles = ['card-base.php', 'card-overlay.php', 'card-overlay-rich.php'];
 
 foreach (['immobili', 'residenze'] as $department) {
     $departmentDir = $viewDir.'/'.$department;
@@ -527,6 +527,20 @@ foreach (['immobili', 'residenze'] as $department) {
         !str_contains($departmentSources, 'CardViewModel'),
         "{$department}: le card usano i dati nativi del reparto"
     );
+
+    foreach ($cardVariantFiles as $file) {
+        $source = (string) file_get_contents($departmentDir.'/'.$file);
+        $assert(
+            str_contains($source, '__ri(') && str_contains($source, '__swiper('),
+            "{$department}/{$file}: sceglie direttamente tra __ri e __swiper"
+        );
+        $assert(
+            !str_contains($source, 'card-media')
+            && !str_contains($source, 'immobili-card.css')
+            && !str_contains($source, 'immobili-card.js'),
+            "{$department}/{$file}: nessun componente o asset media intermedio"
+        );
+    }
 
     $gridSource = (string) file_get_contents($departmentDir.'/cards-grid.php');
     $swiperSource = (string) file_get_contents($departmentDir.'/cards-swiper.php');
@@ -557,6 +571,10 @@ $assert(!is_file($moduleRoot.'/src/Catalog/CardViewModel.php'), 'CardViewModel �
 $assert(!is_file($viewDir.'/card.php'), 'il dispatcher root card.php è stato rimosso');
 $assert(!is_dir($viewDir.'/card'), 'la cartella root card/ è stata rimossa');
 $assert(!is_file($viewDir.'/cards.php'), 'il componente root cards.php è stato rimosso');
+$assert(!is_file($viewDir.'/immobili/card-media.php'), 'immobili/card-media.php è stato rimosso');
+$assert(!is_file($viewDir.'/residenze/card-media.php'), 'residenze/card-media.php è stato rimosso');
+$assert(!is_file($moduleRoot.'/resources/assets/css/immobili-card.css'), 'nessun CSS custom per le card');
+$assert(!is_file($moduleRoot.'/resources/assets/js/immobili-card.js'), 'nessun JavaScript custom per le card');
 
 if (!function_exists('e')) {
     function e(mixed $value): string
@@ -575,12 +593,32 @@ if (!function_exists('__swiper')) {
     }
 }
 
+if (!function_exists('__ri')) {
+    function __ri(string $image): \Wonder\Elements\Media\Image
+    {
+        return \Wonder\Elements\Media\Image::src($image)
+            ->skeleton()
+            ->notDraggable()
+            ->loading()
+            ->sizes(RESPONSIVE_IMAGE_SIZES)
+            ->hasWebP();
+    }
+}
+
 echo "Rendering delle card e delle collezioni native\n";
 $sampleImmobili = [
     (object) [
         'url' => '/immobili/casa-a/',
         'cover' => 'https://example.test/casa-a.jpg',
         'prettyName' => 'Casa A',
+        'images' => [
+            'https://example.test/casa-a-1.jpg',
+            'https://example.test/casa-a-2.jpg',
+        ],
+        'imagesAlt' => [
+            'https://example.test/casa-a-1.jpg' => 'Casa A uno',
+            'https://example.test/casa-a-2.jpg' => 'Casa A due',
+        ],
     ],
     (object) [
         'url' => '/immobili/casa-b/',
@@ -589,7 +627,7 @@ $sampleImmobili = [
     ],
 ];
 $sampleResidenze = [
-    ['url' => '/residenze/borgo-a/', 'nome' => 'Borgo A', 'stato' => 'in_corso', 'images' => []],
+    ['url' => '/residenze/borgo-a/', 'nome' => 'Borgo A', 'stato' => 'in_corso', 'images' => ['borgo-a-1.jpg', 'borgo-a-2.jpg']],
     ['url' => '/residenze/borgo-b/', 'nome' => 'Borgo B', 'stato' => 'in_corso', 'images' => []],
 ];
 
@@ -613,12 +651,81 @@ foreach (['cards-grid', 'cards-swiper'] as $collection) {
     );
 }
 
+$immobileGalleryHtml = \Wonder\View\View::component(
+    $viewDir.'/immobili/card-base.php',
+    ['args' => [
+        'immobile' => $sampleImmobili[0],
+        'gallery' => true,
+        'ratio' => '4:3',
+        'slide_class' => 'immobile-test-slide',
+    ]]
+);
+$residenzaGalleryHtml = \Wonder\View\View::component(
+    $viewDir.'/residenze/card-base.php',
+    ['args' => [
+        'residenza' => $sampleResidenze[0],
+        'gallery' => true,
+        'ratio' => '4:3',
+        'slide_class' => 'residenza-test-slide',
+    ]]
+);
+$singleCoverHtml = \Wonder\View\View::component(
+    $viewDir.'/immobili/card-base.php',
+    ['args' => ['immobile' => $sampleImmobili[1], 'ratio' => '4:3']]
+);
+$emptyOverlayHtml = \Wonder\View\View::component(
+    $viewDir.'/residenze/card-overlay.php',
+    ['args' => ['residenza' => $sampleResidenze[1]]]
+);
+$externalGallery = clone $sampleImmobili[0];
+$externalGallery->images = [
+    'https://cdn.remote.test/casa-1.jpg',
+    'https://cdn.remote.test/casa-2.jpg',
+];
+$externalGallery->imagesAlt = [
+    'https://cdn.remote.test/casa-1.jpg' => 'Casa remota uno',
+    'https://cdn.remote.test/casa-2.jpg' => 'Casa remota due',
+];
+$externalGalleryHtml = \Wonder\View\View::component(
+    $viewDir.'/immobili/card-base.php',
+    ['args' => ['immobile' => $externalGallery, 'gallery' => true]]
+);
+
+$assert(
+    str_contains($immobileGalleryHtml, 'swiper-button-next')
+    && str_contains($immobileGalleryHtml, 'aspect-ratio: 4 / 3')
+    && str_contains($immobileGalleryHtml, 'immobile-test-slide'),
+    'la card immobile usa __swiper con ratio e classi slide configurabili'
+);
+$assert(
+    str_contains($residenzaGalleryHtml, 'swiper-button-next')
+    && str_contains($residenzaGalleryHtml, 'aspect-ratio: 4 / 3')
+    && str_contains($residenzaGalleryHtml, 'residenza-test-slide'),
+    'la card residenza usa __swiper con ratio e classi slide configurabili'
+);
+$assert(
+    str_contains($singleCoverHtml, '<img src="https://example.test/casa-b.jpg"')
+    && !str_contains($singleCoverHtml, 'casa-b-240')
+    && str_contains($singleCoverHtml, 'aspect-ratio: 4 / 3'),
+    'la cover singola usa __ri, rispetta il ratio e non inventa varianti della preview'
+);
+$assert(
+    str_contains($emptyOverlayHtml, 'aspect-ratio: 3 / 2')
+    && str_contains($emptyOverlayHtml, 'Borgo B'),
+    'una card overlay senza immagini mantiene il rapporto e non collassa'
+);
+$assert(
+    str_contains($externalGalleryHtml, 'src="https://cdn.remote.test/casa-1.jpg"')
+    && !str_contains($externalGalleryHtml, 'casa-1-1440'),
+    'la gallery conserva gli URL remoti senza inventare varianti responsive'
+);
+
 $fallbackHtml = \Wonder\View\View::component(
     $viewDir.'/immobili/cards-grid.php',
     ['args' => ['immobili' => [$sampleImmobili[0]], 'card' => '../card-overlay']]
 );
 $assert(
-    str_contains($fallbackHtml, 'bg-white') && !str_contains($fallbackHtml, 'immobili-card--overlay'),
+    str_contains($fallbackHtml, 'bg-white') && !str_contains($fallbackHtml, 'bg-black-o-70'),
     'un nome card non valido non evade la cartella e ricade su card-base'
 );
 
@@ -693,22 +800,9 @@ foreach (array_reverse([
 }
 
 $assert(
-    method_exists(\Wonder\Plugin\Immobili\Immobili::class, 'scriptOnce'),
-    'Immobili::scriptOnce esiste, speculare a styleOnce'
+    !method_exists(\Wonder\Plugin\Immobili\Immobili::class, 'scriptOnce'),
+    'Immobili::scriptOnce non serve senza JavaScript custom'
 );
-
-foreach (['it', 'en'] as $locale) {
-    $components = json_decode((string) file_get_contents($moduleRoot."/lang/{$locale}/components.json"), true);
-
-    foreach (['immobili', 'residenze'] as $department) {
-        foreach (['gallery_prev', 'gallery_next'] as $key) {
-            $assert(
-                isset($components[$department]['card'][$key]),
-                "lang/{$locale}: components.{$department}.card.{$key} tradotta"
-            );
-        }
-    }
-}
 
 echo "Call-site delle collezioni di reparto\n";
 $collectionCallSites = [
@@ -951,14 +1045,12 @@ foreach ([
     'components/immobili/card-base.php',
     'components/immobili/card-overlay.php',
     'components/immobili/card-overlay-rich.php',
-    'components/immobili/card-media.php',
     'components/immobili/cards-grid.php',
     'components/immobili/cards-swiper.php',
     'components/residenze/timeline.php',
     'components/residenze/card-base.php',
     'components/residenze/card-overlay.php',
     'components/residenze/card-overlay-rich.php',
-    'components/residenze/card-media.php',
     'components/residenze/cards-grid.php',
     'components/residenze/cards-swiper.php',
     'pages/frontend/immobili/list.php', 'pages/frontend/immobili/detail.php',
@@ -970,6 +1062,7 @@ foreach ([
 
 foreach ([
     'components/card.php', 'components/card', 'components/cards.php',
+    'components/immobili/card-media.php', 'components/residenze/card-media.php',
     'components/features.php', 'components/filters.php',
     'components/residenze/features.php', 'components/residenze/card.php',
     'pages/frontend/list.php', 'pages/frontend/detail.php', 'pages/frontend/sold.php',
