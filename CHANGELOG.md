@@ -5,6 +5,11 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ## [2.0.0] - non ancora rilasciato
 
+### Compatibilità Composer
+
+- Il modulo accetta sia le release `^2.2` sia `dev-main` di
+  `wonder-image/app`, senza richiedere alias di versione nei siti in sviluppo.
+
 ### ⚠️ Breaking — path delle view e namespace
 
 Il modulo è stato riorganizzato su **due reparti speculari** (immobili e
