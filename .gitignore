@@ -4,7 +4,4 @@ composer.phar
 *.log
 *.claude
 /resources/assets/upload/
-tests/*
-!tests/run.sh
-!tests/resource-form.php
-!tests/residenze.php
+tests/
