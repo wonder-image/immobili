@@ -1,5 +1,6 @@
 <?php
 
+use Wonder\View\View;
 use Wonder\App\Dependencies;
 use Wonder\Elements\Components\Accordion;
 use Wonder\Elements\Components\Container;
@@ -227,5 +228,14 @@ Immobili::layout('main');
         <?= __gallery($slides) ?>
     </div>
 </section>
+
+<?=View::component('frontend.sections.contact-form', [
+        'type' => 'interested_property',
+        'immobileId' => (string) ($row['id'] ?? ''),
+        'showMap' => false,
+        'title' => __t('components.forms.contact.interested_title'),
+        'subtitle' => __t('components.forms.contact.interested_subtitle'),
+    ]);
+?>
 
 <?php \Wonder\View\View::end(); ?>
