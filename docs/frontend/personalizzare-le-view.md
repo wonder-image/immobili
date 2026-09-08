@@ -205,3 +205,35 @@ $immobile->planimetrieAlt;  // ['planimetria1.jpg' => 'Titolo', ...]
 
 Le liste rispettano il campo `position` di `immobili_immagini`; il valore delle mappe `*Alt`
 proviene dal campo `titolo` ed è utilizzabile anche come caption.
+
+### Factory dei media delle card
+
+`Wonder\Plugin\Immobili\Media\CardMedia` prepara il media senza renderizzarlo.
+I metodi `immobile($immobile, $options)` e
+`residenza($residenza, $options, $presenter)` mantengono distinta la lettura dei dati.
+Entrambi restituiscono un `Container` per l'immagine singola o uno `Swiper` quando
+`gallery` è attivo e ci sono almeno due immagini. Senza immagini il container resta vuoto.
+
+```php
+use Wonder\Plugin\Immobili\Media\CardMedia;
+
+$media = CardMedia::immobile($immobile, [
+    'gallery' => true,
+    'ratio' => '3:2',
+    'image_class' => ['mia-immagine'],
+    'slide_class' => ['mia-slide'],
+]);
+
+$media->addClass('mio-contenitore');
+echo $media->render('wonder');
+```
+
+`image_class` accetta una stringa o un array e si applica alle immagini, mentre
+`slide_class` si applica ai wrapper delle slide. Le opzioni possono essere passate
+anche in `card_args` di griglie e caroselli. Con `image_class` valorizzato, la gallery
+usa slide composte da container e immagini; la factory ne imposta il ratio iniziale.
+In questa modalità le funzioni Swiper riservate alle immagini, come miniature e
+lightbox, non sono disponibili.
+
+Per dati già normalizzati è disponibile
+`CardMedia::make($images, $cover, $alt, $options)`, dove `$images` è una mappa URL → alt.
