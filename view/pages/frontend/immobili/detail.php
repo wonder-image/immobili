@@ -35,6 +35,7 @@ if ($residenzaId > 0) {
 }
 
 $PAGE_KEY = 'immobili.detail';
+$GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 $SEO->title = $immobile->titolo.' - '.$SOCIETY->name;
 $SEO->description = mb_substr(strip_tags((string) ($immobile->descrizione ?: $immobile->prettyName)), 0, 160);
 $SEO->url = (string) $immobile->url;
@@ -45,10 +46,6 @@ $SEO->breadcrumb = [
     $SEO->url => $immobile->titolo
 ];
 
-
-$GLOBALS['PAGE_KEY'] = $PAGE_KEY;
-
-// Le colonne media sono gia normalizzate e validate da Immobile::decorate().
 $videos = array_values(array_unique(array_merge(
     $row['youtube'] ?? [],
     $row['video'] ?? []

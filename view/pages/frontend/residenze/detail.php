@@ -1,15 +1,9 @@
 <?php
 
-/**
- * Dettaglio residenza: hero gallery (__swiper), descrizione, timeline, features,
- * unità, classe energetica, capitolato, immobili collegati, mappa, link sito esterno.
- */
-
 use Wonder\App\Dependencies;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Support\EnergyScale;
 use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 
@@ -21,62 +15,26 @@ if (!is_array($row) || !isset($row['id'])) {
     exit;
 }
 
-$presenter = new ResidenzaPresenter();
-$prettyAddress = $presenter->prettyAddress($row);
+$residenza = (new ResidenzaPresenter())->present($row);
 
-// __swiper() vuole una mappa [src => alt]; ResidenzaPresenter::images() torna
-// una lista di {src, alt} (stesso pattern di ImmobilePresenter::imagesAlt).
-$slides = [];
-foreach ($presenter->images($row) as $image) {
-    $slides[(string) $image['src']] = (string) $image['alt'];
-}
-
-$features = is_array($row['features'] ?? null) ? $row['features'] : [];
-
-$nome = (string) ($row['nome'] ?? '');
-$sitoUrl = (string) ($row['sito_url'] ?? '');
-$stato = ResidenzaPresenter::stato($row);
-$statoLabel = (string) __t('pages.residenze.stato.'.$stato);
-
-$inizio = ResidenzaPresenter::timelineLabel((int) ($row['inizio_anno'] ?? 0), (int) ($row['inizio_mese'] ?? 0));
-$fine = ResidenzaPresenter::timelineLabel((int) ($row['fine_anno'] ?? 0), (int) ($row['fine_mese'] ?? 0));
-
-$logoFile = ResidenzaPresenter::firstFile($row['logo'] ?? '');
-$logoUrl = $logoFile !== '' ? ResidenzaPresenter::imageUrl($logoFile) : '';
-
-$capitolatoFile = ResidenzaPresenter::firstFile($row['capitolato'] ?? '');
-$capitolatoUrl = $capitolatoFile !== '' ? ResidenzaPresenter::imageUrl($capitolatoFile) : '';
-
-// Classe energetica: la residenza dichiara solo la classe (niente IPE né legge),
-// la scala la deduce da quella. null se il campo è vuoto → il badge non esce.
-$energyScale = EnergyScale::make((string) ($row['classe_energetica'] ?? ''), '', '');
-
-// Immobili collegati (visibili) via FK.
 $linkedRows = Immobile::safeFind(['residenza_id' => (int) $row['id'], 'visible' => 'true', 'deleted' => 'false'], null, 'creation', 'DESC');
 $linkedRows = is_array($linkedRows) ? $linkedRows : [];
 $linkedItems = (new ImmobileQuery())->cards($linkedRows);
 
-// Mappa (se coordinate presenti): geo_json dal presenter, unica fonte
-// condivisa con la lista e con il componente map.php.
-$feature = $presenter->geoJson($row);
-$geojson = $feature !== [] ? [$feature] : [];
-
 $PAGE_KEY = 'residenze.detail';
-$SEO->title = $nome.' - '.$SOCIETY->name;
-$SEO->description = mb_substr(strip_tags((string) ($row['descrizione_breve'] ?? $nome)), 0, 160);
-$SEO->url = __r('residenze.detail', ['slug' => $slug]);
-$SEO->image = $presenter->cover($row);
+$GLOBALS['PAGE_KEY'] = $PAGE_KEY;
+$SEO->title = $residenza->nome.' - '.$SOCIETY->name;
+$SEO->description = mb_substr(strip_tags($residenza->descrizione_breve), 0, 160);
+$SEO->url = $residenza->url;
+$SEO->image = $residenza->cover;
 $SEO->breadcrumb = [
     __r('home') => __t('components.navigation.home'),
     __r('residenze.list') => __t('pages.residenze.list.title'),
-    $SEO->url => $nome,
+    $SEO->url => $residenza->nome,
 ];
-$GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
-if ($slides !== []) {
-    Dependencies::swiper();
-    Dependencies::fancyapps();
-}
+Dependencies::swiper();
+Dependencies::fancyapps();
 
 Immobili::layout('main');
 
@@ -89,28 +47,32 @@ Immobili::layout('main');
             <a href="<?= e(__r('residenze.list')) ?>" class="text-small"><i class="bi bi-arrow-left"></i> <?= e(__t('pages.residenze.detail.back')) ?></a>
         </div>
 
-        <?php if ($logoUrl !== '') { ?>
-            <img src="<?= e($logoUrl) ?>" alt="<?= e($nome) ?>" class="w-15 w-p-30 mt-3">
+        <?php if ($residenza->logoUrl !== '') { ?>
+            <img src="<?= e($residenza->logoUrl) ?>" alt="<?= e($residenza->nome) ?>" class="w-15 w-p-30 mt-3">
         <?php } ?>
 
-        <h1 class="title-big mt-3"><?= e($nome) ?></h1>
+        <h1 class="title-big mt-3"><?= e($residenza->nome) ?></h1>
 
-        <?php if ($prettyAddress !== '') { ?>
-            <p class="text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e($prettyAddress) ?></p>
+        <?php if ($residenza->prettyAddress !== '') { ?>
+            <p class="text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e($residenza->prettyAddress) ?></p>
         <?php } ?>
 
         <div class="mt-3">
-            <?php Immobili::component('residenze/timeline', ['inizio' => $inizio, 'fine' => $fine, 'stato' => $statoLabel]); ?>
+            <?php Immobili::component('residenze/timeline', [
+                'inizio' => $residenza->inizio,
+                'fine' => $residenza->fine,
+                'stato' => (string) __t('pages.residenze.stato.'.$residenza->stato),
+            ]); ?>
         </div>
 
     </div>
 </section>
 
-<?php if ($slides !== []) { ?>
+<?php if ($residenza->imagesAlt !== []) { ?>
 <section class="pt-0">
     <div class="content">
         <div class="w-100 o-hidden">
-            <?= __swiper($slides)->id('residenza-swiper')
+            <?= __swiper($residenza->imagesAlt)->id('residenza-swiper')
                     ->ratio('3:2')
                     ->thumbnails()
                     ->thumbsRatio('3:2')
@@ -127,39 +89,39 @@ Immobili::layout('main');
 
             <div class="col-2 col-p-1">
 
-                <?php if (($row['descrizione_lunga'] ?? '') !== '') { ?>
-                    <div class="text"><?= nl2br(e((string) $row['descrizione_lunga'])) ?></div>
+                <?php if ($residenza->descrizione_lunga !== '') { ?>
+                    <div class="text"><?= nl2br(e($residenza->descrizione_lunga)) ?></div>
                 <?php } ?>
 
-                <?php if ($features !== []) { ?>
+                <?php if ($residenza->features !== []) { ?>
                     <h2 class="subtitle mt-6"><?= e(__t('forms.residenze.sections.features')) ?></h2>
-                    <div class="mt-3"><?php Immobili::component('amenities', ['features' => $features]); ?></div>
+                    <div class="mt-3"><?php Immobili::component('amenities', ['features' => $residenza->features]); ?></div>
                 <?php } ?>
 
             </div>
 
             <aside class="d-grid gap-4">
 
-                <?php if ((int) ($row['unita_abitative'] ?? 0) > 0) { ?>
+                <?php if ($residenza->unita_abitative > 0) { ?>
                     <div class="p-4 b-r-15 bg-white b-shadow">
                         <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.units')) ?></div>
-                        <div class="title"><?= (int) $row['unita_abitative'] ?></div>
+                        <div class="title"><?= $residenza->unita_abitative ?></div>
                     </div>
                 <?php } ?>
 
-                <?php if ($energyScale !== null) { ?>
+                <?php if ($residenza->energyScale !== null) { ?>
                     <div class="p-4 b-r-15 bg-white b-shadow">
                         <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.energy')) ?></div>
-                        <div class="mt-2"><?php Immobili::component('energy-class/badge', ['scale' => $energyScale]); ?></div>
+                        <div class="mt-2"><?php Immobili::component('energy-class/badge', ['scale' => $residenza->energyScale]); ?></div>
                     </div>
                 <?php } ?>
 
-                <?php if ($capitolatoUrl !== '') { ?>
-                    <a href="<?= e($capitolatoUrl) ?>" target="_blank" rel="noopener" class="btn btn-dark w-100"><i class="bi bi-file-earmark-pdf"></i> <?= e(__t('pages.residenze.detail.download_capitolato')) ?></a>
+                <?php if ($residenza->capitolatoUrl !== '') { ?>
+                    <a href="<?= e($residenza->capitolatoUrl) ?>" target="_blank" rel="noopener" class="btn btn-dark w-100"><i class="bi bi-file-earmark-pdf"></i> <?= e(__t('pages.residenze.detail.download_capitolato')) ?></a>
                 <?php } ?>
 
-                <?php if ($sitoUrl !== '') { ?>
-                    <a href="<?= e($sitoUrl) ?>" target="_blank" rel="noopener" class="btn btn-primary w-100"><i class="bi bi-box-arrow-up-right"></i> <?= e(__t('pages.residenze.detail.visit_site')) ?></a>
+                <?php if ($residenza->sito_url !== '') { ?>
+                    <a href="<?= e($residenza->sito_url) ?>" target="_blank" rel="noopener" class="btn btn-primary w-100"><i class="bi bi-box-arrow-up-right"></i> <?= e(__t('pages.residenze.detail.visit_site')) ?></a>
                 <?php } ?>
 
             </aside>
@@ -180,10 +142,10 @@ Immobili::layout('main');
 </section>
 <?php } ?>
 
-<?php if ($geojson !== []) { ?>
+<?php if ($residenza->geo_json !== []) { ?>
 <section class="pt-0">
     <div class="content">
-        <?php Immobili::component('map', ['features' => $geojson, 'markerMode' => 'icon']); ?>
+        <?php Immobili::component('map', ['features' => [$residenza->geo_json], 'markerMode' => 'icon']); ?>
     </div>
 </section>
 <?php } ?>

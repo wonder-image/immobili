@@ -7,6 +7,7 @@ use Wonder\Plugin\Immobili\Media\MediaUrl;
 use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Provincia;
+use Wonder\Plugin\Immobili\Support\EnergyScale;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 use Wonder\Support\Prettify\Address;
 
@@ -18,6 +19,40 @@ use Wonder\Support\Prettify\Address;
  */
 final class ResidenzaPresenter
 {
+    /**
+     * Presentazione completa per il dettaglio, come ImmobilePresenter::present().
+     *
+     * @param array<string, mixed> $row
+     */
+    public function present(array $row): object
+    {
+        $data = $row;
+        $data['nome'] = (string) ($row['nome'] ?? '');
+        $data['sito_url'] = (string) ($row['sito_url'] ?? '');
+        $data['descrizione_breve'] = (string) ($row['descrizione_breve'] ?? $data['nome']);
+        $data['descrizione_lunga'] = (string) ($row['descrizione_lunga'] ?? '');
+        $data['unita_abitative'] = (int) ($row['unita_abitative'] ?? 0);
+        $data['features'] = is_array($row['features'] ?? null) ? $row['features'] : [];
+        $data['prettyAddress'] = $this->prettyAddress($row);
+        $data['url'] = __r('residenze.detail', ['slug' => (string) ($row['slug'] ?? '')]);
+
+        $images = $this->images($row);
+        $data['images'] = array_column($images, 'src');
+        $data['imagesAlt'] = array_column($images, 'alt', 'src');
+        $data['image'] = $data['images'][0] ?? '';
+        $data['cover'] = $this->cover($row);
+        $data['logoUrl'] = self::imageUrl(self::firstFile($row['logo'] ?? ''));
+        $data['capitolatoUrl'] = self::imageUrl(self::firstFile($row['capitolato'] ?? ''));
+
+        $data['inizio'] = self::timelineLabel((int) ($row['inizio_anno'] ?? 0), (int) ($row['inizio_mese'] ?? 0));
+        $data['fine'] = self::timelineLabel((int) ($row['fine_anno'] ?? 0), (int) ($row['fine_mese'] ?? 0));
+        $data['stato'] = self::stato($row);
+        $data['energyScale'] = EnergyScale::make((string) ($row['classe_energetica'] ?? ''), '', '');
+        $data['geo_json'] = $this->geoJson($row);
+
+        return (object) $data;
+    }
+
     /** @param array<string, mixed> $row */
     public function prettyAddress(array $row): string
     {
