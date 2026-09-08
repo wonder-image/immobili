@@ -21,11 +21,13 @@ $SEO->breadcrumb = [
 
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
-$query = new ResidenzaQuery();
-$filters = $query->filters($_GET);
-$rows = Residenza::safeFind($query->where($filters), null, 'position', 'ASC');
-$rows = is_array($rows) && isset($rows['id']) ? [$rows] : (is_array($rows) ? $rows : []);
 $presenter = new ResidenzaPresenter();
+$query = new ResidenzaQuery($presenter);
+$filters = $query->filters($_GET);
+$where = $query->where($filters);
+$rows = Residenza::safeFind($where, null, 'position', 'ASC');
+$rows = is_array($rows) && isset($rows['id']) ? [$rows] : (is_array($rows) ? $rows : []);
+$geojson = $query->geojson($where);
 
 Immobili::layout('main');
 
@@ -39,6 +41,14 @@ Immobili::layout('main');
         </div>
     </div>
 </section>
+
+<?php if (!empty($geojson)) { ?>
+<section>
+    <div class="content">
+        <?php Immobili::component('map', ['features' => $geojson, 'markerMode' => 'icon']); ?>
+    </div>
+</section>
+<?php } ?>
 
 <section>
     <div class="content">

@@ -196,6 +196,88 @@ final class ResidenzaPresenter
     }
 
     /**
+     * Feature GeoJSON (Point) della residenza, pronta per il componente
+     * `map.php`. Fonte unica del `geo_json` delle residenze (usata sia dal
+     * dettaglio sia dalla collezione di `ResidenzaQuery::geojson()`). '[]' se
+     * mancano le coordinate. Mirror di `ImmobilePresenter::geoJson()`; le
+     * residenze non hanno prezzo/superficie da mostrare sul marker.
+     *
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
+    public function geoJson(array $row): array
+    {
+        $lat = (float) ($row['latitudine'] ?? 0);
+        $lng = (float) ($row['longitudine'] ?? 0);
+
+        if ($lat === 0.0 || $lng === 0.0) {
+            return [];
+        }
+
+        $nome = trim((string) ($row['nome'] ?? ''));
+        $name = $nome !== '' ? $nome : ($this->prettyAddress($row) ?: 'Residenza');
+
+        $url = trim((string) ($row['url'] ?? ''));
+        $slug = trim((string) ($row['slug'] ?? ''));
+        if ($url === '' && $slug !== '') {
+            $url = __r('residenza.detail', ['slug' => $slug]);
+        }
+
+        return [
+            'type' => 'Feature',
+            'geometry' => [
+                'type' => 'Point',
+                'coordinates' => [$lng, $lat],
+            ],
+            'properties' => [
+                'id'           => (int) ($row['id'] ?? 0),
+                'name'         => $name,
+                'price'        => '',
+                'surface'      => '',
+                'url'          => $url,
+                'cover'        => $this->cover($row),
+                'category'     => '',
+                'variant'      => $this->markerVariant($row),
+                'variantLabel' => $this->markerVariantLabel($row),
+            ],
+        ];
+    }
+
+    /**
+     * Variante visuale del marker (le CSS supportano default|featured|sold).
+     *
+     * @param array<string, mixed> $row
+     */
+    private function markerVariant(array $row): string
+    {
+        if (self::isTrue($row['sold'] ?? '')) {
+            return 'sold';
+        }
+
+        if (self::isTrue($row['evidence'] ?? '')) {
+            return 'featured';
+        }
+
+        return 'default';
+    }
+
+    /**
+     * Etichetta di stato mostrata nella scheda del marker.
+     *
+     * @param array<string, mixed> $row
+     */
+    private function markerVariantLabel(array $row): string
+    {
+        return match (self::stato($row)) {
+            'venduto'    => 'Venduto',
+            'in_arrivo'  => 'In arrivo',
+            'in_corso'   => 'In corso',
+            'completato' => 'Completato',
+            default      => '',
+        };
+    }
+
+    /**
      * Filename della gallery decodificati dalla colonna JSON `images`.
      *
      * @param array<string, mixed> $row

@@ -2,9 +2,18 @@
 
 namespace Wonder\Plugin\Immobili\Catalog;
 
+use Wonder\Plugin\Immobili\Models\Residenza;
+
 /** Filtri frontend delle residenze, applicati prima della lettura delle righe. */
 final class ResidenzaQuery
 {
+    private ResidenzaPresenter $presenter;
+
+    public function __construct(?ResidenzaPresenter $presenter = null)
+    {
+        $this->presenter = $presenter ?? new ResidenzaPresenter();
+    }
+
     /** @return array{stato: string, stato_appartamenti: string} */
     public function filters(array $input): array
     {
@@ -48,5 +57,49 @@ final class ResidenzaQuery
         }
 
         return implode(' AND ', $clauses);
+    }
+
+    /**
+     * Feature GeoJSON per la mappa su TUTTE le residenze che soddisfano
+     * $where. Ogni riga è mappata dal presenter, unica fonte del `geo_json`;
+     * le residenze senza coordinate vengono scartate. Mirror di
+     * `ImmobileQuery::geojson()`, condiviso da `pages/frontend/residenze/list.php`.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function geojson(string $where): array
+    {
+        $cols = 'id, nome, slug, comune_id, comune_nome, indirizzo, civico, cap, '
+            .'latitudine, longitudine, sold, evidence, stato, images, '
+            .'inizio_anno, inizio_mese, fine_anno, fine_mese';
+
+        $rows = Residenza::find($where, null, 'position', 'ASC', $cols);
+        $features = [];
+
+        foreach ($this->rows($rows) as $row) {
+            $feature = $this->presenter->geoJson($row);
+
+            if ($feature !== []) {
+                $features[] = $feature;
+            }
+        }
+
+        return $features;
+    }
+
+    /**
+     * Normalizza il risultato di `find()` a lista di righe: `find()` con limit
+     * nullo torna una lista, ma una singola riga arriva come array associativo.
+     *
+     * @param mixed $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function rows(mixed $rows): array
+    {
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return isset($rows['id']) ? [$rows] : array_values($rows);
     }
 }

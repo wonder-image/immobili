@@ -56,16 +56,10 @@ $linkedRows = Immobile::safeFind(['residenza_id' => (int) $row['id'], 'visible' 
 $linkedRows = is_array($linkedRows) ? $linkedRows : [];
 $linkedItems = (new ImmobileQuery())->cards($linkedRows);
 
-// Mappa (se coordinate presenti).
-$lat = trim((string) ($row['latitudine'] ?? ''));
-$lon = trim((string) ($row['longitudine'] ?? ''));
-$geojson = ($lat !== '' && $lon !== '')
-    ? [[
-        'type' => 'Feature',
-        'geometry' => ['type' => 'Point', 'coordinates' => [(float) $lon, (float) $lat]],
-        'properties' => ['title' => $nome],
-    ]]
-    : [];
+// Mappa (se coordinate presenti): geo_json dal presenter, unica fonte
+// condivisa con la lista e con il componente map.php.
+$feature = $presenter->geoJson($row);
+$geojson = $feature !== [] ? [$feature] : [];
 
 $PAGE_KEY = 'residenze.detail';
 $SEO->title = $nome.' - '.$SOCIETY->name;
