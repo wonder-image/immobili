@@ -34,11 +34,15 @@ Route::area('frontend')
             ->prefix('/residenze')
             ->group(function () {
 
-                // Lista residenze (griglia + timeline).
                 Route::get('/', Immobili::viewPath('pages/frontend/residenze/list.php'))
                     ->name('list');
 
-                // Dettaglio residenza per slug (deve restare l'ultima del gruppo).
+            });
+
+        Route::name('residenza.')
+            ->prefix('/residenza')
+            ->group(function () {
+
                 Route::get('/{slug}/', Immobili::viewPath('pages/frontend/residenze/detail.php'))
                     ->name('detail');
 

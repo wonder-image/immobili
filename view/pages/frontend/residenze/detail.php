@@ -22,6 +22,7 @@ if (!is_array($row) || !isset($row['id'])) {
 }
 
 $presenter = new ResidenzaPresenter();
+$prettyAddress = $presenter->prettyAddress($row);
 
 // __swiper() vuole una mappa [src => alt]; ResidenzaPresenter::images() torna
 // una lista di {src, alt} (stesso pattern di ImmobilePresenter::imagesAlt).
@@ -100,8 +101,8 @@ Immobili::layout('main');
 
         <h1 class="title-big mt-3"><?= e($nome) ?></h1>
 
-        <?php if (($row['comune_nome'] ?? '') !== '') { ?>
-            <p class="text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e((string) $row['comune_nome']) ?><?php if (($row['indirizzo'] ?? '') !== '') { echo ', '.e((string) $row['indirizzo']); } ?></p>
+        <?php if ($prettyAddress !== '') { ?>
+            <p class="text tx-muted mt-1"><i class="bi bi-geo-alt"></i> <?= e($prettyAddress) ?></p>
         <?php } ?>
 
         <div class="mt-3">

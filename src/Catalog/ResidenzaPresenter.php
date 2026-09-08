@@ -5,6 +5,10 @@ namespace Wonder\Plugin\Immobili\Catalog;
 use Wonder\App\Support\MediaFileManager;
 use Wonder\Plugin\Immobili\Media\MediaUrl;
 use Wonder\Plugin\Immobili\Models\Residenza;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Provincia;
+use Wonder\Plugin\Immobili\Support\Taxonomy;
+use Wonder\Support\Prettify\Address;
 
 /**
  * View-model della residenza: cover (prima immagine), URL/anteprime immagini,
@@ -14,6 +18,42 @@ use Wonder\Plugin\Immobili\Models\Residenza;
  */
 final class ResidenzaPresenter
 {
+    /** @param array<string, mixed> $row */
+    public function prettyAddress(array $row): string
+    {
+        $street = trim((string) ($row['indirizzo'] ?? ''));
+        $number = trim((string) ($row['civico'] ?? ''));
+        $comuneRow = Taxonomy::byId(Comune::class, (int) ($row['comune_id'] ?? 0));
+        $comune = trim((string) ($comuneRow['nome'] ?? ''));
+        if ($comune === '') {
+            $comune = trim((string) ($row['comune_nome'] ?? ''));
+        }
+        $provincia = Taxonomy::byId(Provincia::class, (int) ($comuneRow['provincia_id'] ?? 0));
+        $address = Address::prettify(
+            $street,
+            $number,
+            trim((string) ($row['cap'] ?? '')),
+            $comune,
+            (string) ($provincia['sigla'] ?? ''),
+            ''
+        );
+
+        if ($address->line !== '--') {
+            return $address->line;
+        }
+
+        // Come per gli immobili, conserva i dati disponibili se incompleti.
+        $parts = [];
+        if ($street !== '') {
+            $parts[] = $number !== '' ? $street.', '.$number : $street;
+        }
+        if ($comune !== '') {
+            $parts[] = $comune;
+        }
+
+        return implode(' — ', $parts);
+    }
+
     /** Etichetta timeline: "" se anno assente, "2025" o "03/2025". */
     public static function timelineLabel(?int $anno, ?int $mese): string
     {

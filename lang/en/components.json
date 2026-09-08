@@ -55,6 +55,17 @@
     "residenze": {
         "card": {
             "part_of": "Part of the development:"
+        },
+        "filters": {
+            "all": "All",
+            "status": "Status",
+            "under_construction": "Under construction",
+            "completed": "Completed",
+            "apartment_status": "Apartment availability",
+            "available": "Available",
+            "unavailable": "Unavailable",
+            "reset": "Reset",
+            "apply": "Filter"
         }
     }
 }

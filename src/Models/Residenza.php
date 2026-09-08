@@ -5,6 +5,7 @@ namespace Wonder\Plugin\Immobili\Models;
 use LogicException;
 use Wonder\App\Model;
 use Wonder\Data\UploadSchema as Field;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaQuery;
 
 /**
  * Residenza / cantiere gestito dall'agenzia: struttura fatta costruire o di cui
@@ -151,7 +152,11 @@ final class Residenza extends Model
     public static function decorate(array $row): array
     {
         $slug = (string) ($row['slug'] ?? '');
-        $row['url'] = __r('residenze.detail', ['slug' => $slug]);
+        $row['url'] = __r('residenza.detail', ['slug' => $slug]);
+        $id = (int) ($row['id'] ?? 0);
+        $row['appartamenti_disponibili'] = $id > 0
+            ? (int) sqlCount('immobili', '`immobili`.`residenza_id` = '.$id.' AND '.ResidenzaQuery::availableApartmentsWhere())
+            : 0;
 
         return $row;
     }

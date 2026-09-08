@@ -58,7 +58,7 @@
                 "title": "Developments",
                 "description": "The residential developments and construction sites we manage."
             },
-            "empty": "No developments at the moment."
+            "empty": "No residences found matching these search criteria."
         },
         "detail": {
             "back": "Back to developments",

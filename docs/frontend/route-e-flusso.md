@@ -11,6 +11,11 @@
 
 Gli slug localizzati sono definiti in `lang/{it,en}/urls.json` e risolti con `__r('immobili.list')`.
 
+Le residenze espongono `residenze.list` (`/residenze/`) e `residenze.detail`
+(`/residenze/{slug}/`). La lista supporta i parametri GET `stato` e
+`stato_appartamenti`: vedere [Filtri delle residenze](filtri-residenze.md) per
+tutte le combinazioni, i criteri di calcolo e gli esempi di query PHP.
+
 ## Flusso della lista
 
 1. `context.php` legge i filtri dalla query string (`comune`, `contratto`, `prezzo_min`, …).

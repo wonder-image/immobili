@@ -25,6 +25,7 @@ if ($residenza === null) {
 $presenter = ($args['presenter'] ?? null) instanceof ResidenzaPresenter
     ? $args['presenter']
     : new ResidenzaPresenter();
+$prettyAddress = $presenter->prettyAddress($residenza);
 $stato = ResidenzaPresenter::stato($residenza);
 $timeline = trim(
     ResidenzaPresenter::timelineLabel(
@@ -51,8 +52,8 @@ $media = CardMedia::residenza($residenza, $args, $presenter);
 
         <div class="p-a bottom start w-100 p-4 d-grid gap-1 bg-black-o-70 tx-white">
             <div class="text fw-600"><?= e((string) ($residenza['nome'] ?? '')) ?></div>
-            <?php if (trim((string) ($residenza['comune_nome'] ?? '')) !== '') { ?>
-                <div class="text-small"><i class="bi bi-geo-alt"></i> <?= e((string) $residenza['comune_nome']) ?></div>
+            <?php if ($prettyAddress !== '') { ?>
+                <div class="text-small"><i class="bi bi-geo-alt"></i> <?= e($prettyAddress) ?></div>
             <?php } ?>
             <?php if ($timeline !== '') { ?>
                 <div class="d-flex gap-3 text-small mt-1">

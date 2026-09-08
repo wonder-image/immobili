@@ -5,8 +5,11 @@ namespace Wonder\Plugin\Immobili\Catalog;
 use Wonder\Plugin\Immobili\Media\MediaUrl;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Provincia;
 use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
+use Wonder\Support\Prettify\Address;
 
 /**
  * Arricchisce una riga `immobili` con i campi derivati usati dalle view
@@ -384,18 +387,34 @@ final class ImmobilePresenter
      */
     private function prettyAddress(array $row, string $comune): string
     {
+        $publishAddress = immobiliIsTrue($row['pub_indirizzo'] ?? 'true');
+        $street = $publishAddress
+            ? trim((string) ($row['strada'] ?? '').' '.(string) ($row['indirizzo'] ?? ''))
+            : '';
+        $number = $publishAddress && immobiliIsTrue($row['pub_civico'] ?? '')
+            ? trim((string) ($row['civico'] ?? ''))
+            : '';
+        $comuneRow = Taxonomy::byId(Comune::class, (int) ($row['comune_id'] ?? 0));
+        $provincia = Taxonomy::byId(Provincia::class, (int) ($comuneRow['provincia_id'] ?? 0));
+        $address = Address::prettify(
+            $street,
+            $number,
+            $publishAddress ? trim((string) ($row['cap'] ?? '')) : '',
+            $comune,
+            (string) ($provincia['sigla'] ?? ''),
+            ''
+        );
+
+        if ($address->line !== '--') {
+            return $address->line;
+        }
+
+        // Il formatter richiede strada, comune e provincia: conserva i dati
+        // disponibili quando l'indirizzo è parziale o non pubblicabile.
         $parts = [];
 
-        if (immobiliIsTrue($row['pub_indirizzo'] ?? 'true')) {
-            $strada = trim((string) ($row['strada'] ?? '').' '.(string) ($row['indirizzo'] ?? ''));
-
-            if (immobiliIsTrue($row['pub_civico'] ?? '') && !empty($row['civico'])) {
-                $strada = trim($strada.', '.(string) $row['civico']);
-            }
-
-            if ($strada !== '') {
-                $parts[] = $strada;
-            }
+        if ($street !== '') {
+            $parts[] = $number !== '' ? $street.', '.$number : $street;
         }
 
         if ($comune !== '') {

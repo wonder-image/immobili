@@ -59,6 +59,17 @@
     "residenze": {
         "card": {
             "part_of": "Parte della residenza:"
+        },
+        "filters": {
+            "all": "Tutti",
+            "status": "Stato",
+            "under_construction": "In costruzione",
+            "completed": "Completata",
+            "apartment_status": "Stato appartamenti",
+            "available": "Disponibili",
+            "unavailable": "Non disponibili",
+            "reset": "Azzera",
+            "apply": "Filtra"
         }
     }
 }

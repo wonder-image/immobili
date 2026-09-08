@@ -352,6 +352,8 @@ final class Immobile extends Model
         $row = self::normalizeMediaFields($row);
         $slug = (string) ($row['slug'] ?? '');
 
+        $row['strada'] = ucwords($row['strada'] ?? '');
+
         # Url
             $row['url'] = __r('immobile.view', [ 'slug' => $slug ]);
             $row['qrcode'] = immobiliQrCodeUrl((string) ($row['external_id'] ?? ''));

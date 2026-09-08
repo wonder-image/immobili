@@ -57,7 +57,7 @@
                 "title": "Residenze",
                 "description": "Le residenze e i cantieri gestiti da noi."
             },
-            "empty": "Nessuna residenza al momento."
+            "empty": "Nessuna residenza trovata con questi criteri di ricerca."
         },
         "detail": {
             "back": "Torna alle residenze",

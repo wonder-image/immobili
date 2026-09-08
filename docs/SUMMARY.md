@@ -24,6 +24,7 @@
 ## Frontend
 
 * [Route e flusso](frontend/route-e-flusso.md)
+* [Filtri delle residenze](frontend/filtri-residenze.md)
 * [Personalizzare le view](frontend/personalizzare-le-view.md)
 
 ## Riferimento
