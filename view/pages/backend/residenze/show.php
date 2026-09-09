@@ -144,7 +144,7 @@ echo ResourceFormLayoutRenderer::renderLayout(
                     $info('Appartamenti disponibili', (int) ($RES->appartamenti_disponibili ?? 0)),
                 ])->columns(3),
 
-            ])->columns(1),
+            ])->columnSpan(2)->columns(1),
 
             (new Accordion('Descrizione'))->components([
                 new RichText(
