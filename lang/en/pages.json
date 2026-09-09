@@ -66,6 +66,8 @@
             "download_capitolato": "Download the specification sheet",
             "linked": "Properties in this development",
             "units": "Housing units",
+            "commercial_units": "Commercial units",
+            "boxes": "Garage boxes",
             "energy": "Energy class",
             "timeline": "Timeline"
         },

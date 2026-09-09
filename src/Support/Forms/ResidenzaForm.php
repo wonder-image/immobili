@@ -14,30 +14,46 @@ final class ResidenzaForm extends FormText
 {
     /** @var array<string, string> id feature → chiave lang (suffisso). */
     public const FEATURE_KEYS = [
-        'ascensore'        => 'ascensore',
-        'giardino'         => 'giardino',
-        'box_auto'         => 'box_auto',
-        'domotica'         => 'domotica',
-        'fotovoltaico'     => 'fotovoltaico',
-        'climatizzazione'  => 'climatizzazione',
-        'area_verde'       => 'area_verde',
-        'videosorveglianza'=> 'videosorveglianza',
-        'cantina'          => 'cantina',
-        'terrazzo'         => 'terrazzo',
+        'ascensore'               => 'ascensore',
+        'giardino'                => 'giardino',
+        'box_auto'                => 'box_auto',
+        'domotica'                => 'domotica',
+        'fotovoltaico'            => 'fotovoltaico',
+        'solare_termico'          => 'solare_termico',
+        'climatizzazione'         => 'climatizzazione',
+        'riscaldamento_autonomo'  => 'riscaldamento_autonomo',
+        'riscaldamento_pavimento' => 'riscaldamento_pavimento',
+        'ventilazione_meccanica'  => 'ventilazione_meccanica',
+        'area_verde'              => 'area_verde',
+        'videosorveglianza'       => 'videosorveglianza',
+        'allarme'                 => 'allarme',
+        'predisposizione_allarme' => 'predisposizione_allarme',
+        'frangisole'              => 'frangisole',
+        'cantina'                 => 'cantina',
+        'terrazzo'                => 'terrazzo',
+        'posizione_centrale'      => 'posizione_centrale',
     ];
 
     /** @var array<string, string> id feature → icona Bootstrap. */
     public const FEATURE_ICONS = [
-        'ascensore'         => 'bi bi-arrow-down-up',
-        'giardino'          => 'bi bi-tree',
-        'box_auto'          => 'bi bi-car-front',
-        'domotica'          => 'bi bi-house-gear',
-        'fotovoltaico'      => 'bi bi-sun',
-        'climatizzazione'   => 'bi bi-snow',
-        'area_verde'        => 'bi bi-flower1',
-        'videosorveglianza' => 'bi bi-camera-video',
-        'cantina'           => 'bi bi-box2',
-        'terrazzo'          => 'bi bi-brightness-high',
+        'ascensore'               => 'bi bi-arrow-down-up',
+        'giardino'                => 'bi bi-tree',
+        'box_auto'                => 'bi bi-car-front',
+        'domotica'                => 'bi bi-house-gear',
+        'fotovoltaico'            => 'bi bi-sun',
+        'solare_termico'          => 'bi bi-thermometer-sun',
+        'climatizzazione'         => 'bi bi-snow',
+        'riscaldamento_autonomo'  => 'bi bi-fire',
+        'riscaldamento_pavimento' => 'bi bi-thermometer-half',
+        'ventilazione_meccanica'  => 'bi bi-fan',
+        'area_verde'              => 'bi bi-flower1',
+        'videosorveglianza'       => 'bi bi-camera-video',
+        'allarme'                 => 'bi bi-shield-lock',
+        'predisposizione_allarme' => 'bi bi-shield',
+        'frangisole'              => 'bi bi-brightness-alt-high',
+        'cantina'                 => 'bi bi-box2',
+        'terrazzo'                => 'bi bi-brightness-high',
+        'posizione_centrale'      => 'bi bi-geo-alt',
     ];
 
     public static function text(string $key, ?string $fallback = null): string
@@ -95,7 +111,7 @@ final class ResidenzaForm extends FormText
         $options = [];
 
         try {
-            $rows = Immobile::find([]);
+            $rows = Immobile::safeFind([]);
         } catch (Throwable) {
             return $options;
         }

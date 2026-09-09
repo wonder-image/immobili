@@ -36,14 +36,15 @@ if ($residenzaId > 0) {
 
 $PAGE_KEY = 'immobili.detail';
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
+
 $SEO->title = $immobile->titolo.' - '.$SOCIETY->name;
-$SEO->description = mb_substr(strip_tags((string) ($immobile->descrizione ?: $immobile->prettyName)), 0, 160);
+$SEO->description = $immobile->descrizione_breve ?: $immobile->prettyName;
 $SEO->url = (string) $immobile->url;
 $SEO->image = $immobile->image;
 $SEO->breadcrumb = [
     __r('home') => __t('components.navigation.home'),
     __r('immobili.list') => __t('components.navigation.immobili'),
-    $SEO->url => $immobile->titolo
+    $SEO->url => $immobile->prettyName
 ];
 
 $videos = array_values(array_unique(array_merge(

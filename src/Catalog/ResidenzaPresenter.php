@@ -32,6 +32,8 @@ final class ResidenzaPresenter
         $data['descrizione_breve'] = (string) ($row['descrizione_breve'] ?? $data['nome']);
         $data['descrizione_lunga'] = (string) ($row['descrizione_lunga'] ?? '');
         $data['unita_abitative'] = (int) ($row['unita_abitative'] ?? 0);
+        $data['unita_commerciali'] = (int) ($row['unita_commerciali'] ?? 0);
+        $data['box'] = (int) ($row['box'] ?? 0);
         $data['features'] = is_array($row['features'] ?? null) ? $row['features'] : [];
         $data['prettyAddress'] = $this->prettyAddress($row);
         $data['url'] = __r('residenze.detail', ['slug' => (string) ($row['slug'] ?? '')]);

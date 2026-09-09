@@ -261,6 +261,8 @@
             "features": "Caratteristiche",
             "classe_energetica": "Classe energetica",
             "unita_abitative": "Unità abitative",
+            "unita_commerciali": "Unità commerciali",
+            "box": "N° box",
             "capitolato": "Capitolato (PDF)",
             "stato": "Stato",
             "sold": "Venduto tutto",
@@ -302,11 +304,19 @@
             "box_auto": "Box / posto auto",
             "domotica": "Domotica",
             "fotovoltaico": "Fotovoltaico",
+            "solare_termico": "Pannelli solari termici",
             "climatizzazione": "Climatizzazione",
+            "riscaldamento_autonomo": "Riscaldamento autonomo",
+            "riscaldamento_pavimento": "Riscaldamento a pavimento",
+            "ventilazione_meccanica": "Ventilazione meccanica",
             "area_verde": "Area verde comune",
             "videosorveglianza": "Videosorveglianza",
+            "allarme": "Impianto d'allarme",
+            "predisposizione_allarme": "Predisposizione impianto d'allarme",
+            "frangisole": "Frangisole",
             "cantina": "Cantina",
-            "terrazzo": "Terrazzo"
+            "terrazzo": "Terrazzo",
+            "posizione_centrale": "Posizione centrale"
         }
     }
 }

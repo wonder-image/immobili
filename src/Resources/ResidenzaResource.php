@@ -16,6 +16,7 @@ use Wonder\Elements\Components\Container;
 use Wonder\Elements\Components\SectionTitle;
 use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
+use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
@@ -61,6 +62,7 @@ final class ResidenzaResource extends Resource
             'descrizione_breve', 'descrizione_lunga', 'indirizzo', 'civico', 'cap',
             'comune_id', 'latitudine', 'longitudine', 'zoom', 'logo', 'images',
             'immobili_collegati', 'features', 'classe_energetica', 'unita_abitative',
+            'unita_commerciali', 'box',
             'capitolato', 'stato', 'sold', 'evidence', 'visible', 'position',
         ] as $key) {
             $labels[$key] = ResidenzaForm::text('fields.'.$key);
@@ -104,6 +106,8 @@ final class ResidenzaResource extends Resource
 
             FormField::key('classe_energetica')->select(ResidenzaForm::energyClasses()),
             self::numberField('unita_abitative'),
+            self::numberField('unita_commerciali'),
+            self::numberField('box'),
             FormField::key('capitolato')->fileDragDrop('file')->maxSize(20)->extensions(['pdf']),
 
             FormField::key('stato')->select(self::statoOptions()),
@@ -164,6 +168,8 @@ final class ResidenzaResource extends Resource
                     self::section('energy'),
                     static::getInput('classe_energetica')->columnSpan(12),
                     static::getInput('unita_abitative')->columnSpan(12),
+                    static::getInput('unita_commerciali')->columnSpan(12),
+                    static::getInput('box')->columnSpan(12),
                 ]),
                 self::card([
                     self::section('publish'),
@@ -186,7 +192,7 @@ final class ResidenzaResource extends Resource
             TableColumn::key('evidence')->evidenceBadge(true)->badgeVariant('badgeIcon')->label('')->size('little'),
             TableColumn::key('image')->image()->formatter(static fn (array $row): string => self::coverCell($row))->label('')->size('little')->link('view'),
             TableColumn::key('nome')->text()->link('view'),
-            TableColumn::key('comune_nome')->text()->size('medium'),
+            TableColumn::key('comune_nome')->formatter(static fn (array $row): string => self::comuneCell($row))->label(ResidenzaForm::text('fields.comune_id'))->size('medium'),
             TableColumn::key('inizio_anno')->formatter(static fn (array $row): string => self::timelineCell($row))->label(ResidenzaForm::text('fields.timeline', 'Timeline'))->size('medium'),
             TableColumn::key('sold')->booleanBadge('sold')
                 ->badgeOff('Disponibile', 'bi bi-tag', 'primary')
@@ -215,7 +221,21 @@ final class ResidenzaResource extends Resource
             ->titles([
                 'create' => ResidenzaForm::text('titles.create', 'Aggiungi residenza'),
                 'edit'   => ResidenzaForm::text('titles.edit', 'Modifica residenza'),
-            ]);
+            ])
+            ->view('show', self::customShowViewPath());
+    }
+
+    /**
+     * View custom read-only della pagina `view` backend: la `show.php` del
+     * modulo (overridabile dal sito). `null` se assente → il framework ricade
+     * sulla show generica. Il template sta nel modulo, quindi il path va
+     * risolto con Immobili::viewPath(), non con ROOT_APP del framework.
+     */
+    private static function customShowViewPath(): ?string
+    {
+        $path = Immobili::viewPath('pages/backend/residenze/show.php');
+
+        return is_file($path) ? $path : null;
     }
 
     public static function apiSchema(): ApiSchema
@@ -281,6 +301,28 @@ final class ResidenzaResource extends Resource
     private static function coverCell(array $row): string
     {
         return (new ResidenzaPresenter())->cover($row);
+    }
+
+    /**
+     * Nome comune per la lista backend. La Table legge le righe via SQL grezzo,
+     * senza passare dal Model, quindi lo slash di escape aggiunto in scrittura
+     * da `sanitize()` resta nel valore (es. `Vaprio d\'Adda`). Applichiamo qui
+     * `sanitizeEcho()` — lo stesso inverso canonico usato da
+     * `Model::normalizeReadRow()` in lettura — così il comune si legge pulito.
+     *
+     * @param array<string, mixed> $row
+     */
+    private static function comuneCell(array $row): string
+    {
+        $value = (string) ($row['comune_nome'] ?? '');
+
+        if ($value === '') {
+            return '';
+        }
+
+        $value = function_exists('sanitizeEcho') ? sanitizeEcho($value) : stripslashes($value);
+
+        return htmlspecialchars($value, ENT_QUOTES);
     }
 
     /** @param array<string, mixed> $row */
@@ -374,7 +416,7 @@ final class ResidenzaResource extends Resource
         $values['sito_url'] = self::sanitizeUrl((string) ($values['sito_url'] ?? ''));
         $values['features'] = self::normalizeFeatures($values['features'] ?? []);
 
-        foreach (['inizio_anno', 'inizio_mese', 'fine_anno', 'fine_mese', 'unita_abitative', 'position'] as $intKey) {
+        foreach (['inizio_anno', 'inizio_mese', 'fine_anno', 'fine_mese', 'unita_abitative', 'unita_commerciali', 'box', 'position'] as $intKey) {
             $raw = trim((string) ($values[$intKey] ?? ''));
             $values[$intKey] = $raw === '' ? '' : (string) (int) $raw;
         }
@@ -411,6 +453,11 @@ final class ResidenzaResource extends Resource
                 $excludeId,
                 'residenza'
             );
+        } else {
+            // In update lo slug non viene re-postato: lo ripassiamo tra i valori
+            // (idempotente) così che il placeholder '{slug}' nei nomi file di
+            // logo/images/capitolato si risolva anche modificando una residenza.
+            $values['slug'] = (string) $oldValues['slug'];
         }
 
         return $values;

@@ -35,6 +35,7 @@ final class ImageProcessor
 
         $processed = 0;
         $failed = 0;
+        $slugs = [];
 
         foreach ($rows as $row) {
             $id = (int) ($row['id'] ?? 0);
@@ -48,7 +49,15 @@ final class ImageProcessor
                 continue;
             }
 
-            $relative = $this->download($fsRoot, $immobileId, (string) ($row['external_id'] ?? (string) $id), $source);
+            // Nome file coerente col backend: '{slug}-{rand}' per le foto,
+            // 'planimetria-{slug}-{rand}' per le planimetrie (tipo P). Lo slug è
+            // quello dell'immobile padre, con cache per lotto.
+            $isFloorPlan = immobiliIsTrue($row['planimetria'] ?? '')
+                || strtoupper(trim((string) ($row['tipo'] ?? ''))) === 'P';
+            $slug = $this->immobileSlug($immobileId, $slugs);
+            $prefix = $isFloorPlan ? 'planimetria-'.$slug : $slug;
+
+            $relative = $this->download($fsRoot, $immobileId, $prefix, $source);
 
             if ($relative === null) {
                 $failed++;
@@ -99,17 +108,23 @@ final class ImageProcessor
     }
 
     /**
-     * Scarica l'originale in {rUpload}/immobili/{immobileId}/{name}.{ext}.
+     * Scarica l'originale in {rUpload}/immobili/{immobileId}/{prefix}-{rand}.{ext}.
      * Ritorna il path relativo (per il DB) o null in caso di errore.
      */
-    private function download(string $fsRoot, int $immobileId, string $name, string $source): ?string
+    private function download(string $fsRoot, int $immobileId, string $prefix, string $source): ?string
     {
         $ext = strtolower(pathinfo(parse_url($source, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
         if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'], true)) {
             $ext = 'jpg';
         }
 
-        $safeName = preg_replace('/[^a-zA-Z0-9_-]+/', '', $name) ?: (string) mt_rand();
+        // '{prefix}-{rand}' slugificato, come fa uploadFiles() per gli upload da
+        // backend; fallback a un codice casuale se lo slug non è disponibile.
+        $base = trim($prefix, '-');
+        $safeName = create_link(strtolower($base !== '' ? $base.'-'.code(3, 'letter') : code(10, 'all')));
+        if ($safeName === '') {
+            $safeName = code(10, 'all');
+        }
         $relativeDir = 'immobili/'.$immobileId;
         $fsDir = $fsRoot.'/'.$relativeDir;
 
@@ -130,6 +145,24 @@ final class ImageProcessor
         }
 
         return $relative;
+    }
+
+    /**
+     * Slug dell'immobile padre, con cache per lotto: base del nome file.
+     * Query diretta (niente decorate()/rotte) perché serve solo lo slug.
+     *
+     * @param array<int, string> $cache
+     */
+    private function immobileSlug(int $immobileId, array &$cache): string
+    {
+        if (array_key_exists($immobileId, $cache)) {
+            return $cache[$immobileId];
+        }
+
+        $row = sqlSelect('immobili', ['id' => $immobileId], 1, null, null, ['slug'])->row ?? null;
+        $slug = is_array($row) ? trim((string) ($row['slug'] ?? '')) : '';
+
+        return $cache[$immobileId] = $slug;
     }
 
     /**

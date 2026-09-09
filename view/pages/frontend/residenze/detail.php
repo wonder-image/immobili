@@ -109,6 +109,20 @@ Immobili::layout('main');
                     </div>
                 <?php } ?>
 
+                <?php if ($residenza->unita_commerciali > 0) { ?>
+                    <div class="p-4 b-r-15 bg-white b-shadow">
+                        <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.commercial_units')) ?></div>
+                        <div class="title"><?= $residenza->unita_commerciali ?></div>
+                    </div>
+                <?php } ?>
+
+                <?php if ($residenza->box > 0) { ?>
+                    <div class="p-4 b-r-15 bg-white b-shadow">
+                        <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.boxes')) ?></div>
+                        <div class="title"><?= $residenza->box ?></div>
+                    </div>
+                <?php } ?>
+
                 <?php if ($residenza->energyScale !== null) { ?>
                     <div class="p-4 b-r-15 bg-white b-shadow">
                         <div class="text-small tx-muted"><?= e(__t('pages.residenze.detail.energy')) ?></div>

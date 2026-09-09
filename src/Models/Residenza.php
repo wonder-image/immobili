@@ -113,8 +113,8 @@ final class Residenza extends Model
             Field::key('nome')->text()->sanitizeFirst(),
             Field::key('slug')->text()->slug(),
 
-            Field::key('logo')->image()->maxSize(3)->extensions(['png'])->responsive(),
-            Field::key('images')->image()->maxSize(3)->maxFile(12)->extensions(['png', 'jpg', 'jpeg'])->responsive(),
+            Field::key('logo')->image()->maxSize(3)->extensions(['png'])->name('logo-{slug}')->responsive(),
+            Field::key('images')->image()->maxSize(3)->maxFile(12)->extensions(['png', 'jpg', 'jpeg'])->name('{slug}-{rand}')->responsive(),
             Field::key('sito_url')->text()->sanitize(false),
 
             // Timeline: anno obbligatorio in UI, mese opzionale.
@@ -138,8 +138,10 @@ final class Residenza extends Model
 
             Field::key('classe_energetica')->text(),
             Field::key('unita_abitative')->number()->decimals(0),
+            Field::key('unita_commerciali')->number()->decimals(0),
+            Field::key('box')->number()->decimals(0),
             Field::key('features')->json(),
-            Field::key('capitolato')->file()->maxSize(20)->extensions(['pdf']),
+            Field::key('capitolato')->file()->maxSize(20)->extensions(['pdf'])->name('capitolato-{slug}'),
 
             Field::key('sold')->text(),
             Field::key('stato')->text(),

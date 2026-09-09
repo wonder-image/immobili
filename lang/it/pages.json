@@ -65,6 +65,8 @@
             "download_capitolato": "Scarica il capitolato",
             "linked": "Immobili in questa residenza",
             "units": "Unità abitative",
+            "commercial_units": "Unità commerciali",
+            "boxes": "N° box",
             "energy": "Classe energetica",
             "timeline": "Tempistiche"
         },

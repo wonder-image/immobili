@@ -261,6 +261,8 @@
             "features": "Features",
             "classe_energetica": "Energy class",
             "unita_abitative": "Housing units",
+            "unita_commerciali": "Commercial units",
+            "box": "Garage boxes",
             "capitolato": "Specification sheet (PDF)",
             "stato": "Status",
             "sold": "Fully sold",
@@ -302,11 +304,19 @@
             "box_auto": "Garage / parking space",
             "domotica": "Home automation",
             "fotovoltaico": "Photovoltaic",
+            "solare_termico": "Solar thermal panels",
             "climatizzazione": "Air conditioning",
+            "riscaldamento_autonomo": "Independent heating",
+            "riscaldamento_pavimento": "Underfloor heating",
+            "ventilazione_meccanica": "Mechanical ventilation",
             "area_verde": "Shared green area",
             "videosorveglianza": "Video surveillance",
+            "allarme": "Alarm system",
+            "predisposizione_allarme": "Alarm system wiring",
+            "frangisole": "Sun louvers",
             "cantina": "Cellar",
-            "terrazzo": "Terrace"
+            "terrazzo": "Terrace",
+            "posizione_centrale": "Central location"
         }
     }
 }

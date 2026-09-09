@@ -68,9 +68,14 @@ final class ImmobileImmagine extends Model
             Field::key('file')->text()->sanitize(false),
             // Immagine caricata a mano (immobili manuali): il framework genera
             // automaticamente webp + varianti responsive all'upload.
+            // Il nome file usa il prefisso risolto per riga da ImmobileResource
+            // ('{prefix}' → slug dell'immobile per le foto, 'planimetria-{slug}'
+            // per le planimetrie): '{prefix}' non è una colonna, viene consumato
+            // solo per comporre il filename e non finisce a DB.
             Field::key('upload')->image()
                 ->maxSize(3)
-                ->extensions(['png', 'jpg', 'jpeg']),
+                ->extensions(['png', 'jpg', 'jpeg'])
+                ->name('{prefix}-{rand}'),
             // 'true' quando le varianti responsive sono state generate.
             Field::key('resized')->text(),
         ];

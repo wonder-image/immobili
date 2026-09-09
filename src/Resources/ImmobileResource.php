@@ -995,12 +995,18 @@ final class ImmobileResource extends Resource
             1,
             null,
             null,
-            ['provider']
+            ['provider', 'slug']
         )->row ?? null;
 
         if (!is_array($parentValues) || !self::isManualRecord($parentValues)) {
             return [];
         }
+
+        // Slug dell'immobile padre: base del nome file delle immagini caricate a
+        // mano ('{slug}-{rand}' per le foto, 'planimetria-{slug}-{rand}' per le
+        // planimetrie). Le righe figlie di immobili_immagini non hanno slug, così
+        // lo iniettiamo per riga come prefisso risolto in prepareRepeaterRelationRow.
+        $parentSlug = (string) ($parentValues['slug'] ?? '');
 
         $relation = self::imageRelation();
 
@@ -1061,7 +1067,7 @@ final class ImmobileResource extends Resource
             $relation,
             $parentId,
             $rows,
-            static function (array $payload, array $row, ?array $existingRow) use ($action, $context): array {
+            static function (array $payload, array $row, ?array $existingRow) use ($action, $context, $parentSlug): array {
                 $inputName = (string) ($row['_immobili_media_input'] ?? 'images');
                 unset($payload['_immobili_media_input'], $row['_immobili_media_input']);
 
@@ -1071,7 +1077,8 @@ final class ImmobileResource extends Resource
                     $row,
                     $existingRow,
                     $action,
-                    $context
+                    $context,
+                    $parentSlug
                 );
             }
         );
@@ -1166,7 +1173,8 @@ final class ImmobileResource extends Resource
         array $row,
         ?array $existingRow = null,
         string $action = 'store',
-        string $context = 'backend'
+        string $context = 'backend',
+        string $parentSlug = ''
     ): array {
         if (in_array($inputName, ['images', 'floor_plans'], true)) {
             unset($payload['preview_url']);
@@ -1174,6 +1182,13 @@ final class ImmobileResource extends Resource
             $isFloorPlan = $inputName === 'floor_plans';
             $payload['tipo'] = $isFloorPlan ? 'P' : 'F';
             $payload['planimetria'] = $isFloorPlan ? 'true' : 'false';
+
+            // Prefisso risolto per il nome file (colonna upload → '{prefix}-{rand}').
+            // Non è una colonna di immobili_immagini: serve solo a comporre il
+            // filename e viene scartato dal prepare prima dell'insert.
+            $payload['prefix'] = $isFloorPlan
+                ? 'planimetria-'.$parentSlug
+                : $parentSlug;
 
             $names = (array) ($row['upload']['name'] ?? []);
             $hasNewUpload = array_filter(
