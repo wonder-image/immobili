@@ -9,6 +9,20 @@
             "results": "immobili trovati",
             "empty": "Nessun immobile trovato con questi criteri di ricerca."
         },
+        "in_vendita": {
+            "seo": {
+                "title": "Immobili in vendita",
+                "description": "Sfoglia gli immobili disponibili: appartamenti, case, uffici, negozi e altro."
+            },
+            "title": "Immobili in vendita"
+        },
+        "in_affitto": {
+            "seo": {
+                "title": "Immobili in affitto",
+                "description": "Sfoglia gli immobili disponibili: appartamenti, case, uffici, negozi e altro."
+            },
+            "title": "Immobili in affitto"
+        },
         "detail": {
             "back": "Torna agli immobili",
             "description": "Descrizione",
@@ -21,7 +35,7 @@
         "sold": {
             "seo": {
                 "title": "Immobili venduti",
-                "description": "Una selezione degli immobili che abbiamo venduto."
+                "description": "Sfoglia gli immobili che abbiamo venduto e affida a noi la vendita della tua casa."
             },
             "title": "Immobili venduti",
             "subtitle": "Una selezione delle trattative concluse con successo.",
@@ -52,12 +66,26 @@
     },
     "residenze": {
         "list": {
-            "title": "Le nostre residenze",
+            "title": "Tutte le nostre residenze",
             "seo": {
-                "title": "Residenze",
+                "title": "Tutte le nostre residenze",
                 "description": "Le residenze e i cantieri gestiti da noi."
             },
-            "empty": "Nessuna residenza trovata con questi criteri di ricerca."
+            "empty": "Nessuna residenza trovata."
+        },
+        "in_costruzione": {
+            "title": "Residenze in costruzione",
+            "seo": {
+                "title": "Cantieri",
+                "description": "Cantieri gestiti da noi."
+            }
+        },
+        "completata": {
+            "title": "Residenze completate",
+            "seo": {
+                "title": "Residenze",
+                "description": "Residenze gestiti da noi."
+            }
         },
         "detail": {
             "back": "Torna alle residenze",
