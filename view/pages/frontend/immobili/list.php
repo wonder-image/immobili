@@ -8,10 +8,13 @@ use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Catalog\ImmobileQuery;
 
-$PAGE_KEY = 'immobili.list';
+use Wonder\Plugin\Immobili\Catalog\ListingRoute;
 
-$SEO->title = __t('pages.immobili.list.seo.title');
-$SEO->description = __t('pages.immobili.list.seo.description');
+$PAGE_KEY = $ROUTE_META['name'] ?? 'immobili.list';
+ListingRoute::redirectCanonical($PAGE_KEY);
+
+$SEO->title = __t('pages.'.$PAGE_KEY.'.seo.title');
+$SEO->description = __t('pages.'.$PAGE_KEY.'.seo.description');
 $SEO->url = __r($PAGE_KEY);
 $SEO->breadcrumb = [
     __r('home') => __t('components.navigation.home'),
@@ -21,19 +24,19 @@ $SEO->breadcrumb = [
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
 $state = Immobili::context();
-$filters = is_array($state['filters'] ?? null) ? $state['filters'] : [];
+$filters = ListingRoute::filters($PAGE_KEY, is_array($state['filters'] ?? null) ? $state['filters'] : []);
 $perPage = (int) ($state['per_page'] ?? 12);
 
 $query = new ImmobileQuery();
 
-$where = $query->where($filters, false);
+$where = $query->where($filters, ListingRoute::PROPERTIES[$PAGE_KEY]['sold']);
 [$order, $direction] = $query->order((string) ($filters['ordina'] ?? 'recenti'));
 
 $PAGINATION = pagination('immobili', $where, $perPage);
 $rows = Immobile::safeFind( $where, $PAGINATION->limit, $order, $direction);
 
 $immobili = $query->cards($rows);
-$total = (int) sqlCount('immobili', $where);
+$total = (int) $PAGINATION->max_row;
 $geojson = $query->geojson($where);
 
 Immobili::layout('main');
@@ -43,10 +46,10 @@ Immobili::layout('main');
 <section class="intro">
     <div class="content">
 
-        <h1 class="title-big"><?= e(__t('pages.immobili.list.title')) ?></h1>
+        <h1 class="title-big"><?= e(__t('pages.'.$PAGE_KEY.'.title')) ?></h1>
 
         <div class="mt-4">
-            <?php Immobili::component('immobili/filters', [ 'filters' => $filters, 'action' => __r('immobili.list') ]); ?>
+            <?php Immobili::component('immobili/filters', [ 'filters' => $filters, 'action' => __r(ListingRoute::PROPERTIES[$PAGE_KEY]['sold'] ? $PAGE_KEY : 'immobili.list'), 'sold' => ListingRoute::PROPERTIES[$PAGE_KEY]['sold'] ]); ?>
         </div>
 
     </div>

@@ -9,21 +9,30 @@ use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaQuery;
 
-$PAGE_KEY = 'residenze.list';
+use Wonder\Plugin\Immobili\Catalog\ListingRoute;
 
-$SEO->title = __t('pages.residenze.list.seo.title');
-$SEO->description = __t('pages.residenze.list.seo.description');
+$PAGE_KEY = $ROUTE_META['name'] ?? 'residenze.list';
+if (isset($ROUTE_META['catalog_alias'])) {
+    $url = __r($ROUTE_META['catalog_alias']);
+    $query = array_diff_key($_GET, ['stato' => true]);
+    header('Location: '.$url.($query ? '?'.http_build_query($query, '', '&', PHP_QUERY_RFC3986) : ''), true, 301);
+    exit;
+}
+ListingRoute::redirectCanonical($PAGE_KEY);
+
+$SEO->title = __t('pages.'.$PAGE_KEY.'.seo.title');
+$SEO->description = __t('pages.'.$PAGE_KEY.'.seo.description');
 $SEO->url = __r($PAGE_KEY);
 $SEO->breadcrumb = [
     __r('home') => __t('components.navigation.home'),
-    $SEO->url => __t('pages.residenze.list.title'),
+    $SEO->url => __t('pages.'.$PAGE_KEY.'.title'),
 ];
 
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
 $presenter = new ResidenzaPresenter();
 $query = new ResidenzaQuery($presenter);
-$filters = $query->filters($_GET);
+$filters = $query->filters(ListingRoute::filters($PAGE_KEY, $_GET));
 $where = $query->where($filters);
 $rows = Residenza::safeFind($where, null, 'position', 'ASC');
 $rows = is_array($rows) && isset($rows['id']) ? [$rows] : (is_array($rows) ? $rows : []);
@@ -35,7 +44,7 @@ Immobili::layout('main');
 
 <section class="intro">
     <div class="content">
-        <h1 class="title-big"><?= e(__t('pages.residenze.list.title')) ?></h1>
+        <h1 class="title-big"><?= e(__t('pages.'.$PAGE_KEY.'.title')) ?></h1>
         <div class="mt-4">
             <?php Immobili::component('residenze/filters', ['filters' => $filters, 'action' => __r('residenze.list')]); ?>
         </div>

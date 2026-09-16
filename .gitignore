@@ -4,5 +4,7 @@ composer.phar
 *.log
 *.claude
 /resources/assets/upload/
-tests/
+/tests/*
+!/tests/property-media.php
+!/tests/listing-routes.php
 assets/

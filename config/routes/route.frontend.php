@@ -2,6 +2,7 @@
 
 use Wonder\Http\Route;
 use Wonder\Plugin\Immobili\Immobili;
+use Wonder\Plugin\Immobili\Catalog\ListingRoute;
 
 Route::area('frontend')
     ->response('html')
@@ -11,22 +12,14 @@ Route::area('frontend')
             ->prefix('/immobili')
             ->group(function () {
 
-                // Lista immobili in vendita/affitto (griglia + mappa + filtri).
-                Route::get('/', Immobili::viewPath('pages/frontend/immobili/list.php'))
-                    ->name('list');
-
-                // Immobili venduti (portfolio).
-                Route::get('/venduti/', Immobili::viewPath('pages/frontend/immobili/sold.php'))
-                    ->name('sold');
+                foreach (ListingRoute::PROPERTIES as $name => $preset) {
+                    Route::get($preset['path'], Immobili::viewPath('pages/frontend/immobili/list.php'))
+                        ->name(substr($name, strlen('immobili.')));
+                }
 
                 // Feed XML per il portale Idealista (crawler). Dichiarato prima di
-                // /{slug}/ per non essere interpretato come slug.
                 Route::get('/idealista/', Immobili::httpPath('frontend/idealista.php'))
                     ->name('idealista');
-
-                // Dettaglio immobile per slug (deve restare l'ultima del gruppo).
-                Route::get('/{slug}/', Immobili::viewPath('pages/frontend/immobili/detail.php'))
-                    ->name('detail');
 
             });
 
@@ -34,8 +27,13 @@ Route::area('frontend')
             ->prefix('/residenze')
             ->group(function () {
 
-                Route::get('/', Immobili::viewPath('pages/frontend/residenze/list.php'))
-                    ->name('list');
+                foreach (ListingRoute::RESIDENCES as $name => $preset) {
+                    Route::get($preset['path'], Immobili::viewPath('pages/frontend/residenze/list.php'))
+                        ->name(substr($name, strlen('residenze.')));
+                }
+                Route::get('/completate/', Immobili::viewPath('pages/frontend/residenze/list.php'), [
+                    'catalog_alias' => 'residenze.realizzate',
+                ])->name('completate');
 
             });
 
@@ -44,7 +42,7 @@ Route::area('frontend')
             ->group(function () {
 
                 Route::get('/{slug}/', Immobili::viewPath('pages/frontend/residenze/detail.php'))
-                    ->name('detail');
+                    ->name('view');
 
             });
 

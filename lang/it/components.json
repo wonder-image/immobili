@@ -50,6 +50,11 @@
                 "button": "Aggiorna immobili",
                 "confirm": "Avviare ora la sincronizzazione di tutti i feed attivi?"
             }
+        },
+        "media": {
+            "load_video": "Guarda il video",
+            "load_tour": "Esplora il tour virtuale",
+            "load_map": "Mostra la mappa"
         }
     },
     "navigation": {

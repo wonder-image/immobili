@@ -13,7 +13,7 @@ Spec di riferimento: `docs/superpowers/specs/2026-08-26-riorganizzazione-due-rep
 ## Global Constraints
 
 - **Le URL non cambiano mai**: `/api/immobili/{sync,images,seed,residenze-seed,reindex,search}/` e tutte le route frontend restano identiche. Sono contratto verso i cron dei siti e il push di Gestim.
-- **I nomi delle route non cambiano**: `immobili.list`, `immobili.detail`, `immobili.sold`, `residenze.list`, `residenze.detail`, `immobile.*`, `api.immobili.*`.
+- **I nomi delle route non cambiano**: `immobili.list`, `immobili.sold`, `residenze.list`, `residenze.detail`, `immobile.*`, `api.immobili.*`.
 - **Le chiavi di traduzione non cambiano** (salvo le aggiunte esplicite del Task 12).
 - **Nessuna migrazione DB**: `tableSchema()` e `dataSchema()` di ogni Model restano intatti.
 - **Namespace stabili**: `Wonder\Plugin\Immobili\Models\Immobile`, `...\Models\Residenza` e tutto `...\Resources\*` NON si spostano.

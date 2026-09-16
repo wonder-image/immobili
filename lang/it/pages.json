@@ -62,6 +62,13 @@
                 "riscaldamento": "Riscaldamento",
                 "posti_auto": "Posti auto"
             }
+        },
+        "affittati": {
+            "title": "Immobili affittati",
+            "seo": {
+                "title": "Immobili affittati",
+                "description": "Immobili affittati."
+            }
         }
     },
     "residenze": {
@@ -103,6 +110,13 @@
             "in_corso": "In corso",
             "completato": "Completato",
             "venduto": "Venduto tutto"
+        },
+        "realizzate": {
+            "title": "Residenze realizzate",
+            "seo": {
+                "title": "Residenze realizzate",
+                "description": "Residenze realizzate."
+            }
         }
     }
 }

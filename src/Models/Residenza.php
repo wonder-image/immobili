@@ -154,7 +154,7 @@ final class Residenza extends Model
     public static function decorate(array $row): array
     {
         $slug = (string) ($row['slug'] ?? '');
-        $row['url'] = __r('residenza.detail', ['slug' => $slug]);
+        $row['url'] = __r('residenza.view', ['slug' => $slug]);
         $id = (int) ($row['id'] ?? 0);
         $row['appartamenti_disponibili'] = $id > 0
             ? (int) sqlCount('immobili', '`immobili`.`residenza_id` = '.$id.' AND '.ResidenzaQuery::availableApartmentsWhere())

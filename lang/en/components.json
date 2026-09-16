@@ -50,6 +50,11 @@
                 "button": "Update properties",
                 "confirm": "Start synchronizing all active feeds now?"
             }
+        },
+        "media": {
+            "load_video": "Watch the video",
+            "load_tour": "Explore the virtual tour",
+            "load_map": "Show the map"
         }
     },
     "residenze": {

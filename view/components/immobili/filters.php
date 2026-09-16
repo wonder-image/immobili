@@ -28,8 +28,8 @@ $QUERY = new ImmobileQuery();
 
 $filters = $args['filters'] ?? [];
 $action = (string) ($args['action'] ?? '');
-$comuni = $QUERY->comuni(false);
-$tipologie = $QUERY->tipologie(false);
+$comuni = $QUERY->comuni((bool) ($args['sold'] ?? false));
+$tipologie = $QUERY->tipologie((bool) ($args['sold'] ?? false));
 
 $v = static fn (string $key): string => (string) ($filters[$key] ?? '');
 
@@ -73,7 +73,7 @@ $tipologieOptions = [ '' => __t('components.immobili.filters.all') ] + array_com
                 ''  => __t('components.immobili.filters.all'),
                 'V' => __t('components.immobili.filters.sale'),
                 'A' => __t('components.immobili.filters.rent'),
-            ])->label(__t('components.immobili.filters.contract'))->value($v('contratto')) ?>
+            ])->label(__t('components.immobili.filters.contract'))->value($v('contratto'))->disabled((bool) ($args['sold'] ?? false)) ?>
         </div>
 
         <?= FormField::key('prezzo_min')->price()->label(__t('components.immobili.filters.price_min'))->value($v('prezzo_min'))->decimal(0) ?>

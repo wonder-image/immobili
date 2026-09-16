@@ -18,6 +18,8 @@
 
 use Wonder\App\Support\GoogleMaps;
 use Wonder\Elements\Media\GoogleMap;
+use Wonder\Elements\Media\Deferred;
+use Wonder\Elements\Components\Button;
 use Wonder\Plugin\Immobili\Immobili;
 
 $features = $args['features'] ?? [];
@@ -113,14 +115,29 @@ if ($js !== '') {
     $map->markerRenderer('ImmobiliMaps.markerContent')->highlightMarkers();
 }
 
-?>
+// Map code and provider requests are deferred together; templates do not
+// execute their scripts or fetch their styles before user interaction.
+$coordinates = $features[0]['geometry']['coordinates'] ?? [0, 0];
+$fallbackUrl = 'https://www.google.com/maps/search/?api=1&query='
+    .rawurlencode((float) ($coordinates[1] ?? 0).','.(float) ($coordinates[0] ?? 0));
+$interactive = ($args['interactive'] ?? false) === true;
+if (!$interactive) {
+    $map->height('100%');
+}
+$content = ($css !== '' ? '<link rel="stylesheet" href="'.e($css).'">' : '')
+    .($js !== '' ? '<script src="'.e($js).'"></script>' : '')
+    .$map->render();
 
-<?php if ($css !== '') { ?>
-    <link rel="stylesheet" href="<?=e($css)?>">
-<?php } ?>
-
-<?php if ($js !== '') { ?>
-    <script src="<?=e($js)?>"></script>
-<?php } ?>
-
-<?=$map->render()?>
+if ($interactive) {
+    echo $content;
+} else {
+    $deferred = Deferred::make($content)
+        ->fallbackUrl($fallbackUrl)
+        ->button(Button::make(__t('components.immobili.media.load_map')));
+    if (($args['fill'] ?? false) === true) {
+        $deferred->fill();
+    } elseif (isset($args['height'])) {
+        $deferred->style('height', is_int($height) ? $height.'px' : $height);
+    }
+    echo $deferred->render();
+}

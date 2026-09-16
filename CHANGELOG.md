@@ -5,6 +5,20 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ## [2.0.0] - non ancora rilasciato
 
+### Route delle liste
+
+- Route dedicate per immobili in vendita, in affitto, venduti e affittati, tutte sulla view list; preset condivisi in ListingRoute.
+- Residenze in costruzione e realizzate sulla stessa view list, con redirect dai vecchi parametri e da completate.
+
+### Prestazioni della scheda immobile
+
+- Caricamento differito delegato a `Iframe::deferred()` / `Deferred` di wonder-image/app e `DeferredContent` di wonder-image/lib, con Button personalizzabile e rapporti CSS senza altezza obbligatoria. Rimossi i wrapper PHP/JS specifici del modulo.
+
+- Video, tour virtuali e mappe caricati su richiesta, con link alternativi senza JavaScript e titoli iframe accessibili.
+- Foto principale prioritaria; `sizes` coerenti con slider, miniature e galleria tramite componenti overridabili.
+- Riutilizzo del conteggio della paginazione nella lista.
+- Guida di aggiornamento in `docs/frontend/prestazioni.md` e test offline `tests/property-media.php`.
+
 ### Compatibilità Composer
 
 - Il modulo accetta sia le release `^2.2` sia `dev-main` di
@@ -205,8 +219,7 @@ reali (creazione FK, ordine tabelle, reseed).
   durante la prima migrazione e non vengono più scritte.
 - Dettaglio frontend: sezione "Video" (embed YouTube + colonna `video`, con
   `<video>` per i file diretti .mp4/.webm/.ogg/.mov) e sezione "Tour virtuale"
-  (embed `virtual_tour`). Nuove chiavi `pages.immobili.detail.video` /
-  `.virtual_tour` in it/en.
+  (embed `virtual_tour`).
 - Form backend per la creazione degli immobili riallineato al gestionale storico:
   layout 9/3 a schede, tutti i campi commerciali e tecnici, tassonomie dipendenti,
   stato editoriale e upload immagini; esclusi `customer_id` e `company_id`.

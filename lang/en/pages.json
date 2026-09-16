@@ -49,6 +49,27 @@
                 "riscaldamento": "Heating",
                 "posti_auto": "Parking"
             }
+        },
+        "in_vendita": {
+            "title": "Properties for sale",
+            "seo": {
+                "title": "Properties for sale",
+                "description": "Properties for sale."
+            }
+        },
+        "in_affitto": {
+            "title": "Properties for rent",
+            "seo": {
+                "title": "Properties for rent",
+                "description": "Properties for rent."
+            }
+        },
+        "affittati": {
+            "title": "Rented properties",
+            "seo": {
+                "title": "Rented properties",
+                "description": "Rented properties."
+            }
         }
     },
     "residenze": {
@@ -76,6 +97,20 @@
             "in_corso": "In progress",
             "completato": "Completed",
             "venduto": "Fully sold"
+        },
+        "in_costruzione": {
+            "title": "Residences under construction",
+            "seo": {
+                "title": "Residences under construction",
+                "description": "Residences under construction."
+            }
+        },
+        "realizzate": {
+            "title": "Completed residences",
+            "seo": {
+                "title": "Completed residences",
+                "description": "Completed residences."
+            }
         }
     }
 }

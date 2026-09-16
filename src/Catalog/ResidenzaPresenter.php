@@ -257,7 +257,7 @@ final class ResidenzaPresenter
         $url = trim((string) ($row['url'] ?? ''));
         $slug = trim((string) ($row['slug'] ?? ''));
         if ($url === '' && $slug !== '') {
-            $url = __r('residenza.detail', ['slug' => $slug]);
+            $url = __r('residenza.view', ['slug' => $slug]);
         }
 
         return [

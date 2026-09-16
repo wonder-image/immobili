@@ -1,6 +1,7 @@
 # Sommario
 
 * [Wonder Immobili](README.md)
+* [Route delle liste](frontend/route-liste.md)
 
 ## Guida introduttiva
 
@@ -26,6 +27,7 @@
 * [Route e flusso](frontend/route-e-flusso.md)
 * [Filtri delle residenze](frontend/filtri-residenze.md)
 * [Personalizzare le view](frontend/personalizzare-le-view.md)
+* [Prestazioni della scheda immobile](frontend/prestazioni.md)
 
 ## Riferimento
 

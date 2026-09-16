@@ -4,6 +4,7 @@ use Wonder\View\View;
 use Wonder\App\Dependencies;
 use Wonder\Elements\Components\Accordion;
 use Wonder\Elements\Components\Container;
+use Wonder\Elements\Components\Button;
 use Wonder\Elements\Media\Iframe;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
@@ -34,7 +35,7 @@ if ($residenzaId > 0) {
     }
 }
 
-$PAGE_KEY = 'immobili.detail';
+$PAGE_KEY = 'immobili.view';
 $GLOBALS['PAGE_KEY'] = $PAGE_KEY;
 
 $SEO->title = $immobile->titolo.' - '.$SOCIETY->name;
@@ -53,19 +54,19 @@ $videos = array_values(array_unique(array_merge(
 )));
 $virtualTours = $row['virtual_tour'] ?? [];
 
-$iframes = static fn (array $urls): array => array_map(
-    static fn (string $url): Iframe => Iframe::url($url)
-        ->attr('allowfullscreen', true)
-        ->class('w-100')
-        ->style('aspect-ratio', '16 / 9')
-        ->style('display', 'block'),
-    $urls
-);
-
-$mediaGrid = static fn (array $urls): Container => (new Container())
-    ->columns(['default' => 1, 'md' => 2, 'lg' => 3])
-    ->gap(3)
-    ->components($iframes($urls));
+$mediaGrid = static function (array $urls, string $label) use ($immobile): Container {
+    $components = [];
+    foreach ($urls as $index => $url) {
+        $components[] = Iframe::url($url)
+            ->attr('title', $label.' — '.$immobile->prettyName.' '.($index + 1))
+            ->attr('allowfullscreen', true)
+            ->class('w-100')
+            ->ratio('16:9')
+            ->deferred(button: Button::make($label));
+    }
+    return (new Container())->columns(['default' => 1, 'md' => 2, 'lg' => 3])
+        ->gap(3)->components($components);
+};
 
 Dependencies::swiper();
 Dependencies::fancyapps();
@@ -109,6 +110,9 @@ Immobili::layout('main');
                 
                 <div class="w-100 o-hidden">
                     <?= __swiper($slides)->id('immobile-swiper')
+                            ->priority()
+                            ->imageSizes('(max-width: 768px) 100vw, 66vw')
+                            ->thumbsImageSizes('(max-width: 768px) 25vw, 17vw')
                             ->ratio('3:2')
                             ->thumbnails()
                             ->thumbsRatio('3:2')
@@ -195,16 +199,26 @@ Immobili::layout('main');
 
             <?php if ($videos !== []) { ?>
                 <?= Accordion::make(__t('pages.immobili.detail.video'))
-                    ->components([$mediaGrid($videos)])
+                    ->components([$mediaGrid($videos, __t('components.immobili.media.load_video'))])
                     ->icon('plus') ?>
             <?php } ?>
 
             <?php if ($virtualTours !== []) { ?>
                 <?= Accordion::make(__t('pages.immobili.detail.virtual_tour'))
-                    ->components([$mediaGrid($virtualTours)])
+                    ->components([$mediaGrid($virtualTours, __t('components.immobili.media.load_tour'))])
                     ->icon('plus') ?>
             <?php } ?>
         </div>
+        <noscript>
+            <div class="d-grid gap-3 mt-3">
+                <?php foreach (['load_video' => $videos, 'load_tour' => $virtualTours] as $label => $urls) {
+                    foreach ($urls as $url) { ?>
+                        <a class="btn btn-primary" href="<?= e(Iframe::url($url)->srcUrl()) ?>" target="_blank" rel="noopener noreferrer"><?= e(__t('components.immobili.media.'.$label)) ?></a>
+                    <?php }
+                } ?>
+            </div>
+        </noscript>
+
 
     </div>
 </section>
@@ -213,8 +227,8 @@ Immobili::layout('main');
 <section class="pt-0">
     <div class="content">
 
-        <div class="f-3-1">
-            <?php Immobili::component('map', [ 'features' => [ $immobile->geo_json ], 'zoom' => 15 ]); ?>
+        <div class="p-r f-3-1">
+            <?php Immobili::component('map', [ 'features' => [ $immobile->geo_json ], 'zoom' => 15, 'fill' => true ]); ?>
         </div>
 
     </div>

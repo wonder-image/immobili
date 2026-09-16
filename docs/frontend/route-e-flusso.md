@@ -6,7 +6,6 @@
 | ----------------- | -------------------------- | ------------- |
 | `immobili.list`   | `/immobili/`               | lista + filtri + mappa |
 | `immobili.sold`   | `/immobili/venduti/`       | immobili venduti |
-| `immobili.detail` | `/immobili/{slug}/`        | dettaglio     |
 | `immobili.pdf`    | `/immobili/{slug}/pdf/`    | scheda stampabile |
 
 Gli slug localizzati sono definiti in `lang/{it,en}/urls.json` e risolti con `__r('immobili.list')`.
