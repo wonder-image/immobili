@@ -18,6 +18,14 @@ custom/modules/immobili/view/layout/frontend/immobili.main.php     → sostituis
 
 Il meccanismo è gestito da `Immobili::viewPath()`, che controlla prima l'override del sito.
 
+### Override del form del backend
+
+La view `pages/backend/immobili/form.php` dichiara la barra di salvataggio di `wonder-image/app` con gli attributi `data-wi-save-bar` e `data-wi-save-bar-dirty`. Un override nel sito non li riceve da solo:
+
+- se l'override è identico al file del modulo, cancellalo;
+- se è personalizzato, aggiungi a mano i due attributi come nella view del modulo, oppure ripubblica solo quel file con `php forge publish:module immobili pages/backend/immobili/form.php --force`;
+- non usare mai `--force` su tutto l'albero: sovrascrive le view personalizzate.
+
 ## Componenti disponibili
 
 La regola di collocazione è **radice = trasversale, sottocartella = reparto**: un componente

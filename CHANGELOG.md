@@ -24,6 +24,11 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 - Il modulo accetta sia le release `^2.2` sia `dev-main` di
   `wonder-image/app`, senza richiedere alias di versione nei siti in sviluppo.
 
+### Barra di salvataggio del backend
+
+- Il form degli immobili dichiara la barra di salvataggio di `wonder-image/app` con `data-wi-save-bar` e `data-wi-save-bar-dirty` nell'opzione `attributes` del renderer: dopo un salvataggio fallito parte già come non salvato. Con una versione dell'app che non conosce l'opzione non cambia niente.
+- Un override di `pages/backend/immobili/form.php` nel sito non riceve gli attributi: vedi `docs/frontend/personalizzare-le-view.md`.
+
 ### ⚠️ Breaking — path delle view e namespace
 
 Il modulo è stato riorganizzato su **due reparti speculari** (immobili e

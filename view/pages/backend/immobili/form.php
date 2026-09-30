@@ -12,6 +12,8 @@ $isFeedRecord = !in_array(
 if (is_object($NAME ?? null)) {
     \Wonder\App\LegacyGlobals::set('NAME', $NAME);
 }
+
+$saveBar = empty($READONLY) || !empty($READONLY_EDITABLE);
 ?>
 
 <?php if ($isFeedRecord): ?>
@@ -31,6 +33,10 @@ if (is_object($NAME ?? null)) {
         'method' => (string) ($FORM_METHOD ?? 'POST'),
         'enctype' => (string) ($FORM_ENCTYPE ?? 'multipart/form-data'),
         'action' => (string) ($FORM_ACTION ?? ''),
+        'attributes' => [
+            'data-wi-save-bar' => $saveBar,
+            'data-wi-save-bar-dirty' => $saveBar && !empty($FORM_ERRORS),
+        ],
     ]
 )?>
 
