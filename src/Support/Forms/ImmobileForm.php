@@ -195,6 +195,26 @@ final class ImmobileForm extends FormText
         return self::taxonomy(Comune::class);
     }
 
+    /**
+     * Attributi per `places.js` della lib sul campo `indirizzo`: i suggerimenti
+     * di Google riempiono civico, CAP, comune (scelto per nome tra le opzioni
+     * della select) e coordinate, che qui hanno i nomi delle colonne dei feed.
+     * Con $toponym il toponimo ("Via", "Piazza"...) va in quel campo e in
+     * `indirizzo` resta solo il nome. Ricerca limitata all'Italia.
+     */
+    public static function placeAttributes(?string $toponym = null): string
+    {
+        $attributes = 'data-wi-place="" data-wi-place-number="civico" data-wi-place-city="comune_id"'
+            .' data-wi-place-lat="latitudine" data-wi-place-lng="longitudine"'
+            .' data-wi-restriction=\'{"country":"it"}\'';
+
+        if ($toponym !== null) {
+            $attributes .= ' data-wi-place-toponym="'.$toponym.'"';
+        }
+
+        return $attributes;
+    }
+
     /** @return array<string, string|array<string, mixed>> */
     public static function districts(): array
     {

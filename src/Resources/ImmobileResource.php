@@ -114,9 +114,12 @@ final class ImmobileResource extends Resource
             FormField::key('quartiere_id')->select(ImmobileForm::districts()),
             FormField::key('quartiere_zona_id')->select(ImmobileForm::districtZones()),
             FormField::key('strada')->text()->required(),
-            FormField::key('indirizzo')->text()->required(),
+            FormField::key('indirizzo')->text()->required()->attribute(ImmobileForm::placeAttributes('strada')),
             FormField::key('civico')->text(),
             FormField::key('cap')->text()->required(),
+            // Coordinate scritte dai suggerimenti di Google sull'indirizzo.
+            FormField::key('latitudine')->hidden(),
+            FormField::key('longitudine')->hidden(),
             FormField::key('note')->textarea(),
 
             FormField::key('contratto_id')->select(ImmobileForm::options('contract')),
@@ -207,13 +210,16 @@ final class ImmobileResource extends Resource
                 ]),
                 self::card([
                     self::section('location'),
-                    static::getInput('comune_id')->columnSpan(['default' => 12, 'md' => 4]),
-                    static::getInput('quartiere_id')->columnSpan(['default' => 12, 'md' => 4]),
-                    static::getInput('quartiere_zona_id')->columnSpan(['default' => 12, 'md' => 4]),
-                    static::getInput('strada')->columnSpan(['default' => 12, 'md' => 2]),
-                    static::getInput('indirizzo')->columnSpan(['default' => 12, 'md' => 6]),
+                    // Prima l'indirizzo, che con Google riempie toponimo, civico, comune e CAP.
+                    static::getInput('indirizzo')->columnSpan(['default' => 12, 'md' => 7]),
+                    static::getInput('strada')->columnSpan(['default' => 6, 'md' => 3]),
                     static::getInput('civico')->columnSpan(['default' => 6, 'md' => 2]),
-                    static::getInput('cap')->columnSpan(['default' => 6, 'md' => 2]),
+                    static::getInput('comune_id')->columnSpan(['default' => 8, 'md' => 9]),
+                    static::getInput('cap')->columnSpan(['default' => 4, 'md' => 3]),
+                    static::getInput('quartiere_id')->columnSpan(['default' => 12, 'md' => 6]),
+                    static::getInput('quartiere_zona_id')->columnSpan(['default' => 12, 'md' => 6]),
+                    static::getInput('latitudine'),
+                    static::getInput('longitudine'),
                 ]),
                 self::card([
                     static::getInput('note')->columnSpan(12),

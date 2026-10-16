@@ -95,6 +95,11 @@ final class ResidenzaForm extends FormText
         return ImmobileForm::municipalities();
     }
 
+    public static function placeAttributes(): string
+    {
+        return ImmobileForm::placeAttributes();
+    }
+
     public static function comuneNome(string $comuneId): string
     {
         return ImmobileForm::taxonomyLabel(Comune::class, $comuneId);

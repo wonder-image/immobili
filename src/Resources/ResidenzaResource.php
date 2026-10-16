@@ -85,7 +85,7 @@ final class ResidenzaResource extends Resource
             FormField::key('descrizione_breve')->textarea(),
             FormField::key('descrizione_lunga')->textarea(),
 
-            FormField::key('indirizzo')->text(),
+            FormField::key('indirizzo')->text()->attribute(ResidenzaForm::placeAttributes()),
             FormField::key('civico')->text(),
             FormField::key('cap')->text(),
             FormField::key('comune_id')->selectSearch(ResidenzaForm::municipalities()),
@@ -137,13 +137,14 @@ final class ResidenzaResource extends Resource
                 ]),
                 self::card([
                     self::section('location'),
-                    static::getInput('indirizzo')->columnSpan(['default' => 12, 'md' => 6]),
-                    static::getInput('civico')->columnSpan(['default' => 6, 'md' => 2]),
-                    static::getInput('cap')->columnSpan(['default' => 6, 'md' => 4]),
-                    static::getInput('comune_id')->columnSpan(['default' => 12, 'md' => 6]),
-                    static::getInput('latitudine')->columnSpan(['default' => 6, 'md' => 3]),
-                    static::getInput('longitudine')->columnSpan(['default' => 6, 'md' => 3]),
-                    static::getInput('zoom')->columnSpan(['default' => 12, 'md' => 6]),
+                    // Prima l'indirizzo, che con Google riempie il resto.
+                    static::getInput('indirizzo')->columnSpan(['default' => 8, 'md' => 9]),
+                    static::getInput('civico')->columnSpan(['default' => 4, 'md' => 3]),
+                    static::getInput('comune_id')->columnSpan(['default' => 8, 'md' => 9]),
+                    static::getInput('cap')->columnSpan(['default' => 4, 'md' => 3]),
+                    static::getInput('latitudine')->columnSpan(['default' => 6, 'md' => 4]),
+                    static::getInput('longitudine')->columnSpan(['default' => 6, 'md' => 4]),
+                    static::getInput('zoom')->columnSpan(['default' => 12, 'md' => 4]),
                 ]),
                 self::card([
                     self::section('media'),
