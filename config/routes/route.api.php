@@ -11,15 +11,15 @@ Route::area('api')
             ->group(function () {
 
                 // Sincronizzazione feed. Con parametro `feed` (id) sincronizza
-                // solo quella FeedSource, altrimenti tutti i feed attivi. Pensata
-                // per scheduler HTTP esterni e per il push di Gestim (che invia
+                // solo quella FeedSource, altrimenti tutti i feed pull attivi. Serve
+                // per le chiamate manuali e per il push di Gestim (che invia
                 // `callback` in querystring). Vedi http/api/task/sync.php.
                 Route::get('/sync/', Immobili::httpPath('api/task/sync.php'))
                     ->name('sync');
 
                 // Secondo piano immagini: scarica gli originali a massima
                 // risoluzione e genera le varianti responsive (webp) a lotti.
-                // Da agganciare a un cron separato dalla sync.
+                // Pianificato dall'attività `immobili.images` dello scheduler.
                 Route::get('/images/', Immobili::httpPath('api/task/images.php'))
                     ->name('images');
 

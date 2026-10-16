@@ -69,6 +69,6 @@ il resto della pagina funziona normalmente.
 Gli endpoint HTTP di sync **non** usano variabili d'ambiente: il modulo crea automaticamente un
 **utente API dedicato** (`@immobili`) con un token, generato al primo accesso al pannello
 **Immobili → Feed**. È quel token a proteggere le chiamate (header `Authorization: Bearer …`
-o, per Gestim in push, `?token=…`). La CLI locale non passa dagli endpoint e non usa il token.
-Dettagli e cron in
+o, per Gestim in push, `?token=…`). Lo scheduler del framework e la CLI locale non passano dagli
+endpoint e non usano il token. Dettagli e pianificazioni in
 [API, CLI e sincronizzazione](../riferimento/api-e-sync.md).

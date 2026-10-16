@@ -3,6 +3,9 @@
 namespace Wonder\Plugin\Immobili;
 
 use Wonder\App\Module\Contracts\ModuleInterface;
+use Wonder\App\Module\Contracts\ModuleTasks;
+use Wonder\Plugin\Immobili\Scheduler\ImagesTask;
+use Wonder\Plugin\Immobili\Scheduler\SyncTask;
 use Wonder\View\View;
 
 /**
@@ -14,7 +17,7 @@ use Wonder\View\View;
  * un sito può sovrascrivere qualunque view del modulo in
  * `custom/modules/immobili/view/…` senza toccare il pacchetto.
  */
-final class Immobili implements ModuleInterface
+final class Immobili implements ModuleInterface, ModuleTasks
 {
     /**
      * Base della documentazione (GitBook/GitHub). Usata per i link contestuali
@@ -26,6 +29,16 @@ final class Immobili implements ModuleInterface
     public static function root(): string
     {
         return dirname(__DIR__);
+    }
+
+    /**
+     * Attività registrate nello scheduler del core (Backend > Dev > Automazioni):
+     * sincronizzazione dei feed pull e ridimensionamento delle immagini. Le
+     * pianificazioni nascono da sole con `forge update` o al primo tick.
+     */
+    public static function tasks(): iterable
+    {
+        return [new SyncTask(), new ImagesTask()];
     }
 
     public static function manifestPath(): string

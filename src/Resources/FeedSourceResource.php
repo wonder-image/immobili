@@ -152,17 +152,17 @@ final class FeedSourceResource extends Resource
     }
 
     /**
-     * Nota secondaria del pannello feed: gli endpoint HTTP si autenticano con
-     * il token dell'utente API dedicato `@immobili` (nessuna variabile
-     * d'ambiente); la CLI locale non ne ha bisogno. Non mostra i comandi cron
-     * e rimanda alla documentazione.
+     * Nota secondaria del pannello feed: sincronizzazione e immagini sono
+     * attività dello scheduler del core (nessun cron da inserire a mano); il
+     * token dell'utente API `@immobili` serve solo agli endpoint HTTP, in
+     * pratica all'URL di notifica di Gestim.
      *
      * Provisiona l'utente/token al primo render (idempotente) così l'admin può
-     * copiarlo subito per configurare i cron.
+     * copiarlo subito.
      */
     private static function syncHelp(): string
     {
-        $docs = Immobili::DOCS_URL.'/riferimento/api-e-sync.md';
+        $docs = Immobili::DOCS_URL.'/riferimento/api-e-sync.md#pianificazioni';
 
         $token = '';
         try {
@@ -176,10 +176,11 @@ final class FeedSourceResource extends Resource
             : '';
 
         return
-            'Gli endpoint HTTP usano un <strong>token API dedicato</strong>; la CLI locale no.'
+            'Sincronizzazione e immagini sono pianificate in <strong>Dev → Automazioni → Pianificazioni</strong>: nessun cron da configurare.'
+            .'<br>Gli endpoint HTTP (es. notifica Gestim) usano un <strong>token API dedicato</strong>.'
             .$tokenBlock
             .'<br><a href="'.htmlspecialchars($docs, ENT_QUOTES).'" target="_blank" rel="noopener">'
-            .'Guida alla configurazione dei cron</a>';
+            .'Guida alle pianificazioni</a>';
     }
 
     /**

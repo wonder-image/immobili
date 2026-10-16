@@ -12,7 +12,7 @@ Ogni sito può collegare **uno o più feed**. Un feed è una riga gestita dal ba
    - **Attivo**: se spento, il feed viene ignorato dalla sincronizzazione.
    - **Credenziali**: variano per provider (vedi sotto).
    - **Opzioni**: salvataggio immagini in locale, default di visibilità/evidenza/venduto.
-3. Salva e premi **Sincronizza ora** (o attendi il cron).
+3. Salva e premi **Sincronizza ora** (o attendi la pianificazione).
 
 ## Credenziali per provider
 
@@ -30,7 +30,7 @@ anche *ID Sito*. Gestim **non** richiede né URL feed né password: tutti i dati
 agenzie, tipologie/lookup) arrivano nello ZIP inviato in push.
 
 Il pannello mostra inoltre, come testo secondario, il **token API** dedicato alla
-sincronizzazione e il link alla guida per configurare i cron.
+sincronizzazione (serve per l'URL di notifica di Gestim) e il link alle pianificazioni.
 
 Dettagli in [Getrix](../provider/getrix.md) e [Gestim](../provider/gestim.md).
 
@@ -42,14 +42,13 @@ tocca gli immobili degli altri.
 
 ## Sincronizzazione automatica
 
-Gli endpoint HTTP si autenticano con il **token di un utente API dedicato** (`@immobili`), creato
-automaticamente dal modulo; la CLI locale non richiede token. Il modo di aggiornare dipende dal
-gestionale:
+Il modulo registra le sue attività nello **scheduler di wonder-image/app**: nessun cron da
+inserire a mano. Il modo di aggiornare dipende dal gestionale:
 
-- **Getrix — pull**: serve un cron che legge il feed periodicamente.
-- **Gestim — push**: è Gestim a chiamare il tuo URL; **niente** cron di sync.
-- **Immagini**: cron separato per il resize webp, per entrambi i provider.
+- **Getrix — pull**: l'attività `immobili.sync` legge i feed pull ogni 30 minuti.
+- **Gestim — push**: è Gestim a chiamare il tuo URL (con il token dell'utente API `@immobili`);
+  la sincronizzazione pianificata lo salta.
+- **Immagini**: l'attività `immobili.images` elabora il resize webp ogni 5 minuti, per entrambi.
 
-I comandi cron esatti, sia CLI sia HTTP, sono nella
-[guida ai cron](../riferimento/api-e-sync.md), la stessa linkata dal pannello del feed. Per ogni task
-va configurata una sola modalità.
+Frequenze e parametri si gestiscono in **Backend → Dev → Automazioni → Pianificazioni**. Dettagli in
+[Pianificazioni](../riferimento/api-e-sync.md#pianificazioni), la pagina linkata dal pannello del feed.

@@ -50,8 +50,9 @@ dalla CLI locale senza token.
 > backend**, ma **non** esercita il codice di import (`GetrixProvider`/`GestimProvider`, tassonomie,
 > upsert idempotente, CLI o autenticazione degli endpoint). Per validare una **sincronizzazione
 > end-to-end** — parsing del feed, esecuzione CLI oppure token HTTP dell'utente API `@immobili` —
-> crea invece un `FeedSource` reale (anche di un cliente di prova) e premi **Sincronizza ora** o usa
-> il comando Getrix documentato in [API, CLI e sincronizzazione](api-e-sync.md).
+> crea invece un `FeedSource` reale (anche di un cliente di prova) e premi **Sincronizza ora**, **Esegui ora**
+> sulla pianificazione `immobili.sync` o usa il comando documentato in
+> [API, CLI e sincronizzazione](api-e-sync.md).
 
 ## Migrazione allo schema canonico (reseed)
 

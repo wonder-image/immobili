@@ -47,14 +47,16 @@ Apri il backend → sezione **Immobili → Feed**, aggiungi un feed (provider + 
 Il frontend è disponibile su `/immobili/` (lista), `/immobili/{slug}/` (dettaglio),
 `/immobili/venduti/` (venduti).
 
-## 6. Verifica la CLI e configura i cron
+## 6. Controlla le pianificazioni
 
-Il comando seguente usa il file reale installato dal modulo e non richiede il link `vendor/bin`:
+Non ci sono cron da configurare: `php forge update --local` registra nello scheduler del framework
+le attività `immobili.sync` e `immobili.images`, attive per default. Verificale in
+**Backend → Dev → Automazioni → Pianificazioni** (serve il cron unico di wonder-image/app già
+attivo sul server). Dettagli in
+[Pianificazioni](../riferimento/api-e-sync.md#pianificazioni).
+
+Per lanciare a mano gli stessi lavori resta la CLI del modulo:
 
 ```bash
 php vendor/wonder-image/immobili/bin/immobili list
 ```
-
-Deve elencare `sync` e `images`. Configura quindi i due task separati seguendo
-[API, CLI e sincronizzazione](../riferimento/api-e-sync.md#creare-i-cron): CLI con path assoluto se
-il cron gira sul server del sito, endpoint HTTP con token soltanto per scheduler esterni.

@@ -22,9 +22,9 @@ GET /api/immobili/images/            → elabora un lotto (default 30)
 GET /api/immobili/images/?limit=50   → dimensione del lotto
 ```
 
-Da agganciare a un **cron separato** da quello di sincronizzazione. Se il cron gira sul server usa il
-comando CLI con path assoluto; usa l'endpoint soltanto per scheduler esterni. Gli esempi canonici,
-mantenuti in un solo punto, sono nella [guida ai cron](api-e-sync.md#creare-i-cron).
+Il lavoro gira da solo con l'attività `immobili.images` dello scheduler del framework (ogni 5
+minuti, lotto da 30), separata dalla sincronizzazione: non serve configurare cron. Endpoint e CLI
+restano per l'esecuzione manuale. Vedi [Pianificazioni](api-e-sync.md#pianificazioni).
 
 Finché un'immagine non è processata, il frontend mostra comunque la `source_url` remota (nessuna
 immagine rotta).

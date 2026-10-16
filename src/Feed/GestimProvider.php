@@ -5,6 +5,7 @@ namespace Wonder\Plugin\Immobili\Feed;
 use Wonder\App\ResourceSchema\FormField;
 use Wonder\Plugin\Gestim\Import;
 use Wonder\Plugin\Immobili\Feed\Contracts\FeedProvider;
+use Wonder\Plugin\Immobili\Feed\Contracts\PushFeedProvider;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
@@ -23,7 +24,7 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
  *   - code      → society_id (id società Gestim)
  *   - username  → site_id (id sito Gestim)
  */
-final class GestimProvider implements FeedProvider
+final class GestimProvider implements FeedProvider, PushFeedProvider
 {
     public const KEY = 'gestim';
 

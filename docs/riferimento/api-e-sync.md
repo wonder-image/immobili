@@ -9,12 +9,12 @@ genera un **token** JWT, salvato in `api_users` come per l'utente di sistema del
 framework.
 
 Quel token è **l'unico segreto degli endpoint HTTP**. Lo trovi come testo secondario nel pannello
-del feed (etichetta _Token API (Bearer)_). La CLI locale non usa il token perché non espone una
-richiesta di rete.
+del feed (etichetta _Token API (Bearer)_). Lo scheduler del framework e la CLI locale non lo usano
+perché non passano da una richiesta di rete.
 
 Ai soli endpoint HTTP puoi presentarlo in due modi:
 
-- **Header** (consigliato per gli scheduler HTTP):
+- **Header** (consigliato per le chiamate manuali o da integrazioni):
   `Authorization: Bearer <TOKEN>`
 - **Query string** (usata da Gestim in push, che non può impostare header):
   `?token=<TOKEN>` — l'endpoint lo trasforma internamente in Bearer.
@@ -33,35 +33,32 @@ Risposta JSON:
 { "success": true, "status": 200, "response": [ { "success": true, "count": 42, "feed": 1 } ] }
 ```
 
-## CLI locale
+## CLI locale — esecuzione manuale
 
-Il modulo installa un unico binario Composer, `immobili`, con due sottocomandi. Il percorso fisico
-può essere invocato da qualunque directory: il binario ricava la radice del sito dal proprio path e
+Il modulo installa un unico binario Composer, `immobili`, con due sottocomandi utili per lanciare a
+mano o diagnosticare gli stessi lavori delle [pianificazioni](#pianificazioni). **Non** va aggiunto
+ai cron del server: la frequenza la gestisce lo scheduler del framework. Il percorso fisico può
+essere invocato da qualunque directory: il binario ricava la radice del sito dal proprio path e
 avvia il bootstrap di Wonder prima di chiamare i servizi.
 
 ```bash
 php /PERCORSO/SITO/vendor/wonder-image/immobili/bin/immobili list
 ```
 
-Il path fisico è la forma consigliata nei cron: non dipende dalla directory corrente e non usa il
-link `vendor/bin/immobili`. Se il path contiene spazi, racchiudilo tra virgolette.
-
 | Comando | Comportamento |
 |---|---|
 | `sync --feed=<ID>` | Sincronizza un singolo feed; è la forma consigliata per Getrix. |
-| `sync` | Sincronizza tutti i feed attivi. Usalo soltanto se sono tutti provider pull: Gestim è push e deve essere chiamato dal gestionale con `callback`. |
+| `sync` | Sincronizza tutti i feed attivi pull; i feed push (Gestim) sono saltati perché li chiama il gestionale con `callback`. |
 | `images --limit=30` | Elabora il lotto successivo di immagini; il limite ammesso è 1–200 e il default è 30. |
 | `list` | Elenca i sottocomandi senza avviare una sincronizzazione. |
 | `<comando> --help` | Mostra opzioni e sintassi del sottocomando. |
 
 La CLI non richiede il token Bearer e non effettua richieste HTTP verso il sito. Scrive il risultato
 JSON su standard output e termina con codice `0` quando il task riesce oppure `1` quando il bootstrap
-non parte, una sincronizzazione fallisce o il lotto immagini contiene errori. Prima di aggiungere le
-redirezioni del cron, esegui entrambi i comandi manualmente e controlla il JSON restituito.
+non parte, una sincronizzazione fallisce o il lotto immagini contiene errori.
 
 Dalla radice del sito Composer rende disponibile anche la scorciatoia
-`php vendor/bin/immobili <comando>`; è equivalente, ma non è necessaria per l'esecuzione tramite path
-assoluto.
+`php vendor/bin/immobili <comando>`; è equivalente.
 
 ## Cosa fa la sincronizzazione
 
@@ -74,62 +71,41 @@ Per ogni feed (`FeedSyncService::sync`):
 4. Aggiorna immagini e descrizioni, genera slug/URL/QR code.
 5. Rimuove gli immobili spariti dal feed e registra `last_sync_status`.
 
-## Creare i cron
+## Pianificazioni
 
-**Sincronizzazione** e **resize immagini** vanno su **due cron separati**. Per ciascun task scegli
-una sola modalità:
+Sincronizzazione e resize immagini **non** si inseriscono a mano nei cron del server: il modulo le
+registra nello **scheduler di wonder-image/app** (`Immobili::tasks()`, contratto `ModuleTasks`).
+Basta il cron unico del framework, già configurato per il sito (vedi la documentazione
+di wonder-image/app, *Cron job da codice*). Le pianificazioni iniziali vengono create da
+`php forge update --local` o al primo tick dello scheduler e si gestiscono in
+**Backend → Dev → Automazioni → Pianificazioni**.
 
-- **CLI locale**, consigliata quando il cron gira sullo stesso server del sito: non passa da HTTP e
-  non richiede token;
-- **HTTP**, per scheduler esterni che possono chiamare soltanto un URL.
+| Attività | Chiave | Default | Parametri |
+|---|---|---|---|
+| Immobili: sincronizzazione dei feed | `immobili.sync` | attiva, ogni 30 minuti, timeout 900 s | `feed`: id del feed; vuoto = tutti i feed pull attivi |
+| Immobili: ridimensionamento delle immagini | `immobili.images` | attiva, ogni 5 minuti, timeout 300 s | `limit`: lotto da 1 a 200 (default 30) |
 
-Non configurare entrambe le modalità per lo stesso task, altrimenti la stessa lavorazione partirebbe
-due volte.
+- I feed **push** (Gestim) sono saltati dalla sincronizzazione pianificata: li aggiorna il
+  gestionale chiamando l'endpoint (vedi sotto). Una pianificazione con `feed` impostato su un feed
+  push fallisce con un messaggio esplicito.
+- Per frequenze diverse per feed aggiungi dal backend altre pianificazioni di `immobili.sync`, una
+  per `feed`, e sospendi quella di default.
+- Frequenza, stato e parametri definiti nel codice valgono **solo come valori iniziali**: dopo la
+  creazione si modificano dal backend. **Esegui ora** dalla lista avvia il lavoro al tick successivo.
+- Una sincronizzazione con errori o un lotto con immagini fallite viene registrato come esecuzione
+  fallita nel registro dello scheduler, oltre che in **Immobili → Storico sync**.
 
-### CLI locale — consigliata
+### Gestim — push, nessuna pianificazione di sync
 
-Sostituisci `/PERCORSO/SITO` con la radice assoluta del sito e `<ID>` con l'id del feed Getrix.
-
-```cron
-# Getrix: sincronizzazione del singolo feed ogni 30 minuti
-*/30 * * * * /usr/bin/php /PERCORSO/SITO/vendor/wonder-image/immobili/bin/immobili sync --feed=<ID> > /dev/null 2>&1
-
-# Getrix e Gestim: elaborazione immagini ogni 5 minuti, lotto da 30
-*/5 * * * * /usr/bin/php /PERCORSO/SITO/vendor/wonder-image/immobili/bin/immobili images --limit=30 > /dev/null 2>&1
-```
-
-Durante la prima configurazione rimuovi temporaneamente `> /dev/null 2>&1`: in questo modo vedi il
-JSON e gli eventuali errori. Riattiva la redirezione solo dopo una prova manuale riuscita.
-
-### HTTP — scheduler esterno
-
-Sostituisci `TUOSITO`, `<TOKEN>` (token dell'utente `@immobili`) e `<ID>` (id del feed).
-
-#### Getrix — pull
-
-Getrix espone un file da scaricare: sei tu a doverlo leggere periodicamente.
-
-```cron
-*/30 * * * * curl -fsS -H "Authorization: Bearer <TOKEN>" "https://TUOSITO/api/immobili/sync/?feed=<ID>" > /dev/null
-```
-
-#### Immagini — Getrix e Gestim
-
-```cron
-*/5 * * * * curl -fsS -H "Authorization: Bearer <TOKEN>" "https://TUOSITO/api/immobili/images/" > /dev/null
-```
-
-### Gestim — push, nessun cron di sincronizzazione
-
-È Gestim a chiamare il tuo URL quando ci sono aggiornamenti: **non** serve un cron di sync.
-Nel pannello Gestim imposta come URL di notifica (il token va in query perché Gestim non
-invia header):
+È Gestim a chiamare il tuo URL quando ci sono aggiornamenti. Nel pannello Gestim imposta come URL
+di notifica (il token va in query perché Gestim non invia header):
 
 ```
 https://TUOSITO/api/immobili/sync/?feed=<ID>&token=<TOKEN>
 ```
 
-(Gestim vi aggiunge automaticamente `&callback=<url-zip>`.)
+(Gestim vi aggiunge automaticamente `&callback=<url-zip>`.) Le immagini dei feed Gestim sono
+elaborate dalla pianificazione `immobili.images`.
 
 ## Ricerca (JSON)
 

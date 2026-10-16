@@ -12,7 +12,8 @@ pronti, **bilingua (it/en)**.
 - **Modello dati unico**: tutti gli immobili confluiscono nelle tabelle `immobili*`, distinti da
   `provider` e dal feed di origine.
 - **Frontend pronto**: lista con mappa e filtri, scheda dettaglio, immobili venduti, scheda PDF.
-- **Backend e automazione**: configurazione feed, sincronizzazione manuale, CLI/cron e gestione di
+- **Backend e automazione**: configurazione feed, sincronizzazione manuale o pianificata dallo
+  scheduler del framework, CLI e gestione di
   visibilità/evidenza/venduto.
 - **Bilingua**: interfaccia e slug in italiano e inglese; descrizioni multilingua importate dal feed.
 - **Estendibile**: nuovi gestionali via `FeedProvider`; view personalizzabili dal sito.
@@ -22,7 +23,7 @@ pronti, **bilingua (it/en)**.
 1. [Installazione](getting-started/installazione.md)
 2. [Struttura del modulo](getting-started/struttura-modulo.md)
 3. [Collegare uno o più feed](configurazione/feed-e-gestionali.md)
-4. [Automatizzare con CLI o API](riferimento/api-e-sync.md#creare-i-cron)
+4. [Pianificazioni automatiche](riferimento/api-e-sync.md#pianificazioni)
 
 ## Mappa della documentazione
 

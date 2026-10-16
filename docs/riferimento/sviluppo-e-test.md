@@ -35,7 +35,7 @@ php bin/immobili sync --help
 php bin/immobili images --help
 ```
 
-In un sito installato verifica anche il percorso destinato ai cron:
+In un sito installato verifica anche il percorso fisico del binario:
 
 ```bash
 php /PERCORSO/SITO/vendor/wonder-image/immobili/bin/immobili list --raw

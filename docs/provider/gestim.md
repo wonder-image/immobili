@@ -38,9 +38,9 @@ secondario nel pannello del feed (vedi [API, CLI e sincronizzazione](../riferime
   denormalizzati.
 - `sold` è derivato dallo stato Gestim (`stato_immo`) ed è autoritativo dal feed.
 
-## Cron (Gestim = push)
+## Pianificazioni (Gestim = push)
 
-Gestim è **push**: chiama lui il tuo URL, quindi **non serve un cron di sincronizzazione**. Serve solo
-il cron **immagini**. Usa la CLI con path assoluto se il cron gira sul server del sito, oppure
-l'endpoint con token Bearer per uno scheduler esterno. Vedi la
-[guida ai cron](../riferimento/api-e-sync.md) per il comando unico da configurare.
+Gestim è **push**: chiama lui il tuo URL, quindi la sincronizzazione pianificata `immobili.sync` lo
+salta. Le immagini sono elaborate dall'attività `immobili.images`, registrata dal modulo nello
+scheduler del framework: non serve configurare cron. Vedi
+[Pianificazioni](../riferimento/api-e-sync.md#pianificazioni).

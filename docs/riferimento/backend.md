@@ -14,7 +14,7 @@ Il modulo aggiunge la sezione **Immobili** al backend (Feed, Immobili, Storico s
 - Elenco di tutti gli immobili (da feed **e** manuali).
 - Toggle rapidi in tabella per **In evidenza**, **Visibile**, **Venduto**.
 - Filtri per contratto e stato; ricerca su riferimento/indirizzo/quartiere/zona.
-- **Aggiorna immobili**: forza dalla testata della lista la sincronizzazione di tutti i feed attivi.
+- **Aggiorna immobili**: forza dalla testata della lista la sincronizzazione di tutti i feed pull attivi (Getrix); i feed push (Gestim) li aggiorna il gestionale.
 - **Immobili da feed**: dal form si aggiorna lo stato editoriale, tradotto nei flag `visible` e
   `sold`; `evidence` resta disponibile come azione rapida in tabella. Gli altri dati sono governati
   dal gestionale.

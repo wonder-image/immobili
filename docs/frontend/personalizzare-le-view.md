@@ -159,8 +159,8 @@ lightbox Fancybox) per le planimetrie. La pagina abilita i relativi bundle con
 Queste funzioni ricostruiscono le varianti responsive con `Image::src()`, quindi funzionano **solo
 con immagini già processate** (varianti locali generate dall'ImageProcessor o dall'upload manuale).
 Finché un immobile ha immagini non ancora processate (solo `source_url` remota), la pagina ricade sul
-componente `gallery` (griglia statica) — nessuna immagine rotta. Dopo il cron immagini
-(`/api/immobili/images/`) compare automaticamente il carosello.
+componente `gallery` (griglia statica) — nessuna immagine rotta. Dopo il passaggio
+dell'attività `immobili.images` compare automaticamente il carosello.
 
 > Per vedere il carosello sugli immobili di **seed** (immagini `picsum` remote), esegui prima
 > l'endpoint immagini così vengono scaricate e processate in locale.

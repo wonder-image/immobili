@@ -11,8 +11,8 @@ use Wonder\Plugin\Immobili\Media\ImageProcessor;
  *   GET /api/immobili/images/?limit=50   → dimensione del lotto
  *
  * Scarica gli originali a massima risoluzione e genera le varianti responsive
- * (webp + formati di default). Da agganciare a un cron distinto da quello di
- * sincronizzazione. Autenticazione: token dell'utente API dedicato `@immobili`
+ * (webp + formati di default). Di norma lo esegue l'attività `immobili.images`
+ * dello scheduler; l'endpoint resta per le chiamate manuali. Autenticazione: token dell'utente API dedicato `@immobili`
  * (`Authorization: Bearer <token>`), come per l'endpoint di sync.
  */
 

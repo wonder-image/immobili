@@ -9,6 +9,12 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 - Nella card "Immobili" della home i link **Immobili** e **Residenze** mostrano il totale come badge e una riga con la ripartizione (in vendita / in affitto / venduti; visibili / in evidenza). Li forniscono `Backend\ImmobiliLinkSummary` e `Backend\ResidenzeLinkSummary` tramite `NavigationSchema::homeSummary()`; le query (`Backend\HomeCounts`) girano solo in home e una volta per richiesta. Richiede il contratto `HomeLinkSummary` di `wonder-image/app` (non ancora in un tag: oggi `dev-main`). Test offline `tests/home-summary.php`.
 
+### Pianificazioni nello scheduler del framework
+
+- Sincronizzazione dei feed (`immobili.sync`, ogni 30 minuti) e resize immagini (`immobili.images`, ogni 5 minuti) sono attività dello scheduler di wonder-image/app, registrate da `Immobili::tasks()` (`ModuleTasks`) e gestite in **Dev → Automazioni → Pianificazioni**. Non vanno più inseriti cron a mano: rimuovere dai server le righe cron `immobili sync` / `immobili images` e le chiamate HTTP a `/api/immobili/{sync,images}/`, altrimenti i lavori partono due volte.
+- I provider push implementano `Feed\Contracts\PushFeedProvider` (Gestim): "tutti i feed" (scheduler, CLI, endpoint, **Aggiorna immobili**) li salta invece di registrare un errore a ogni giro.
+- Richiede `wonder-image/app` `^2.2.10`. Test offline `tests/scheduler-tasks.php`.
+
 ### Route delle liste
 
 - Route dedicate per immobili in vendita, in affitto, venduti e affittati, tutte sulla view list; preset condivisi in ListingRoute.
@@ -25,7 +31,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ### Compatibilità Composer
 
-- Il modulo accetta sia le release `^2.2` sia `dev-main` di
+- Il modulo accetta sia le release `^2.2.10` sia `dev-main` di
   `wonder-image/app`, senza richiedere alias di versione nei siti in sviluppo.
 
 ### Barra di salvataggio del backend

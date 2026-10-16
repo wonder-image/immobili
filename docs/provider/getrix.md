@@ -39,10 +39,10 @@ Salva e premi **Sincronizza ora**.
   comuni a ogni sync. Per forzarne l'aggiornamento, richiama l'endpoint con
   `&refresh_taxonomies=1` (operazione più lenta).
 
-## Cron (Getrix = pull)
+## Pianificazioni (Getrix = pull)
 
-Getrix richiede un **cron di sincronizzazione** (sei tu a scaricare il file) più il cron immagini.
-Usa la **CLI con path assoluto** se il cron gira sul server del sito; usa gli endpoint con token
-Bearer solo per uno scheduler esterno. I comandi completi sono raccolti nella
-[guida ai cron](../riferimento/api-e-sync.md), così non ci sono configurazioni concorrenti o esempi
-divergenti. Vedi anche [Feed e gestionali](../configurazione/feed-e-gestionali.md).
+Getrix è **pull**: il file va scaricato periodicamente. Non serve configurare cron: le attività
+`immobili.sync` (ogni 30 minuti) e `immobili.images` (ogni 5 minuti) sono registrate dal modulo
+nello scheduler del framework e si gestiscono in **Backend → Dev → Automazioni → Pianificazioni**.
+Dettagli in [Pianificazioni](../riferimento/api-e-sync.md#pianificazioni). Vedi anche
+[Feed e gestionali](../configurazione/feed-e-gestionali.md).

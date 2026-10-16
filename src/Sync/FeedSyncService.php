@@ -7,6 +7,7 @@ use Wonder\Plugin\Immobili\Feed\FeedSourceConfig;
 use Wonder\Plugin\Immobili\Feed\NormalizedListing;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;
 use Wonder\Plugin\Immobili\Feed\Contracts\ArchivesFeedArtifact;
+use Wonder\Plugin\Immobili\Feed\Contracts\PushFeedProvider;
 use Wonder\Plugin\Immobili\Models\System\FeedSource;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
@@ -32,7 +33,8 @@ final class FeedSyncService
     private ?ImmobilePresenter $presenter = null;
 
     /**
-     * Sincronizza tutti i feed attivi.
+     * Sincronizza tutti i feed attivi in pull. I feed push (Gestim) sono
+     * saltati: si aggiornano solo quando il gestionale chiama l'endpoint.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -41,10 +43,24 @@ final class FeedSyncService
         $results = [];
 
         foreach ($this->rows(FeedSource::find(['active' => 'true', 'deleted' => 'false'])) as $row) {
-            $results[] = $this->sync(FeedSourceConfig::fromRow($row));
+            $feed = FeedSourceConfig::fromRow($row);
+
+            if (self::isPush($feed)) {
+                continue;
+            }
+
+            $results[] = $this->sync($feed);
         }
 
         return $results;
+    }
+
+    /** True se il provider del feed è push e non può essere letto su richiesta. */
+    public static function isPush(FeedSourceConfig $feed): bool
+    {
+        ProviderRegistry::registerDefaults();
+
+        return ProviderRegistry::get($feed->provider) instanceof PushFeedProvider;
     }
 
     /**

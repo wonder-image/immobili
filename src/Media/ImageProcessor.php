@@ -13,7 +13,8 @@ use Wonder\Plugin\Immobili\Models\System\SyncLog;
  * massima risoluzione in locale e genera le varianti responsive (webp + formati
  * di default `RESPONSIVE_IMAGE_SIZES`) tramite l'SDK del framework
  * `Wonder\Plugin\Custom\Image\ResponsiveImage`. È separato dalla sincronizzazione
- * perché gli immobili hanno molte immagini pesanti: si esegue via cron a batch.
+ * perché gli immobili hanno molte immagini pesanti: si esegue a lotti
+ * dall'attività `immobili.images` dello scheduler.
  */
 final class ImageProcessor
 {
