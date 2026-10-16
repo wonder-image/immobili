@@ -5,6 +5,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ## [2.0.0] - non ancora rilasciato
 
+### Conteggi sui link della home del backend
+
+- Nella card "Immobili" della home i link **Immobili** e **Residenze** mostrano il totale come badge e una riga con la ripartizione (in vendita / in affitto / venduti; visibili / in evidenza). Li forniscono `Backend\ImmobiliLinkSummary` e `Backend\ResidenzeLinkSummary` tramite `NavigationSchema::homeSummary()`; le query (`Backend\HomeCounts`) girano solo in home e una volta per richiesta. Richiede il contratto `HomeLinkSummary` di `wonder-image/app` (non ancora in un tag: oggi `dev-main`). Test offline `tests/home-summary.php`.
+
 ### Route delle liste
 
 - Route dedicate per immobili in vendita, in affitto, venduti e affittati, tutte sulla view list; preset condivisi in ListingRoute.

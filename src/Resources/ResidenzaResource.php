@@ -16,10 +16,11 @@ use Wonder\Elements\Components\Container;
 use Wonder\Elements\Components\SectionTitle;
 use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
+use Wonder\Plugin\Immobili\Backend\ResidenzeLinkSummary;
+use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
-use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
 use Wonder\Plugin\Immobili\Support\Slug;
 
@@ -256,7 +257,8 @@ final class ResidenzaResource extends Resource
             ->section('immobili', 'Immobili', 'bi-house-door', 500, ['admin', 'immobili_manager'])
             ->title(ResidenzaForm::text('titles.list', 'Residenze'))
             ->order(20)
-            ->authority(['admin', 'immobili_manager']);
+            ->authority(['admin', 'immobili_manager'])
+            ->homeSummary(ResidenzeLinkSummary::class);
     }
 
     // --- Form helpers -----------------------------------------------------

@@ -2,8 +2,8 @@
 
 namespace Wonder\Plugin\Immobili\Resources;
 
-use Wonder\App\Resource;
 use Wonder\App\LegacyGlobals;
+use Wonder\App\Resource;
 use Wonder\App\ResourceSchema\ApiSchema;
 use Wonder\App\ResourceSchema\FormField;
 use Wonder\App\ResourceSchema\Inputs\InputCheckBoolean;
@@ -25,14 +25,15 @@ use Wonder\Elements\Components\SectionTitle;
 use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
 use Wonder\Http\Route;
+use Wonder\Plugin\Immobili\Backend\ImmobiliLinkSummary;
+use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Immobili;
-use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
+use Wonder\Plugin\Immobili\Models\Taxonomy\Comune;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Quartiere;
 use Wonder\Plugin\Immobili\Models\Taxonomy\QuartiereZona;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
-use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
 use Wonder\Plugin\Immobili\Support\Slug;
 
@@ -503,7 +504,8 @@ final class ImmobileResource extends Resource
             ->section('immobili', 'Immobili', 'bi-house-door', 500, ['admin', 'immobili_manager'])
             ->title('Immobili')
             ->order(10)
-            ->authority(['admin', 'immobili_manager']);
+            ->authority(['admin', 'immobili_manager'])
+            ->homeSummary(ImmobiliLinkSummary::class);
     }
 
     /**
