@@ -190,17 +190,17 @@ final class ResidenzaResource extends Resource
     public static function tableSchema(): array
     {
         return [
-            TableColumn::key('evidence')->evidenceBadge(true)->badgeVariant('badgeIcon')->label('')->size('little'),
-            TableColumn::key('image')->image()->formatter(static fn (array $row): string => self::coverCell($row))->label('')->size('little')->link('view'),
+            TableColumn::key('evidence')->evidenceBadge(true)->badgeVariant('badgeIcon')->label('')->size('little')->hiddenDevice('mobile'),
+            TableColumn::key('image')->image()->formatter(static fn (array $row): string => self::coverCell($row))->label('')->size('little')->link('view')->hiddenDevice('mobile'),
             TableColumn::key('nome')->text()->link('view'),
             TableColumn::key('comune_nome')->formatter(static fn (array $row): string => self::comuneCell($row))->label(ResidenzaForm::text('fields.comune_id'))->size('medium'),
-            TableColumn::key('inizio_anno')->formatter(static fn (array $row): string => self::timelineCell($row))->label(ResidenzaForm::text('fields.timeline', 'Timeline'))->size('medium'),
+            TableColumn::key('inizio_anno')->formatter(static fn (array $row): string => self::timelineCell($row))->label(ResidenzaForm::text('fields.timeline', 'Timeline'))->size('medium')->hiddenDevice('mobile'),
             TableColumn::key('sold')->booleanBadge('sold')
                 ->badgeOff('Disponibile', 'bi bi-tag', 'primary')
                 ->badgeOn('Venduto', 'bi bi-check2-circle', 'dark')
                 ->size('little'),
             TableColumn::key('visible')->visibleBadge(true)->size('little'),
-            TableColumn::key('actions')->button()->actions(['view', 'edit', 'visible', 'evidence', 'delete']),
+            TableColumn::key('actions')->button()->actions(['view', 'edit', 'visible', 'evidence', 'delete'])->hiddenDevice('mobile'),
         ];
     }
 

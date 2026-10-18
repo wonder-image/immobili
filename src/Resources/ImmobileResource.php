@@ -438,18 +438,18 @@ final class ImmobileResource extends Resource
     {
         return [
             TableColumn::key('evidence')->evidenceBadge(true)->badgeVariant('badgeIcon')->label('')->size('little'),
-            TableColumn::key('image')->image()->formatter(static fn (array $row): string => (new ImmobilePresenter())->coverImage($row))->label('')->size('little')->link('view'),
+            TableColumn::key('image')->image()->formatter(static fn (array $row): string => (new ImmobilePresenter())->coverImage($row))->label('')->size('little')->link('view')->hiddenDevice('mobile'),
             TableColumn::key('nome')->formatter(static fn (array $row): string => ImmobilePresenter::nome($row))->link('view'),
-            TableColumn::key('comune_nome')->text()->size('medium'),
+            TableColumn::key('comune_nome')->text()->size('medium')->hiddenDevice('mobile'),
             TableColumn::key('prezzo')->formatter(static fn (array $row): string => ImmobilePresenter::price($row))->size('medium')->sortable(),
-            TableColumn::key('superficie')->formatter(static fn (array $row): string => ImmobilePresenter::formatSurface($row['superficie'] ?? 0))->size('medium')->sortable(),
-            TableColumn::key('creation')->date()->sortable(),
+            TableColumn::key('superficie')->formatter(static fn (array $row): string => ImmobilePresenter::formatSurface($row['superficie'] ?? 0))->size('medium')->sortable()->hiddenDevice('mobile'),
+            TableColumn::key('creation')->date()->sortable()->hiddenDevice('mobile'),
             TableColumn::key('sold')->booleanBadge('sold')
                 ->badgeOff('In vendita', 'bi bi-tag', 'primary')
                 ->badgeOn('Venduto', 'bi bi-check2-circle', 'dark')
                 ->size('little'),
             TableColumn::key('visible')->visibleBadge(true)->size('little'),
-            TableColumn::key('actions')->button()->actions(['view', 'edit', 'visible', 'evidence', 'delete']),
+            TableColumn::key('actions')->button()->actions(['view', 'edit', 'visible', 'evidence', 'delete'])->hiddenDevice('mobile'),
         ];
     }
 
