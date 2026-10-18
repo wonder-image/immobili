@@ -6,12 +6,12 @@ use Wonder\Plugin\Immobili\Models\Immobile;
 use Wonder\Plugin\Immobili\Models\Residenza;
 
 /**
- * Numeri del modulo per i link "Immobili" e "Residenze" della home del
+ * Numeri del modulo per le card di stato "Immobili" e "Residenze" della home del
  * backend: immobili (totale, in vendita, in affitto, venduti) e residenze
  * (totale, visibili, in evidenza). Contano solo le righe non cancellate;
  * vendita/affitto seguono la convenzione del catalogo (`contratto_id` 'A' =
  * affitto, tutto il resto = vendita) ed escludono i venduti. Le query girano
- * una volta per richiesta, anche se i due link le chiedono entrambi.
+ * una volta per richiesta, anche se le due card le chiedono entrambe.
  */
 final class HomeCounts
 {
@@ -45,13 +45,13 @@ final class HomeCounts
         ];
     }
 
-    /** @return array{badge: string, detail: string} */
+    /** @return array{value: string, detail: string} */
     public static function immobili(array $counts): array
     {
         $immobili = (array) ($counts['immobili'] ?? []);
 
         return [
-            'badge' => (string) (int) ($immobili['totale'] ?? 0),
+            'value' => (string) (int) ($immobili['totale'] ?? 0),
             'detail' => implode(' · ', [
                 (int) ($immobili['vendita'] ?? 0).' in vendita',
                 (int) ($immobili['affitto'] ?? 0).' in affitto',
@@ -60,13 +60,13 @@ final class HomeCounts
         ];
     }
 
-    /** @return array{badge: string, detail: string} */
+    /** @return array{value: string, detail: string} */
     public static function residenze(array $counts): array
     {
         $residenze = (array) ($counts['residenze'] ?? []);
 
         return [
-            'badge' => (string) (int) ($residenze['totale'] ?? 0),
+            'value' => (string) (int) ($residenze['totale'] ?? 0),
             'detail' => implode(' · ', [
                 self::plural((int) ($residenze['visibili'] ?? 0), 'visibile', 'visibili'),
                 (int) ($residenze['evidenza'] ?? 0).' in evidenza',

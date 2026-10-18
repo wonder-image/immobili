@@ -25,7 +25,6 @@ use Wonder\Elements\Components\SectionTitle;
 use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
 use Wonder\Http\Route;
-use Wonder\Plugin\Immobili\Backend\ImmobiliLinkSummary;
 use Wonder\Plugin\Immobili\Catalog\ImmobilePresenter;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
@@ -505,7 +504,7 @@ final class ImmobileResource extends Resource
             ->title('Immobili')
             ->order(10)
             ->authority(['admin', 'immobili_manager'])
-            ->homeSummary(ImmobiliLinkSummary::class);
+            ->homeShortcut();
     }
 
     /**

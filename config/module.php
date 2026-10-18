@@ -1,6 +1,8 @@
 <?php
 
 use Wonder\Localization\LanguageContext;
+use Wonder\Plugin\Immobili\Backend\ImmobiliStatus;
+use Wonder\Plugin\Immobili\Backend\ResidenzeStatus;
 use Wonder\Plugin\Immobili\Feed\ProviderRegistry;
 use Wonder\Plugin\Immobili\Immobili;
 
@@ -25,4 +27,12 @@ return [
 
     // Aspetto compatto del marker: `icon` oppure `icon-price`.
     'map_marker_mode' => 'icon-price',
+
+    // Card di stato della home del backend, accanto a Scheduler ed Errori.
+    'backend' => [
+        'home_status' => [
+            'immobili' => ImmobiliStatus::class,
+            'residenze' => ResidenzeStatus::class,
+        ],
+    ],
 ];

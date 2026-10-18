@@ -5,9 +5,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ## [2.0.0] - non ancora rilasciato
 
-### Conteggi sui link della home del backend
+### Conteggi e scorciatoie nella home del backend
 
-- Nella card "Immobili" della home i link **Immobili** e **Residenze** mostrano il totale come badge e una riga con la ripartizione (in vendita / in affitto / venduti; visibili / in evidenza). Li forniscono `Backend\ImmobiliLinkSummary` e `Backend\ResidenzeLinkSummary` tramite `NavigationSchema::homeSummary()`; le query (`Backend\HomeCounts`) girano solo in home e una volta per richiesta. Richiede il contratto `HomeLinkSummary` di `wonder-image/app` (non ancora in un tag: oggi `dev-main`). Test offline `tests/home-summary.php`.
+- Nella striscia di stato della home, accanto a Scheduler ed Errori, le card **Immobili** (totale; in vendita / in affitto / venduti) e **Residenze** (totale; visibili / in evidenza), registrate in `backend.home_status` da `Backend\ImmobiliStatus` e `Backend\ResidenzeStatus`. Le query (`Backend\HomeCounts`) girano solo in home e una volta per richiesta; le card compaiono a chi vede l'elenco della Resource.
+- **Immobili** e **Residenze** sono anche in "Accesso rapido" (`NavigationSchema::homeShortcut()`), oltre che nella card della sezione. Richiede `wonder-image/app` con `homeShortcut()` (non ancora in un tag: oggi `dev-main`). Test offline `tests/home-summary.php`.
 
 ### Pianificazioni nello scheduler del framework
 

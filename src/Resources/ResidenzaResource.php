@@ -16,7 +16,6 @@ use Wonder\Elements\Components\Container;
 use Wonder\Elements\Components\SectionTitle;
 use Wonder\Elements\Form\Components\Submit;
 use Wonder\Elements\Form\Form;
-use Wonder\Plugin\Immobili\Backend\ResidenzeLinkSummary;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Immobili;
 use Wonder\Plugin\Immobili\Models\Immobile;
@@ -258,7 +257,7 @@ final class ResidenzaResource extends Resource
             ->title(ResidenzaForm::text('titles.list', 'Residenze'))
             ->order(20)
             ->authority(['admin', 'immobili_manager'])
-            ->homeSummary(ResidenzeLinkSummary::class);
+            ->homeShortcut();
     }
 
     // --- Form helpers -----------------------------------------------------
