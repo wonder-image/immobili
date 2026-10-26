@@ -36,7 +36,7 @@ final class ResidenzaPresenter
         $data['box'] = (int) ($row['box'] ?? 0);
         $data['features'] = is_array($row['features'] ?? null) ? $row['features'] : [];
         $data['prettyAddress'] = $this->prettyAddress($row);
-        $data['url'] = __r('residenze.detail', ['slug' => (string) ($row['slug'] ?? '')]);
+        $data['url'] = __r('residenza.view', ['slug' => (string) ($row['slug'] ?? '')]);
 
         $images = $this->images($row);
         $data['images'] = array_column($images, 'src');

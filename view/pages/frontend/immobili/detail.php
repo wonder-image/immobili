@@ -30,7 +30,7 @@ if ($residenzaId > 0) {
     if (is_array($residenzaRow) && isset($residenzaRow['slug'])) {
         $residenzaLink = [
             'nome' => (string) ($residenzaRow['nome'] ?? ''),
-            'url'  => __r('residenze.detail', ['slug' => (string) $residenzaRow['slug']]),
+            'url'  => __r('residenza.view', ['slug' => (string) $residenzaRow['slug']]),
         ];
     }
 }

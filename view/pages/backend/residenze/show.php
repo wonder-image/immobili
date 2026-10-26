@@ -3,6 +3,7 @@
 use Wonder\Plugin\Immobili\Models\Residenza;
 use Wonder\Plugin\Immobili\Catalog\ResidenzaPresenter;
 use Wonder\Plugin\Immobili\Support\Forms\ResidenzaForm;
+use Wonder\Plugin\Immobili\Resources\ResidenzaResource;
 
 use Wonder\Backend\Support\ResourceFormLayoutRenderer;
 use Wonder\Elements\Components\{ Container, Card, InfoCard, SectionTitle, RichText, Accordion };
@@ -83,6 +84,11 @@ $actions = [[
     'class'  => 'btn-sm btn-info',
     'href'   => $RES->url,
     'target' => '_blank',
+], [
+    'label' => 'Modifica',
+    'icon'  => 'bi bi-pencil',
+    'class' => 'btn-sm btn-warning',
+    'href'  => __r('backend.resource.'.ResidenzaResource::slug().'.update', ['id' => (int) $ITEM['id']]),
 ]];
 if (trim((string) $RES->sito_url) !== '') {
     $actions[] = [
