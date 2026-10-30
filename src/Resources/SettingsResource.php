@@ -2,7 +2,7 @@
 
 namespace Wonder\Plugin\Immobili\Resources;
 
-use Wonder\App\ResourceSchema\{ FormField, NavigationSchema, PermissionSchema, RepeaterColumn };
+use Wonder\App\ResourceSchema\{ ApiSchema, FormField, NavigationSchema, PermissionSchema, RepeaterColumn };
 use Wonder\App\Resources\Support\SingletonResource;
 use Wonder\Plugin\Immobili\Models\System\Settings;
 use Wonder\Plugin\Immobili\Support\AttributeCatalog;
@@ -156,6 +156,11 @@ final class SettingsResource extends SingletonResource
         }
 
         return $values;
+    }
+
+    public static function apiSchema(): ApiSchema
+    {
+        return ApiSchema::for(static::class)->enabled(false);
     }
 
     public static function permissionSchema(): PermissionSchema
