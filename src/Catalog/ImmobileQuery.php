@@ -78,6 +78,13 @@ final class ImmobileQuery
     }
 
     /**
+     * Gli immobili collegati a una residenza (nuova costruzione) si vedono solo
+     * nella pagina della residenza: il catalogo (vendita, affitto, venduti,
+     * filtri, mappa) mostra soltanto gli immobili non legati a una residenza.
+     */
+    private const NOT_IN_RESIDENZA = '(`residenza_id` IS NULL OR `residenza_id` = 0)';
+
+    /**
      * Costruisce la condizione WHERE (stringa SQL raw) per la ricerca immobili.
      * Single-table su `immobili`. Fedele al filtraggio PHP storico. Tutti i
      * valori stringa sono escaped; i numerici castati a int.
@@ -90,7 +97,12 @@ final class ImmobileQuery
             "`visible` = 'true'",
             "`deleted` = 'false'",
             "`sold` = '".($sold ? 'true' : 'false')."'",
+            self::NOT_IN_RESIDENZA,
         ];
+
+        if (!empty($filters['evidence'])) {
+            $clauses[] = "`evidence` = 'true'";
+        }
 
         $q = strtolower(trim((string) ($filters['q'] ?? '')));
         if ($q !== '') {
@@ -246,7 +258,7 @@ final class ImmobileQuery
     private function findDistinctColumnValue(string $column, bool $sold = false): array
     {
         $where = "`visible` = 'true' AND `deleted` = 'false' AND `sold` = '"
-            .($sold ? 'true' : 'false')."' AND `{$column}` <> ''";
+            .($sold ? 'true' : 'false')."' AND ".self::NOT_IN_RESIDENZA." AND `{$column}` <> ''";
 
         $rows = Immobile::find($where, null, $column, 'ASC', 'DISTINCT `'.$column.'`');
         $rows = is_array($rows) ? $rows : [];

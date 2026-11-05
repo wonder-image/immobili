@@ -276,7 +276,10 @@ final class GestimProvider implements FeedProvider, PushFeedProvider
             return 0;
         }
 
-        $row = Tipologia::find(['nome' => $nome], 1);
+        // Lo stesso nome esiste in più categorie (Appartamento è sia in
+        // Residenziale sia in Casa Vacanze) e Gestim non dà la categoria:
+        // si preferisce quella con id più basso (Residenziale).
+        $row = Tipologia::find(['nome' => $nome], 1, 'categoria_id', 'ASC');
 
         if (!is_array($row) || !isset($row['id'])) {
             return 0;

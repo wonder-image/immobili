@@ -137,9 +137,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
         // Classificazione: i codici nativi Getrix vengono risolti negli id delle
         // tassonomie canoniche (mappa via colonna getrix_id). La macrotipologia è
         // derivata dal FeedSyncService dalla tipologia canonica.
-        $listing->set('categoria_id', (string) Taxonomy::idByProviderCode(Categoria::class, self::KEY, (string) ($data['Categoria'] ?? '')));
+        $categoriaId = Taxonomy::idByProviderCode(Categoria::class, self::KEY, (string) ($data['Categoria'] ?? ''));
+        $listing->set('categoria_id', (string) $categoriaId);
         $listing->set('macrotipologia_id', '');
-        $listing->set('tipologia_id', (string) Taxonomy::idByProviderCode(Tipologia::class, self::KEY, $tipologiaId));
+        // Il codice tipologia Getrix si ripete fra categorie: risolto
+        // nell'ambito della categoria dell'immobile.
+        $listing->set('tipologia_id', (string) Taxonomy::idByProviderCode(
+            Tipologia::class,
+            self::KEY,
+            $tipologiaId,
+            $categoriaId > 0 ? ['categoria_id' => $categoriaId] : []
+        ));
 
         // Localizzazione (comune risolto all'id canonico via cod_catastale/getrix_id)
         $listing->set('comune_id', (string) Taxonomy::idByProviderCode(Comune::class, self::KEY, (string) ($data['CodiceComune'] ?? '')));
@@ -501,6 +509,11 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
             return;
         }
 
+        // Riseminare cambia gli id a cui puntano gli immobili già importati:
+        // il resto del sync li deve rimappare tutti, anche quelli invariati
+        // sul gestionale (vedi FeedSyncService::upsert()).
+        $_REQUEST['refresh_taxonomies'] = '1';
+
         $import = new Import();
 
         $this->syncCategorie($import);
@@ -526,13 +539,36 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
     {
         $column = Taxonomy::providerColumn(self::KEY);
 
-        foreach ([Categoria::class, Tipologia::class, Comune::class] as $model) {
+        foreach ([Categoria::class, Macrotipologia::class, Tipologia::class, Comune::class] as $model) {
             if (!$this->hasMappedRows($model, $column)) {
                 return false;
             }
         }
 
-        return true;
+        return !$this->hasCrossCategoryTypes();
+    }
+
+    /**
+     * Tipologie la cui categoria non coincide con quella del loro gruppo.
+     *
+     * È la traccia lasciata dal vecchio seeding che faceva match solo per
+     * `chiave` (slug del nome): i gruppi omonimi di Casa Vacanze sovrascrivevano
+     * quelli di Residenziale. Se presente, il set va riseminato: così le
+     * installazioni esistenti si riparano al primo sync senza
+     * `?refresh_taxonomies=1`.
+     */
+    private function hasCrossCategoryTypes(): bool
+    {
+        try {
+            return (int) sqlCount(
+                Tipologia::$table,
+                'EXISTS (SELECT 1 FROM `'.Macrotipologia::$table.'` AS m'
+                .' WHERE m.`id` = `'.Tipologia::$table.'`.`macrotipologia_id`'
+                .' AND m.`categoria_id` <> `'.Tipologia::$table.'`.`categoria_id`)'
+            ) > 0;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
@@ -577,12 +613,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                 $macroNome = $this->clean($macrotipologia['TipologiaMacro'] ?? '');
                 $macroChiave = $this->chiave($macroNome, 'macro-'.$macroCode);
 
-                $macroId = $this->upsert(Macrotipologia::class, ['chiave' => $macroChiave], [
+                // Match e adozione SEMPRE nell'ambito della categoria: Getrix
+                // ripete gli stessi nomi in categorie diverse (Residenziale e
+                // Casa Vacanze hanno entrambe "Case", "Ville", "Altre"…). Senza
+                // categoria_id la seconda occorrenza ri-parentava la riga della
+                // prima, svuotando i gruppi di Residenziale.
+                $macroId = $this->upsert(Macrotipologia::class, ['chiave' => $macroChiave, 'categoria_id' => $categoriaId], [
                     'chiave'       => $macroChiave,
                     'nome'         => $macroNome,
                     'categoria_id' => $categoriaId,
                     'getrix_id'    => $macroCode,
-                ], ['nome' => $macroNome]);
+                ], ['nome' => $macroNome, 'categoria_id' => $categoriaId]);
 
                 $tipologie = $macrotipologia['Tipologie']['Tipologia'] ?? [];
                 if (isset($tipologie['IDTipologia'])) {
@@ -594,13 +635,17 @@ final class GetrixProvider implements FeedProvider, ArchivesFeedArtifact
                     $tipNome = $this->clean($tipologia['Tipologia'] ?? '');
                     $tipChiave = $this->chiave($tipNome, 'tipologia-'.$tipCode);
 
-                    $this->upsert(Tipologia::class, ['chiave' => $tipChiave], [
+                    // Stesso ambito per le tipologie: Getrix riusa lo stesso
+                    // codice (es. 1 = Appartamento) in più categorie, quindi
+                    // getrix_id non è univoco da solo. Vedi Taxonomy::byProviderCode
+                    // con $scope per la risoluzione lato immobile.
+                    $this->upsert(Tipologia::class, ['chiave' => $tipChiave, 'categoria_id' => $categoriaId], [
                         'chiave'            => $tipChiave,
                         'nome'              => $tipNome,
                         'categoria_id'      => $categoriaId,
                         'macrotipologia_id' => $macroId,
                         'getrix_id'         => $tipCode,
-                    ], ['nome' => $tipNome]);
+                    ], ['nome' => $tipNome, 'categoria_id' => $categoriaId]);
                 }
             }
         }

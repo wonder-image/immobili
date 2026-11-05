@@ -31,10 +31,16 @@ final class Taxonomy
     /**
      * Riga canonica dato il codice nativo del gestionale.
      *
+     * `$scope` restringe la ricerca (es. `['categoria_id' => 1]`) quando il
+     * codice nativo da solo non è univoco: le tipologie Getrix ripetono lo
+     * stesso codice in più categorie. Se nell'ambito non c'è nessuna riga si
+     * ricade sulla ricerca senza ambito.
+     *
      * @param class-string $model
+     * @param array<string, int|string> $scope
      * @return array<string, mixed>|null
      */
-    public static function byProviderCode(string $model, string $provider, string $code): ?array
+    public static function byProviderCode(string $model, string $provider, string $code, array $scope = []): ?array
     {
         $column = self::providerColumn($provider);
         $code = trim($code);
@@ -43,16 +49,21 @@ final class Taxonomy
             return null;
         }
 
-        $cacheKey = $model.'|'.$column.'|'.$code;
+        ksort($scope);
+        $cacheKey = $model.'|'.$column.'|'.$code.'|'.http_build_query($scope);
 
         if (array_key_exists($cacheKey, self::$cache)) {
             return self::$cache[$cacheKey];
         }
 
         try {
-            $row = $model::find([$column => $code], 1);
+            $row = $model::find([$column => $code] + $scope, 1);
         } catch (Throwable) {
             return self::$cache[$cacheKey] = null;
+        }
+
+        if ((!is_array($row) || !isset($row['id'])) && $scope !== []) {
+            return self::$cache[$cacheKey] = self::byProviderCode($model, $provider, $code);
         }
 
         return self::$cache[$cacheKey] = (is_array($row) && isset($row['id'])) ? $row : null;
@@ -62,10 +73,11 @@ final class Taxonomy
      * Id canonico dato il codice nativo del gestionale (0 se non risolvibile).
      *
      * @param class-string $model
+     * @param array<string, int|string> $scope
      */
-    public static function idByProviderCode(string $model, string $provider, string $code): int
+    public static function idByProviderCode(string $model, string $provider, string $code, array $scope = []): int
     {
-        return (int) (self::byProviderCode($model, $provider, $code)['id'] ?? 0);
+        return (int) (self::byProviderCode($model, $provider, $code, $scope)['id'] ?? 0);
     }
 
     /**

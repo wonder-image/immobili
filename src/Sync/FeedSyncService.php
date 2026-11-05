@@ -157,7 +157,11 @@ final class FeedSyncService
         $existing = (is_array($existing) && isset($existing['id'])) ? $existing : null;
 
         // Se già presente e non più recente nel feed: aggiorno solo lo stato.
-        if ($existing !== null) {
+        // Dopo un refresh delle tassonomie si reimporta comunque, per
+        // riallineare categoria/gruppo/tipologia ai nuovi id.
+        $refresh = immobiliIsTrue($_REQUEST['refresh_taxonomies'] ?? '');
+
+        if ($existing !== null && !$refresh) {
             $oldMod = (int) strtotime((string) ($existing['external_modified_at'] ?? ''));
             $newMod = (int) strtotime($listing->externalModifiedAt);
 
