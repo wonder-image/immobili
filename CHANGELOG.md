@@ -35,6 +35,10 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 - Il modulo accetta sia le release `^2.2.10` sia `dev-main` di
   `wonder-image/app`, senza richiedere alias di versione nei siti in sviluppo.
 
+### Token CSRF nel form degli immobili
+
+- La view `backend/immobili/form.php` passa `Csrf::fieldFor()` nell'opzione `footer` del renderer, come il form generico delle Resource. Senza il campo `_csrf` ogni creazione o modifica dal backend falliva con l'alert generico «Operazione non riuscita. Controlla i campi del form.» (codice 929).
+
 ### Barra di salvataggio del backend
 
 - Il form degli immobili dichiara la barra di salvataggio di `wonder-image/app` con `data-wi-save-bar` e `data-wi-save-bar-dirty` nell'opzione `attributes` del renderer: dopo un salvataggio fallito parte già come non salvato. Con una versione dell'app che non conosce l'opzione non cambia niente.

@@ -14,6 +14,13 @@ if (is_object($NAME ?? null)) {
 }
 
 $saveBar = empty($READONLY) || !empty($READONLY_EDITABLE);
+$formMethod = (string) ($FORM_METHOD ?? 'POST');
+
+// Token CSRF verificato da ResourcePageController::store()/update(): senza,
+// ogni salvataggio fallisce con l'alert generico (codice 929).
+$csrfField = method_exists(\Wonder\Http\Csrf::class, 'fieldFor')
+    ? \Wonder\Http\Csrf::fieldFor($formMethod)
+    : '';
 ?>
 
 <?php if ($isFeedRecord): ?>
@@ -30,13 +37,14 @@ $saveBar = empty($READONLY) || !empty($READONLY_EDITABLE);
     $FORM_LAYOUT,
     [
         'id' => 'immobile-resource-form',
-        'method' => (string) ($FORM_METHOD ?? 'POST'),
+        'method' => $formMethod,
         'enctype' => (string) ($FORM_ENCTYPE ?? 'multipart/form-data'),
         'action' => (string) ($FORM_ACTION ?? ''),
         'attributes' => [
             'data-wi-save-bar' => $saveBar,
             'data-wi-save-bar-dirty' => $saveBar && !empty($FORM_ERRORS),
         ],
+        'footer' => $csrfField,
     ]
 )?>
 
