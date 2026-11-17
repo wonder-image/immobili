@@ -3,18 +3,18 @@
 Tutte le modifiche rilevanti a `wonder-image/immobili` sono documentate qui.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
-## [2.0.0] - non ancora rilasciato
+## [2.1.0] - 2026-11-17
 
 ### Conteggi e scorciatoie nella home del backend
 
 - Nella striscia di stato della home, accanto a Scheduler ed Errori, le card **Immobili** (totale; in vendita / in affitto / venduti) e **Residenze** (totale; visibili / in evidenza), registrate in `backend.home_status` da `Backend\ImmobiliStatus` e `Backend\ResidenzeStatus`. Le query (`Backend\HomeCounts`) girano solo in home e una volta per richiesta; le card compaiono a chi vede l'elenco della Resource.
-- **Immobili** e **Residenze** sono anche in "Accesso rapido" (`NavigationSchema::homeShortcut()`), oltre che nella card della sezione. Richiede `wonder-image/app` con `homeShortcut()` (non ancora in un tag: oggi `dev-main`). Test offline `tests/home-summary.php`.
+- **Immobili** e **Residenze** sono anche in "Accesso rapido" (`NavigationSchema::homeShortcut()`), oltre che nella card della sezione. Richiede `wonder-image/app` `^2.4.0` (con `homeShortcut()`). Test offline `tests/home-summary.php`.
 
 ### Pianificazioni nello scheduler del framework
 
 - Sincronizzazione dei feed (`immobili.sync`, ogni 30 minuti) e resize immagini (`immobili.images`, ogni 5 minuti) sono attività dello scheduler di wonder-image/app, registrate da `Immobili::tasks()` (`ModuleTasks`) e gestite in **Dev → Automazioni → Pianificazioni**. Non vanno più inseriti cron a mano: rimuovere dai server le righe cron `immobili sync` / `immobili images` e le chiamate HTTP a `/api/immobili/{sync,images}/`, altrimenti i lavori partono due volte.
 - I provider push implementano `Feed\Contracts\PushFeedProvider` (Gestim): "tutti i feed" (scheduler, CLI, endpoint, **Aggiorna immobili**) li salta invece di registrare un errore a ogni giro.
-- Richiede `wonder-image/app` `^2.2.10`. Test offline `tests/scheduler-tasks.php`.
+- Richiede `wonder-image/app` `^2.4.0`. Test offline `tests/scheduler-tasks.php`.
 
 ### Route delle liste
 
@@ -32,7 +32,7 @@ Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
 ### Compatibilità Composer
 
-- Il modulo accetta sia le release `^2.2.10` sia `dev-main` di
+- Il modulo accetta sia le release `^2.4.0` sia `dev-main` di
   `wonder-image/app`, senza richiedere alias di versione nei siti in sviluppo.
 
 ### Token CSRF nel form degli immobili
