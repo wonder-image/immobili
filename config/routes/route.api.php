@@ -40,5 +40,22 @@ Route::area('api')
                 Route::get('/search/', Immobili::httpPath('api/frontend/search.php'))
                     ->name('search');
 
+                // API backend di sessione (token CSRF mandato dalla lib).
+                Route::name('backend.')
+                    ->prefix('/backend')
+                    ->backend()
+                    ->csrf()
+                    ->group(function () {
+
+                        // Stato editoriale dal menu della lista (venduto,
+                        // affittato, di nuovo disponibile), anche per gli
+                        // immobili da feed.
+                        Route::post('/status/', Immobili::httpPath('api/backend/status.php'))
+                            ->name('status')
+                            ->guarded()
+                            ->permit(['admin', 'immobili_manager']);
+
+                    });
+
             });
     });

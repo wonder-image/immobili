@@ -14,6 +14,8 @@ use Wonder\Plugin\Immobili\Models\ImmobileDescrizione;
 use Wonder\Plugin\Immobili\Models\ImmobileImmagine;
 use Wonder\Plugin\Immobili\Models\System\SyncLog;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
+use Wonder\Plugin\Immobili\Immobili;
+use Wonder\Plugin\Immobili\Support\ListingStatus;
 use Wonder\Plugin\Immobili\Support\Slug;
 use Wonder\Plugin\Immobili\Support\Taxonomy;
 
@@ -23,14 +25,25 @@ use Wonder\Plugin\Immobili\Support\Taxonomy;
  * Per ogni feed: sincronizza le tassonomie, marca gli immobili come "non più
  * presenti", legge il feed dal provider e fa l'upsert idempotente (preservando i
  * flag manuali evidence/visible/sold), aggiorna immagini e descrizioni, genera
- * slug e QR code (l'URL è derivato in lettura, non persistito), rimuove gli
- * immobili spariti e registra lo stato.
+ * slug e QR code (l'URL è derivato in lettura, non persistito), gestisce gli
+ * immobili spariti secondo `feed_vanished` (vedi ListingStatus) e registra lo
+ * stato.
  */
 final class FeedSyncService
 {
     private int $imagesCount = 0;
     private string $currentSource = '';
     private ?ImmobilePresenter $presenter = null;
+
+    /** Politica per gli immobili non più nel feed (ListingStatus::VANISHED_*). */
+    private string $vanishedPolicy = ListingStatus::VANISHED_DELETE;
+
+    /**
+     * Id degli immobili del feed già assenti prima di questo sync.
+     *
+     * @var array<int, true>
+     */
+    private array $alreadyVanished = [];
 
     /**
      * Sincronizza tutti i feed attivi in pull. I feed push (Gestim) sono
@@ -127,8 +140,15 @@ final class FeedSyncService
             return $this->finish($feed, false, 0, $e->getMessage());
         }
 
+        $this->vanishedPolicy = ListingStatus::vanishedPolicy(Immobili::config('feed_vanished', ListingStatus::VANISHED_DELETE));
+
+        // Prima di marcarli tutti: quali erano già assenti dal feed. Serve a
+        // distinguere chi sparisce ora (regola applicata una volta) da chi era
+        // già sparito, e a riconoscere chi ritorna.
+        $this->alreadyVanished = $this->vanishedIds($feed);
+
         // Solo dopo la validazione marca gli immobili come non più presenti:
-        // quelli incontrati verranno riaccesi, gli altri rimossi a fine sync.
+        // quelli incontrati verranno riaccesi, gli altri gestiti a fine sync.
         Immobile::query()->Update(Immobile::$table, ['feed_deleted' => 'true'], 'feed_source_id', $feed->id);
 
         $count = 0;
@@ -139,6 +159,9 @@ final class FeedSyncService
                 $count++;
             }
         } catch (\Throwable $e) {
+            // Sync interrotto: chi non è stato letto non è davvero sparito.
+            $this->unmarkNotReached($feed);
+
             return $this->finish($feed, false, $count, $e->getMessage());
         }
 
@@ -166,10 +189,11 @@ final class FeedSyncService
             $newMod = (int) strtotime($listing->externalModifiedAt);
 
             if ($newMod > 0 && $newMod <= $oldMod) {
-                Immobile::update([
+                // Update tecnico parziale: Model::update() validerebbe i required.
+                Immobile::query()->Update(Immobile::$table, [
                     'feed_deleted' => 'false',
                     'synced_at'    => date('Y-m-d H:i:s'),
-                ], (int) $existing['id']);
+                ] + $this->reappearedValues($existing), 'id', (int) $existing['id']);
 
                 return;
             }
@@ -189,10 +213,19 @@ final class FeedSyncService
         // - evidence: manuale, ma un provider può fornire il default iniziale.
         // - sold: se il provider lo fornisce (es. Gestim) è autoritativo dal feed
         //   anche in update; altrimenti manuale (default alla creazione, preservato).
+        // - stato: allineato ai flag; un immobile che torna nel feed dopo essere
+        //   stato nascosto/affittato dalla regola `retain` torna disponibile.
         if ($existing !== null) {
             $fields['evidence'] = (string) ($existing['evidence'] ?? 'false');
             $fields['visible']  = (string) ($existing['visible'] ?? 'true');
             $fields['sold']     = $listing->sold ?? (string) ($existing['sold'] ?? 'false');
+            $fields['stato']    = (string) ($existing['stato'] ?? '');
+            $fields = array_merge($fields, $this->reappearedValues($existing));
+
+            // Il `sold` fornito dal provider resta autoritativo anche al ritorno.
+            if ($listing->sold !== null) {
+                $fields['sold'] = $listing->sold;
+            }
         } else {
             $fields['evidence'] = $listing->evidence
                 ?? (immobiliIsTrue($feed->default_evidence) ? 'true' : 'false');
@@ -200,6 +233,8 @@ final class FeedSyncService
             $fields['sold']     = $listing->sold
                 ?? (immobiliIsTrue($feed->default_sold) ? 'true' : 'false');
         }
+
+        $fields['stato'] = ListingStatus::fromRow($fields);
 
         // Slug pubblico leggibile (senza external_id), stabile e univoco.
         $fields['slug'] = $this->buildSlug($feed, $listing, $existing);
@@ -270,6 +305,11 @@ final class FeedSyncService
         }
     }
 
+    /**
+     * Immobili non più presenti nel feed, secondo `feed_vanished`:
+     * - `delete`: eliminati, tranne quelli segnati venduti/affittati;
+     * - `retain`: conservati; in vendita → nascosti, in affitto → affittati.
+     */
     private function removeVanished(FeedSourceConfig $feed): void
     {
         $gone = Immobile::find([
@@ -284,9 +324,61 @@ final class FeedSyncService
                 continue;
             }
 
+            $outcome = ListingStatus::vanished($row, $this->vanishedPolicy, !isset($this->alreadyVanished[$id]));
+
+            if (is_array($outcome)) {
+                Immobile::query()->Update(Immobile::$table, $outcome, 'id', $id);
+                continue;
+            }
+
+            if ($outcome !== ListingStatus::DELETE) {
+                continue;
+            }
+
             ImmobileImmagine::query()->Delete(ImmobileImmagine::$table, ['immobile_id' => $id]);
             ImmobileDescrizione::query()->Delete(ImmobileDescrizione::$table, ['immobile_id' => $id]);
             Immobile::delete($id);
+        }
+    }
+
+    /**
+     * Campi da ripristinare se l'immobile era sparito e ora torna nel feed.
+     *
+     * @param array<string, mixed> $existing
+     * @return array<string, string>
+     */
+    private function reappearedValues(array $existing): array
+    {
+        if (!isset($this->alreadyVanished[(int) ($existing['id'] ?? 0)])) {
+            return [];
+        }
+
+        return ListingStatus::reappeared($existing, $this->vanishedPolicy);
+    }
+
+    /** @return array<int, true> */
+    private function vanishedIds(FeedSourceConfig $feed): array
+    {
+        $ids = [];
+
+        foreach ($this->rows(Immobile::find(['feed_source_id' => $feed->id, 'feed_deleted' => 'true'])) as $row) {
+            $id = (int) ($row['id'] ?? 0);
+
+            if ($id > 0) {
+                $ids[$id] = true;
+            }
+        }
+
+        return $ids;
+    }
+
+    /** Riporta a "presenti" gli immobili marcati da questo sync e non letti. */
+    private function unmarkNotReached(FeedSourceConfig $feed): void
+    {
+        foreach (array_keys($this->vanishedIds($feed)) as $id) {
+            if (!isset($this->alreadyVanished[$id])) {
+                Immobile::query()->Update(Immobile::$table, ['feed_deleted' => 'false'], 'id', $id);
+            }
         }
     }
 
