@@ -49,6 +49,13 @@
             "sync_all": {
                 "button": "Update properties",
                 "confirm": "Start synchronizing all active feeds now?"
+            },
+            "status": {
+                "mark_sold": "Mark as sold",
+                "mark_rented": "Mark as rented",
+                "mark_for_sale": "Put back on sale",
+                "mark_for_rent": "Put back for rent",
+                "updated": "Status updated."
             }
         },
         "media": {

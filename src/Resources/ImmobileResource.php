@@ -34,6 +34,7 @@ use Wonder\Plugin\Immobili\Models\Taxonomy\Quartiere;
 use Wonder\Plugin\Immobili\Models\Taxonomy\QuartiereZona;
 use Wonder\Plugin\Immobili\Models\Taxonomy\Tipologia;
 use Wonder\Plugin\Immobili\Support\Forms\ImmobileForm;
+use Wonder\Plugin\Immobili\Support\ListingStatus;
 use Wonder\Plugin\Immobili\Support\Slug;
 
 /**
@@ -449,7 +450,37 @@ final class ImmobileResource extends Resource
                 ->badgeOn('Venduto', 'bi bi-check2-circle', 'dark')
                 ->size('little'),
             TableColumn::key('visible')->visibleBadge(true)->size('little'),
-            TableColumn::key('actions')->button()->actions(['view', 'edit', 'visible', 'evidence', 'delete'])->hiddenDevice('mobile'),
+            TableColumn::key('actions')->button()->actions([
+                'view', 'edit', 'visible', 'evidence',
+                ...self::statusActions(),
+                'delete',
+            ])->hiddenDevice('mobile'),
+        ];
+    }
+
+    /**
+     * Voci del menu "⋯" per cambiare lo stato, anche sugli immobili da feed.
+     * Ogni riga ne mostra una sola, in base a contratto e venduto.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private static function statusActions(): array
+    {
+        $action = static fn (string $label, string $status, array $sold, array $contract): array => [
+            'label' => (string) __t('components.immobili.backend.status.'.$label),
+            'request' => 'immobili/backend/status/',
+            'key' => ['stato' => $status],
+            'divider' => true,
+            'filter' => ['row' => ['sold' => $sold, 'contratto_id' => $contract]],
+        ];
+        $available = ['false', ''];
+        $sale = ['V', ''];
+
+        return [
+            'mark_sold' => $action('mark_sold', ListingStatus::PURCHASED, $available, $sale),
+            'mark_rented' => $action('mark_rented', ListingStatus::RENTED, $available, ['A']),
+            'mark_for_sale' => $action('mark_for_sale', ListingStatus::ACTIVE, ['true'], $sale),
+            'mark_for_rent' => $action('mark_for_rent', ListingStatus::ACTIVE, ['true'], ['A']),
         ];
     }
 
@@ -523,9 +554,10 @@ final class ImmobileResource extends Resource
 
     public static function mutateFormValues(array $values, string $mode, string $context = 'backend'): array
     {
-        // `stato` è il valore canonico del form. I vecchi flag visible/sold
-        // restano il fallback per record legacy che non hanno ancora stato.
-        $values['stato'] = self::statusFromValues($values);
+        // `stato` è il valore canonico del form. Se i flag visible/sold sono
+        // stati cambiati altrove (toggle della lista, feed) vince ciò che il
+        // sito mostra; i record legacy senza stato lo derivano dai flag.
+        $values['stato'] = ListingStatus::fromRow($values);
 
         if (!isset($values['n_livelli']) || trim((string) $values['n_livelli']) === '') {
             $values['n_livelli'] = 1;
@@ -583,8 +615,8 @@ final class ImmobileResource extends Resource
         ?array $oldValues = null
     ): array {
         $isManual = $action === 'store' || self::isManualRecord($oldValues ?? []);
-        $status = self::statusFromValues($values + ($oldValues ?? []));
-        [$visible, $sold] = self::statusFlags($status);
+        $status = ListingStatus::fromValues($values + ($oldValues ?? []));
+        [$visible, $sold] = ListingStatus::flags($status);
 
         if (!$isManual) {
             return [
@@ -854,37 +886,6 @@ final class ImmobileResource extends Resource
         }
 
         return preg_match('/^[A-Za-z0-9_-]{6,}$/', $videoId) === 1 ? $videoId : '';
-    }
-
-    private static function statusFromValues(array $values): string
-    {
-        $status = strtolower(trim((string) ($values['stato'] ?? '')));
-
-        if (in_array($status, ['active', 'suspended', 'purchased', 'rented'], true)) {
-            return $status;
-        }
-
-        if (immobiliIsTrue($values['sold'] ?? '')) {
-            return strtoupper(trim((string) ($values['contratto_id'] ?? ''))) === 'A'
-                ? 'rented'
-                : 'purchased';
-        }
-
-        if (array_key_exists('visible', $values) && !immobiliIsTrue($values['visible'])) {
-            return 'suspended';
-        }
-
-        return 'active';
-    }
-
-    /** @return array{0: string, 1: string} */
-    private static function statusFlags(string $status): array
-    {
-        return match ($status) {
-            'suspended' => ['false', 'false'],
-            'purchased', 'rented' => ['true', 'true'],
-            default => ['true', 'false'],
-        };
     }
 
     private static function currentUserId(): int

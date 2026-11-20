@@ -28,6 +28,12 @@ return [
     // Aspetto compatto del marker: `icon` oppure `icon-price`.
     'map_marker_mode' => 'icon-price',
 
+    // Immobili non più presenti nel feed del gestionale:
+    // - `delete`: eliminati, tranne quelli segnati venduti/affittati;
+    // - `retain`: conservati; in vendita → nascosti, in affitto → affittati.
+    //   Se tornano nel feed riprendono lo stato disponibile.
+    'feed_vanished' => 'delete',
+
     // Card di stato della home del backend, accanto a Scheduler ed Errori.
     'backend' => [
         'home_status' => [

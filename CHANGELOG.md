@@ -3,6 +3,14 @@
 Tutte le modifiche rilevanti a `wonder-image/immobili` sono documentate qui.
 Il formato segue [Keep a Changelog](https://keepachangelog.com/it/1.0.0/).
 
+## [Unreleased]
+
+### Stato degli immobili da feed
+
+- Dal menu "⋯" della lista degli immobili: **Segna come venduto / affittato** e **Rimetti in vendita / in affitto**, anche per gli immobili caricati da un feed (`POST /api/immobili/backend/status/`, CSRF, permessi `admin` / `immobili_manager`, autorizzazione UPDATE sulla tabella). Venduto/affittato seguono il contratto. La sincronizzazione preserva queste scelte (con Gestim il `sold` del feed resta autoritativo).
+- `Support\ListingStatus` tiene coerenti `stato`, `visible` e `sold` (form, lista, sync). Il toggle "Visibile" della lista non lascia più uno `stato` fuori sincrono nel form.
+- Nuova opzione `feed_vanished` per gli immobili spariti dal feed: `delete` (default) li elimina come prima ma **conserva quelli venduti/affittati**; `retain` li conserva: in vendita → nascosti (`suspended`), in affitto → affittati (`rented`); se tornano nel feed riprendono lo stato disponibile. La regola si applica solo al sync in cui spariscono, così le modifiche manuali successive restano. Un sito la imposta in `custom/config/modules/immobili.php`. Test offline `tests/listing-status.php`.
+
 ## [2.1.0] - 2026-11-17
 
 ### Conteggi e scorciatoie nella home del backend

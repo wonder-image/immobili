@@ -49,6 +49,13 @@
             "sync_all": {
                 "button": "Aggiorna immobili",
                 "confirm": "Avviare ora la sincronizzazione di tutti i feed attivi?"
+            },
+            "status": {
+                "mark_sold": "Segna come venduto",
+                "mark_rented": "Segna come affittato",
+                "mark_for_sale": "Rimetti in vendita",
+                "mark_for_rent": "Rimetti in affitto",
+                "updated": "Stato aggiornato."
             }
         },
         "media": {
